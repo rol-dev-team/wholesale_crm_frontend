@@ -1,4 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
+import { FloatingInput } from "@/components/ui/floatingInput";
+import { FloatingSelect } from "@/components/ui/floatingSelect";
+import { FloatingDatePicker } from "@/components/ui/FloatingDatePicker";
+import { SelectItem } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -8,15 +12,10 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import {
-  FloatingLabelInput,
-  FloatingLabelTextarea,
-} from "@/components/ui/floating-label-input";
-import {
-  FloatingLabelSelect,
-  FloatingSelectItem,
-} from "@/components/ui/floating-label-select";
 import type { Activity, ActivityType, Client } from "@/data/mockData";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+
 
 export interface KAM {
   id: string;
@@ -41,7 +40,6 @@ const activityTypes: { value: ActivityType; label: string }[] = [
   { value: "virtual_meeting", label: "Virtual Meeting" },
   { value: "call", label: "Call" },
   { value: "email", label: "Email" },
-  { value: "task", label: "Task" },
   { value: "follow_up", label: "Follow-up" },
 ];
 
@@ -59,15 +57,24 @@ export function ActivityModal({
   const isSupervisor = userRole === 'supervisor' || userRole === 'super_admin' || userRole === 'boss';
   const [selectedKamId, setSelectedKamId] = useState<string>("");
 
-  const [formData, setFormData] = useState({
-    clientId: preselectedClientId || "",
-    type: "call" as ActivityType,
-    title: "",
-    description: "",
-    scheduledAt: "",
-    outcome: "",
-    address: "",
-  });
+  const [formData, setFormData] = useState<{
+  clientId: string;
+  type: ActivityType | null;
+  title: string;
+  description: string;
+  scheduledAt:string;
+  outcome: string;
+  address: string;
+}>({
+  clientId: preselectedClientId || "",
+  type: null,
+  title: "",
+  description: "",
+  scheduledAt: "",
+  outcome: "",
+  address: "",
+});
+
 
   // Filter clients based on selected KAM for supervisors
   const filteredClients = useMemo(() => {
@@ -79,14 +86,14 @@ export function ActivityModal({
     { lat: number; lng: number; address?: string } | undefined
   >();
 
-  const getDefaultScheduledAt = (date?: Date) => {
-    if (date) {
-      const d = new Date(date);
-      d.setHours(9, 0, 0, 0);
-      return d.toISOString().slice(0, 16);
-    }
-    return new Date().toISOString().slice(0, 16);
-  };
+  // const getDefaultScheduledAt = (date?: Date) => {
+  //   if (date) {
+  //     const d = new Date(date);
+  //     d.setHours(9, 0, 0, 0);
+  //     return d.toISOString().slice(0, 16);
+  //   }
+  //   return new Date().toISOString().slice(0, 16);
+  // };
 
   useEffect(() => {
     if (editingActivity) {
@@ -97,7 +104,7 @@ export function ActivityModal({
         description: editingActivity.description,
         scheduledAt: editingActivity.scheduledAt.slice(0, 16),
         outcome: editingActivity.outcome || "",
-        address: "",
+        address: editingActivity.address || "",
       });
 
       // Location handling removed
@@ -112,13 +119,17 @@ export function ActivityModal({
     } else {
       setFormData({
         clientId: preselectedClientId || "",
-        type: "call",
+        type: null,
         title: "",
         description: "",
-        scheduledAt: getDefaultScheduledAt(preselectedDate),
+        scheduledAt: preselectedDate
+  ? new Date(preselectedDate).toISOString().slice(0, 16)
+  : "",
+
         outcome: "",
         address: "",
-      });
+});
+
       setLocation(undefined);
       setSelectedKamId("");
     }
@@ -137,6 +148,7 @@ export function ActivityModal({
       outcome: formData.outcome || null,
       createdBy: editingActivity?.createdBy || "user-1",
       notes: editingActivity?.notes,
+      address: formData.address || null,
     });
 
     onClose();
@@ -147,10 +159,10 @@ export function ActivityModal({
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {editingActivity ? "Edit Activity" : "Create New Activity"}
+            {editingActivity ? "Edit Task" : "Create New Task"}
           </DialogTitle>
           <DialogDescription>
-            Fill in the activity details below.
+            Fill in the task details below.
           </DialogDescription>
         </DialogHeader>
 
@@ -158,40 +170,42 @@ export function ActivityModal({
           <div className="grid gap-4">
             {/* KAM Selection (Supervisor only) */}
             {isSupervisor && kams.length > 0 && (
-              <FloatingLabelSelect
-                label="KAM *"
-                value={selectedKamId}
-                onValueChange={(value) => {
-                  setSelectedKamId(value);
-                  setFormData({ ...formData, clientId: "" }); // Reset client when KAM changes
-                }}
-              >
-                {kams.map((kam) => (
-                  <FloatingSelectItem key={kam.id} value={kam.id}>
-                    {kam.name}
-                  </FloatingSelectItem>
-                ))}
-              </FloatingLabelSelect>
+              <FloatingSelect
+  label="KAM *"
+  value={selectedKamId}
+  onValueChange={(value) => {
+    setSelectedKamId(value);
+    setFormData({ ...formData, clientId: "" });
+  }}
+>
+  {kams.map((kam) => (
+    <SelectItem key={kam.id} value={kam.id}>
+      {kam.name}
+    </SelectItem>
+  ))}
+</FloatingSelect>
+
             )}
 
             {/* Client Selection */}
-            <FloatingLabelSelect
-              label="Client *"
-              value={formData.clientId}
-              onValueChange={(value) =>
-                setFormData({ ...formData, clientId: value })
-              }
-              disabled={isSupervisor && kams.length > 0 && !selectedKamId}
-            >
+                          <FloatingSelect
+                label="Client *"
+                value={formData.clientId}
+                onValueChange={(value) => {
+                  if (isSupervisor && kams.length > 0 && !selectedKamId) return;
+                  setFormData({ ...formData, clientId: value });
+                }}
+              >
+
               {filteredClients?.map((client) => (
-                <FloatingSelectItem key={client.id} value={client.id}>
+                <SelectItem key={client.id} value={client.id}>
                   {client.name}
-                </FloatingSelectItem>
+                </SelectItem>
               ))}
-            </FloatingLabelSelect>
+            </FloatingSelect>
 
             {/* Activity Type */}
-            <FloatingLabelSelect
+            <FloatingSelect
               label="Activity Type *"
               value={formData.type}
               onValueChange={(value) =>
@@ -202,15 +216,15 @@ export function ActivityModal({
               }
             >
               {activityTypes.map((type) => (
-                <FloatingSelectItem key={type.value} value={type.value}>
+                <SelectItem key={type.value} value={type.value}>
                   {type.label}
-                </FloatingSelectItem>
+                </SelectItem>
               ))}
-            </FloatingLabelSelect>
+            </FloatingSelect>
 
             {/* Title */}
-            <FloatingLabelInput
-              label="Title *"
+            <FloatingInput
+              label="Title/Reason *"
               value={formData.title}
               onChange={(e) =>
                 setFormData({ ...formData, title: e.target.value })
@@ -219,7 +233,7 @@ export function ActivityModal({
             />
 
             {/* Description */}
-            <FloatingLabelTextarea
+                        <FloatingInput
               label="Description"
               value={formData.description}
               onChange={(e) =>
@@ -228,26 +242,21 @@ export function ActivityModal({
                   description: e.target.value,
                 })
               }
-              rows={3}
             />
 
             {/* Scheduled At */}
-            <FloatingLabelInput
-              label="Scheduled Date & Time *"
-              type="datetime-local"
-              value={formData.scheduledAt}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  scheduledAt: e.target.value,
-                })
-              }
-              required
-            />
+            <FloatingDatePicker
+  label="Scheduled Date & Time *"
+  value={formData.scheduledAt}
+  onChange={(value) =>
+    setFormData({ ...formData, scheduledAt: value })
+  }
+/>
+
 
             {/* Meeting Location as Text Input */}
             {(formData.type === "physical_meeting" || formData.type === "follow_up") && (
-              <FloatingLabelInput
+              <FloatingInput
                 label="Meeting Address *"
                 value={formData.address}
                 onChange={(e) =>
@@ -259,13 +268,13 @@ export function ActivityModal({
 
             {/* Outcome (edit only) */}
             {editingActivity && (
-              <FloatingLabelTextarea
+              <FloatingInput
                 label="Outcome"
                 value={formData.outcome}
                 onChange={(e) =>
                   setFormData({ ...formData, outcome: e.target.value })
                 }
-                rows={3}
+                
               />
             )}
           </div>
@@ -278,7 +287,7 @@ export function ActivityModal({
               type="submit"
               disabled={!formData.clientId || !formData.title}
             >
-              {editingActivity ? "Save Changes" : "Create Activity"}
+              {editingActivity ? "Save Changes" : "Create Task"}
             </Button>
           </DialogFooter>
         </form>

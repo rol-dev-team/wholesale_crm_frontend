@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { X, Filter, Plus, Activity, Clock, Target, TrendingUp } from "lucide-react";
+import { FilterDrawer } from "@/components/filters/ActivityFilterDrawer";
+
 import {
   initialClients,
   initialActivities,
@@ -41,8 +43,12 @@ export default function KAMDashboard() {
   const [preselectedClientId, setPreselectedClientId] = useState<string>();
 
   // Filters
-  const [activityStatusFilter, setActivityStatusFilter] = useState<"all" | "completed" | "incomplete">("all");
-  const [activityTypeFilter, setActivityTypeFilter] = useState<ActivityTypeEnum | "all">("all");
+  const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
+
+  const [activityStatusFilter, setActivityStatusFilter] = useState<"all" | "completed" | "pending">("all");
+  const [activityTypeFilter, setActivityTypeFilter] =
+  useState<ActivityTypeEnum[]>([]);
+
   const [clientFilter, setClientFilter] = useState<string>("all");
   const [dateRangeFilter, setDateRangeFilter] = useState<{ from?: string; to?: string }>({});
 
@@ -70,9 +76,15 @@ export default function KAMDashboard() {
   const filteredActivities = useMemo(() => {
     return myActivities.filter((a) => {
       if (activityStatusFilter === "completed" && !a.completedAt) return false;
-      if (activityStatusFilter === "incomplete" && a.completedAt) return false;
+      if (activityStatusFilter === "pending" && a.completedAt) return false;
 
-      if (activityTypeFilter !== "all" && a.type !== activityTypeFilter) return false;
+              if (
+          activityTypeFilter.length > 0 &&
+          !activityTypeFilter.includes(a.type)
+        ) {
+          return false;
+        }
+
 
       if (clientFilter !== "all" && a.clientId !== clientFilter) return false;
 
@@ -291,7 +303,7 @@ export default function KAMDashboard() {
         <div className="flex items-center justify-between">
           {/* Status Toggle */}
           <div className="flex gap-2">
-            {["all", "completed", "incomplete"].map((status) => (
+            {["all", "pending", "completed"].map((status) => (
               <Button
                 key={status}
                 variant={activityStatusFilter === status ? "default" : "outline"}
@@ -303,84 +315,76 @@ export default function KAMDashboard() {
             ))}
           </div>
 
-          {/* Other Filters in Popover */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <Filter className="h-4 w-4" />
-                Filters
-                {(activityTypeFilter !== "all" || clientFilter !== "all" || dateRangeFilter.from || dateRangeFilter.to) && (
-                  <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">!</Badge>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-72 p-4" align="end">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium">Filters</h4>
-                  {(activityTypeFilter !== "all" || clientFilter !== "all" || dateRangeFilter.from || dateRangeFilter.to) && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setActivityTypeFilter("all");
-                        setClientFilter("all");
-                        setDateRangeFilter({});
-                      }}
-                      className="h-8 px-2 text-xs"
-                    >
-                      <X className="h-3 w-3 mr-1" />
-                      Clear
-                    </Button>
-                  )}
-                </div>
+        <Button
+  variant="outline"
+  className="gap-2"
+  onClick={() => setIsFilterDrawerOpen(true)}
+>
+  <Filter className="h-4 w-4" />
+  Filters
+  {(activityTypeFilter.length > 0 ||
+  clientFilter !== "all" ||
+  dateRangeFilter.from ||
+  dateRangeFilter.to) && (
+(
+    <Badge
+      variant="secondary"
+      className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
+    >
+      !
+    </Badge>
+  ))}
+</Button>
 
-                {/* Activity Type */}
-                <div className="space-y-2">
-                  <Label>Activity Type</Label>
-                  <Select value={activityTypeFilter} onValueChange={(v) => setActivityTypeFilter(v as ActivityTypeEnum | "all")}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Types" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value="physical_meeting">Physical Meeting</SelectItem>
-                      <SelectItem value="virtual_meeting">Virtual Meeting</SelectItem>
-                      <SelectItem value="call">Call</SelectItem>
-                      <SelectItem value="email">Email</SelectItem>
-                      <SelectItem value="task">Task</SelectItem>
-                      <SelectItem value="follow_up">Follow-up</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Client */}
-                <div className="space-y-2">
-                  <Label>Client</Label>
-                  <Select value={clientFilter} onValueChange={setClientFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Clients" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Clients</SelectItem>
-                      {allMyClients.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Date Range */}
-                <div className="space-y-2">
-                  <Label>Date From</Label>
-                  <Input type="date" value={dateRangeFilter.from || ""} onChange={(e) => setDateRangeFilter({ ...dateRangeFilter, from: e.target.value })} />
-                  <Label>Date To</Label>
-                  <Input type="date" value={dateRangeFilter.to || ""} onChange={(e) => setDateRangeFilter({ ...dateRangeFilter, to: e.target.value })} />
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
         </div>
+<FilterDrawer<string>
+  open={isFilterDrawerOpen}
+  onClose={() => setIsFilterDrawerOpen(false)}
+  title="Filter Activities"
+  filters={[
+    {
+  type: "multi-select",
+  label: "Activity Type",
+  value: activityTypeFilter,
+  onChange: (v) => setActivityTypeFilter(v as ActivityTypeEnum[]),
+  options: [
+    { label: "Physical Meeting", value: "physical_meeting" },
+    { label: "Virtual Meeting", value: "virtual_meeting" },
+    { label: "Call", value: "call" },
+    { label: "Email", value: "email" },
+    { label: "Task", value: "task" },
+    { label: "Follow-up", value: "follow_up" },
+  ],
+},
+
+    {
+      type: "search-select",
+      label: "Client",
+      value: clientFilter,
+      onChange: setClientFilter,
+      options: [
+        { label: "All Clients", value: "all" },
+        ...allMyClients.map((c) => ({
+          label: c.name,
+          value: c.id,
+        })),
+      ],
+    },
+    {
+      type: "date-range",
+      label: "Date Range",
+      value: dateRangeFilter,
+      onChange: setDateRangeFilter,
+    },
+  ]}
+  onReset={() => {
+  setActivityTypeFilter([]);
+  setClientFilter("all");
+  setDateRangeFilter({});
+}}
+
+  onApply={() => setIsFilterDrawerOpen(false)}
+/>
 
         {/* Activity List */}
         <ActivityList

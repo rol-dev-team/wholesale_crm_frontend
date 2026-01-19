@@ -171,6 +171,20 @@ export function ActivityDetailsSheet({
               </div>
             )}
 
+{/* Address */}
+{(activity.type === "physical_meeting" || activity.type === "follow_up") &&
+  activity.address && (
+    <div className="space-y-1">
+      <div className="text-sm font-medium text-muted-foreground">
+        Address
+      </div>
+      <p className="text-sm text-foreground">
+        {activity.address}
+      </p>
+    </div>
+)}
+
+
             {/* Outcome */}
             {activity.outcome && (
               <div className="space-y-1">

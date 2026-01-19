@@ -18,7 +18,7 @@ const allNavItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, roles: ['kam', 'back_office', 'supervisor', 'boss', 'super_admin'] },
   { title: "Targets", url: "/targets", icon: Crosshair, roles: ['supervisor', 'boss', 'super_admin'] },
   { title: "KAM Performance", url: "/kam-performance", icon: Trophy, roles: ['supervisor', 'boss', 'super_admin'] },
-  { title: "Activities", url: "/activities", icon: ClipboardList, roles: ['supervisor', 'boss', 'super_admin'] },
+  { title: "Activities", url: "/activities", icon: ClipboardList, roles: ['kam','supervisor', 'boss', 'super_admin'] },
   { title: "Clients", url: "/clients", icon: Building2, roles: ['kam', 'back_office', 'supervisor', 'boss', 'super_admin'] },
   { title: "Achievements", url: "/achievements", icon: BarChart3, roles: ['kam', 'supervisor', 'boss', 'super_admin'] },
 ];

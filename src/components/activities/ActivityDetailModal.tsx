@@ -103,6 +103,19 @@ export function ActivityDetailModal({
             </div>
           )}
 
+                   {/* Address */}
+{(activity.type === "physical_meeting" || activity.type === "follow_up") && activity.address && (
+  <div className="space-y-1">
+    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+      <MapPin className="h-4 w-4" />
+      Address
+    </div>
+    <p className="text-sm text-foreground pl-6">
+      {activity.address}
+    </p>
+  </div>
+)}
+
 
           {/* Outcome */}
           {activity.outcome && (

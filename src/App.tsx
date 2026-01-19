@@ -16,6 +16,7 @@ import AdminDashboard from "./pages/dashboards/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import TargetsPage from "./pages/TargetsPage";
 import KAMPerformancePage from "./pages/KAMPerformancePage";
+import "react-datepicker/dist/react-datepicker.css";
 
 const queryClient = new QueryClient();
 

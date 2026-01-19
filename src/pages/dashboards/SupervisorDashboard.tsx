@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ActivityModal } from '@/components/activities/ActivityModal';
 import { ActivityDetailModal } from '@/components/activities/ActivityDetailModal';
 import { ActivityList } from '@/components/activities/ActivityList';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { FilterDrawer } from "@/components/filters/ActivityFilterDrawer";
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import {
@@ -51,23 +51,25 @@ export default function SupervisorDashboard() {
   const [sales] = useState(initialSales);
   const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
   const [isCreateActivityOpen, setIsCreateActivityOpen] = useState(false);
+  const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
+
 
   // Activity filters
   const [activityStatusFilter, setActivityStatusFilter] = useState<'all' | 'completed' | 'pending'>('all');
   const [activityTypeFilter, setActivityTypeFilter] = useState<ActivityTypeEnum | 'all'>('all');
   const [clientFilter, setClientFilter] = useState<string>('all');
   const [kamFilter, setKamFilter] = useState<string>('all');
-  const [entityFilter, setEntityFilter] = useState<string>('all');
+  // const [entityFilter, setEntityFilter] = useState<string>('all');
   const [divisionFilter, setDivisionFilter] = useState<string>('all');
   const [dateRangeFilter, setDateRangeFilter] = useState<{ from?: string; to?: string }>({});
 
-  const hasFilters = activityTypeFilter !== 'all' || clientFilter !== 'all' || kamFilter !== 'all' || entityFilter !== 'all' || divisionFilter !== 'all' || dateRangeFilter.from || dateRangeFilter.to;
+  const hasFilters = activityTypeFilter !== 'all' || clientFilter !== 'all' || kamFilter !== 'all' || divisionFilter !== 'all' || dateRangeFilter.from || dateRangeFilter.to;
 
   const clearFilters = () => {
     setActivityTypeFilter('all');
     setClientFilter('all');
     setKamFilter('all');
-    setEntityFilter('all');
+    // setEntityFilter('all');
     setDivisionFilter('all');
     setDateRangeFilter({});
   };
@@ -148,11 +150,11 @@ export default function SupervisorDashboard() {
         if (!client || client.assignedKamId !== kamFilter) return false;
       }
 
-      // Entity filter
-      if (entityFilter !== 'all') {
-        const client = clients.find(c => c.id === a.clientId);
-        if (!client || !client.businessEntities.includes(entityFilter)) return false;
-      }
+      // // Entity filter
+      // if (entityFilter !== 'all') {
+      //   const client = clients.find(c => c.id === a.clientId);
+      //   if (!client || !client.businessEntities.includes(entityFilter)) return false;
+      // }
 
       // Division filter
       if (divisionFilter !== 'all') {
@@ -167,7 +169,7 @@ export default function SupervisorDashboard() {
 
       return true;
     });
-  }, [teamActivities, activityStatusFilter, activityTypeFilter, clientFilter, kamFilter, entityFilter, divisionFilter, dateRangeFilter, clients]);
+  }, [teamActivities, activityStatusFilter, activityTypeFilter, clientFilter, kamFilter, divisionFilter, dateRangeFilter, clients]);
 
   /* ---------------- HANDLERS ---------------- */
   const handleCreateActivity = (activityData: Omit<ActivityType, 'id'>) => {
@@ -352,127 +354,114 @@ export default function SupervisorDashboard() {
           </div>
 
           {/* Other Filters in Popover */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <Filter className="h-4 w-4" />
-                Filters
-                {hasFilters && (
-                  <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">!</Badge>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-72 p-4" align="end">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium">Filters</h4>
-                  {hasFilters && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={clearFilters}
-                      className="h-8 px-2 text-xs"
-                    >
-                      <X className="h-3 w-3 mr-1" />
-                      Clear
-                    </Button>
-                  )}
-                </div>
+          <Button
+  variant="outline"
+  className="gap-2"
+  onClick={() => setIsFilterDrawerOpen(true)}
+>
+  <Filter className="h-4 w-4" />
+  Filters
+  {hasFilters && (
+    <Badge
+      variant="secondary"
+      className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
+    >
+      !
+    </Badge>
+  )}
+</Button>
 
-                {/* KAM Filter */}
-                <div className="space-y-2">
-                  <Label>KAM</Label>
-                  <Select value={kamFilter} onValueChange={setKamFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All KAMs" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All KAMs</SelectItem>
-                      {kams.map((k) => (
-                        <SelectItem key={k.id} value={k.id}>{k.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Activity Type */}
-                <div className="space-y-2">
-                  <Label>Activity Type</Label>
-                  <Select value={activityTypeFilter} onValueChange={(v) => setActivityTypeFilter(v as ActivityTypeEnum | 'all')}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Types" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value="physical_meeting">Physical Meeting</SelectItem>
-                      <SelectItem value="virtual_meeting">Virtual Meeting</SelectItem>
-                      <SelectItem value="call">Call</SelectItem>
-                      <SelectItem value="email">Email</SelectItem>
-                      <SelectItem value="task">Task</SelectItem>
-                      <SelectItem value="follow_up">Follow-up</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Business Entity */}
-                <div className="space-y-2">
-                  <Label>Business Entity</Label>
-                  <Select value={entityFilter} onValueChange={setEntityFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Entities" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Entities</SelectItem>
-                      {businessEntities.map((e) => (
-                        <SelectItem key={e} value={e}>{e}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Division */}
-                <div className="space-y-2">
-                  <Label>Division</Label>
-                  <Select value={divisionFilter} onValueChange={setDivisionFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Divisions" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Divisions</SelectItem>
-                      {divisions.map((d) => (
-                        <SelectItem key={d} value={d}>{d}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Client */}
-                <div className="space-y-2">
-                  <Label>Client</Label>
-                  <Select value={clientFilter} onValueChange={setClientFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Clients" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Clients</SelectItem>
-                      {clients.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Date Range */}
-                <div className="space-y-2">
-                  <Label>Date From</Label>
-                  <Input type="date" value={dateRangeFilter.from || ''} onChange={(e) => setDateRangeFilter({ ...dateRangeFilter, from: e.target.value })} />
-                  <Label>Date To</Label>
-                  <Input type="date" value={dateRangeFilter.to || ''} onChange={(e) => setDateRangeFilter({ ...dateRangeFilter, to: e.target.value })} />
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
         </div>
+<FilterDrawer
+  open={isFilterDrawerOpen}
+  onClose={() => setIsFilterDrawerOpen(false)}
+  title="Filter Activities"
+  filters={[
+    {
+      type: "single-select",
+      label: "Activity Type",
+      value: activityTypeFilter,
+      onChange: (v) =>
+        setActivityTypeFilter(v as ActivityTypeEnum | "all"),
+      options: [
+        { label: "All Types", value: "all" },
+        { label: "Physical Meeting", value: "physical_meeting" },
+        { label: "Virtual Meeting", value: "virtual_meeting" },
+        { label: "Call", value: "call" },
+        { label: "Email", value: "email" },
+        { label: "Task", value: "task" },
+        { label: "Follow-up", value: "follow_up" },
+      ],
+    },
+    {
+      type: "search-select",
+      label: "KAM",
+      value: kamFilter,
+      onChange: setKamFilter,
+      options: [
+        { label: "All KAMs", value: "all" },
+        ...kams.map((k) => ({
+          label: k.name,
+          value: k.id,
+        })),
+      ],
+    },
+    {
+      type: "search-select",
+      label: "Client",
+      value: clientFilter,
+      onChange: setClientFilter,
+      options: [
+        { label: "All Clients", value: "all" },
+        ...clients.map((c) => ({
+          label: c.name,
+          value: c.id,
+        })),
+      ],
+    },
+    // {
+    //   type: "single-select",
+    //   label: "Business Entity",
+    //   value: entityFilter,
+    //   onChange: setEntityFilter,
+    //   options: [
+    //     { label: "All Entities", value: "all" },
+    //     ...businessEntities.map((e) => ({
+    //       label: e,
+    //       value: e,
+    //     })),
+    //   ],
+    // },
+    {
+      type: "single-select",
+      label: "Division",
+      value: divisionFilter,
+      onChange: setDivisionFilter,
+      options: [
+        { label: "All Divisions", value: "all" },
+        ...divisions.map((d) => ({
+          label: d,
+          value: d,
+        })),
+      ],
+    },
+    {
+      type: "date-range",
+      label: "Date Range",
+      value: dateRangeFilter,
+      onChange: setDateRangeFilter,
+    },
+  ]}
+  onReset={() => {
+    setActivityTypeFilter("all");
+    setClientFilter("all");
+    setKamFilter("all");
+    // setEntityFilter("all");
+    setDivisionFilter("all");
+    setDateRangeFilter({});
+  }}
+  onApply={() => setIsFilterDrawerOpen(false)}
+/>
 
         {/* Activity List */}
         <ActivityList

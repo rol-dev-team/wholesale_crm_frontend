@@ -108,6 +108,7 @@ export interface Activity {
   type: ActivityType;
   title: string;
   description: string;
+  address?: string | null;
   scheduledAt: string;
   completedAt: string | null;
   outcome: string | null;
@@ -840,6 +841,7 @@ export const initialActivities: Activity[] = [
    clientId: "client-1",
     type: "physical_meeting",
     title: "On-site Product Demo",
+    address: "Dhaka",
     description: "Present enterprise features to IT team",
     scheduledAt: "2025-12-17T10:00:00Z",
     completedAt: null,
@@ -918,6 +920,7 @@ export const initialActivities: Activity[] = [
     clientId: "client-2",
     type: "physical_meeting",
     title: "Client Site Visit - Global Systems",
+     address: "Chittagong",
     description: "Meet with procurement team for contract finalization",
     scheduledAt: "2025-12-18T14:00:00Z",
     completedAt: null,
@@ -984,6 +987,7 @@ export const initialActivities: Activity[] = [
     clientId: "client-2",
     type: "physical_meeting",
     title: "Lunch with Enterprise Client",
+     address: "Gulshan",
     description: "Relationship building meeting with key stakeholder",
     scheduledAt: "2025-12-21T12:30:00Z",
     completedAt: null,

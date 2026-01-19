@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { FloatingLabelInput } from "@/components/ui/floating-label-input";
-import { FloatingLabelWrapper } from "@/components/ui/floating-label-wrapper";
+"use client";
+
+import { useState, useMemo } from "react";
 import {
   Tabs,
   TabsContent,
@@ -15,1206 +15,413 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Users, Group, Settings2 } from "lucide-react";
+import { Users, Group, Settings2, Edit2, Trash } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
-import {
-  systemUsers,
-  businessEntities,
-  divisions,
-  initialKAMs,
-} from "@/data/mockData";
-import type { SystemUser } from "@/data/mockData";
+import { systemUsers as mockSystemUsers } from "@/data/mockData";
 
-/* ---------------- helpers ---------------- */
+import FloatingTeamForm, { TeamPayload, SelectOption } from "@/components/teams/createTeamForm";
+import { CreateGroupFormValues, CreateGroupForm } from "@/components/groups/CreateGroupForm";
+import { UserAccessForm, UserAccessFormValues } from "@/components/user/UserAccessControl";
+import { CreateSystemUserForm, SystemUser } from "@/components/user/CreateSystemUserForm";
+import { SystemUserList } from "@/components/user/SystemUserList";
+import { UserAccessForm as UserMappingForm, UserAccessFormValues as UserMappingValues } from "@/components/user/UserMapping";
+import { MappedList } from "@/components/user/MappedList";
 
-const kamUsers = systemUsers.filter((u) => u.role === "kam");
-const products = ["Product A", "Product B", "Product C", "Product D"];
 
 /* ================= PAGE ================= */
-
 export default function SettingsPage() {
+  const [activeTab, setActiveTab] = useState("teams");
+
   /* ---------------- TEAMS ---------------- */
   const [showTeamForm, setShowTeamForm] = useState(false);
-  const [teamName, setTeamName] = useState("");
-  const [teamBusinesses, setTeamBusinesses] = useState<string[]>([]);
-  const [teamKAMs, setTeamKAMs] = useState<string[]>([]);
-  const [teamSupervisor, setTeamSupervisor] = useState<string>("");
-  const [teams, setTeams] = useState<
-    { name: string; businesses: string[]; kams: string[]; supervisor: string }[]
-  >([]);
+  const [teams, setTeams] = useState<TeamPayload[]>([]);
+  const [editingTeamIndex, setEditingTeamIndex] = useState<number | null>(null);
 
-  // Teams dropdowns
-  const [teamBusinessDropdownOpen, setTeamBusinessDropdownOpen] = useState(false);
-  const [teamKamDropdownOpen, setTeamKamDropdownOpen] = useState(false);
-  const [teamSupervisorDropdownOpen, setTeamSupervisorDropdownOpen] = useState(false);
+  /* ---------------- GROUPS ---------------- */
+  const [groups, setGroups] = useState<CreateGroupFormValues[]>([]);
+  const [showGroupForm, setShowGroupForm] = useState(false);
+  const [editingGroupIndex, setEditingGroupIndex] = useState<number | null>(null);
 
-  const handleSaveTeam = () => {
-    if (!teamName || !teamSupervisor) {
-      toast({ title: "Error", description: "Team name & supervisor required" });
-      return;
+  /* ---------------- USER ACCESS ---------------- */
+  const [userAccesses, setUserAccesses] = useState<UserAccessFormValues[]>([]);
+  const [editingUserAccessIndex, setEditingUserAccessIndex] = useState<number | null>(null);
+
+  /* ---------------- SYSTEM USERS ---------------- */
+  const [systemUserList, setSystemUserList] = useState<SystemUser[]>([]);
+  const [editingSystemUser, setEditingSystemUser] = useState<SystemUser | null>(null);
+
+  /* ---------------- USER MAPPING ---------------- */
+  const [userMappings, setUserMappings] = useState<UserMappingValues[]>([]);
+  const [editingUserMappingIndex, setEditingUserMappingIndex] = useState<number | null>(null);
+
+  /* ---------------- OPTIONS ---------------- */
+  const kamOptions: SelectOption[] = useMemo(
+    () => systemUserList.filter(u => u.role.toLowerCase() === "kam").map(u => ({ label: u.fullName, value: u.id })),
+    [systemUserList]
+  );
+
+  const supervisorOptions: SelectOption[] = useMemo(
+    () => systemUserList.filter(u => u.role.toLowerCase() === "supervisor").map(u => ({ label: u.fullName, value: u.id })),
+    [systemUserList]
+  );
+
+  const teamOptions: SelectOption[] = useMemo(
+    () => teams.map((t, idx) => ({ label: t.name, value: String(idx) })),
+    [teams]
+  );
+
+  /* ---------------- USER ACCESS FORM OPTIONS ---------------- */
+  const userAccessGroupOptions = useMemo(
+    () => groups.map((g, idx) => ({
+      id: String(idx),
+      label: g.groupName,
+      teams: g.teams.map((tId) => {
+        const team = teams[parseInt(tId)];
+        return {
+          id: tId,
+          label: team?.name || "",
+          kams: team?.kams.map(kId => {
+            const user = systemUserList.find(u => u.id === kId);
+            return { label: user?.fullName || "", value: kId };
+          }) || [],
+        };
+      }),
+    })),
+    [groups, teams, systemUserList]
+  );
+
+  const userAccessTeamOptions = useMemo(
+    () => teams.map((t, idx) => ({
+      id: String(idx),
+      label: t.name,
+      kams: t.kams.map(kId => {
+        const user = systemUserList.find(u => u.id === kId);
+        return { label: user?.fullName || "", value: kId };
+      }),
+    })),
+    [teams, systemUserList]
+  );
+
+  const userAccessKamOptions = useMemo(
+    () => systemUserList.filter(u => u.role.toLowerCase() === "kam").map(u => ({ label: u.fullName, value: u.id })),
+    [systemUserList]
+  );
+
+  /* ---------------- USER MAPPING OPTIONS ---------------- */
+  const userMappingGroupOptions = userAccessGroupOptions;
+  const userMappingTeamOptions = userAccessTeamOptions;
+  const userMappingKamOptions = userAccessKamOptions;
+
+  /* ---------------- HANDLERS ---------------- */
+
+  // Teams
+  const handleSaveTeam = (team: TeamPayload, index?: number) => {
+    if (index !== undefined && index !== null) {
+      setTeams(prev => prev.map((t, i) => (i === index ? team : t)));
+      toast({ title: "Team Updated", description: `Team "${team.name}" updated` });
+    } else {
+      setTeams(prev => [...prev, team]);
+      toast({ title: "Team Created", description: `Team "${team.name}" created` });
     }
-
-    setTeams((prev) => [
-      ...prev,
-      {
-        name: teamName,
-        businesses: teamBusinesses,
-        kams: teamKAMs,
-        supervisor: teamSupervisor,
-      },
-    ]);
-
-    setTeamName("");
-    setTeamBusinesses([]);
-    setTeamKAMs([]);
-    setTeamSupervisor("");
     setShowTeamForm(false);
-
-    toast({ title: "Team Created", description: `Team "${teamName}" has been created` });
-  };
-
-  const handleCancelTeam = () => {
-    setTeamName("");
-    setTeamBusinesses([]);
-    setTeamKAMs([]);
-    setTeamSupervisor("");
-    setShowTeamForm(false);
-  };
-
-  const handleEditTeam = (index: number) => {
-    const team = teams[index];
-    setTeamName(team.name);
-    setTeamBusinesses(team.businesses);
-    setTeamKAMs(team.kams);
-    setTeamSupervisor(team.supervisor);
-    setShowTeamForm(true);
-    setTeams(prev => prev.filter((_, i) => i !== index));
+    setEditingTeamIndex(null);
   };
 
   const handleDeleteTeam = (index: number) => {
     setTeams(prev => prev.filter((_, i) => i !== index));
-    toast({ title: "Deleted", description: "Team has been deleted" });
+    toast({ title: "Team Deleted", description: "Team deleted successfully" });
   };
 
-  /* ---------------- GROUPS ---------------- */
-  const [showGroupForm, setShowGroupForm] = useState(false);
-  const [groupName, setGroupName] = useState("");
-  const [groupTeams, setGroupTeams] = useState<string[]>([]);
-  const [groupKAMs, setGroupKAMs] = useState<string[]>([]);
-  const [groupSupervisor, setGroupSupervisor] = useState<string>("");
-  const [groups, setGroups] = useState<
-    { name: string; teams: string[]; kams: string[]; supervisor: string }[]
-  >([]);
-
-  const [groupTeamsDropdownOpen, setGroupTeamsDropdownOpen] = useState(false);
-  const [groupKamDropdownOpen, setGroupKamDropdownOpen] = useState(false);
-  const [groupSupervisorDropdownOpen, setGroupSupervisorDropdownOpen] = useState(false);
-
-  const handleSaveGroup = () => {
-    if (!groupName || !groupSupervisor) {
-      toast({ title: "Error", description: "Group name & supervisor required" });
-      return;
+  // Groups
+  const handleCreateOrUpdateGroup = (group: CreateGroupFormValues, index?: number) => {
+    if (index !== undefined) {
+      setGroups(prev => prev.map((g, i) => (i === index ? group : g)));
+      toast({ title: "Group Updated", description: `Group "${group.groupName}" updated` });
+    } else {
+      setGroups(prev => [...prev, group]);
+      toast({ title: "Group Created", description: `Group "${group.groupName}" created` });
     }
-
-    setGroups((prev) => [
-      ...prev,
-      {
-        name: groupName,
-        teams: groupTeams,
-        kams: groupKAMs,
-        supervisor: groupSupervisor,
-      },
-    ]);
-
-    setGroupName("");
-    setGroupTeams([]);
-    setGroupKAMs([]);
-    setGroupSupervisor("");
     setShowGroupForm(false);
-
-    toast({ title: "Group Created", description: `Group "${groupName}" has been created` });
+    setEditingGroupIndex(null);
   };
 
-  const handleCancelGroup = () => {
-    setGroupName("");
-    setGroupTeams([]);
-    setGroupKAMs([]);
-    setGroupSupervisor("");
-    setShowGroupForm(false);
-  };
-
-  const handleEditGroup = (index: number) => {
-    const group = groups[index];
-    setGroupName(group.name);
-    setGroupTeams(group.teams);
-    setGroupKAMs(group.kams);
-    setGroupSupervisor(group.supervisor);
-    setShowGroupForm(true);
-    setGroups(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleDeleteGroup = (index: number) => {
-    setGroups(prev => prev.filter((_, i) => i !== index));
-    toast({ title: "Deleted", description: "Group has been deleted" });
-  };
-
-  /* ---------------- USER CONFIGURATION ---------------- */
-  type ConfigRole = "kam" | "supervisor" | "management" | "";
-  
-  interface UserConfig {
-    userId: string;
-    businessEntities: string[];
-    role: ConfigRole;
-    divisions: string[];
-    kams: string[];
-    products: string[];
-  }
-
-  const [showConfigForm, setShowConfigForm] = useState(false);
-  const [configUserId, setConfigUserId] = useState<string>("");
-  const [configBusinessEntities, setConfigBusinessEntities] = useState<string[]>([]);
-  const [configRole, setConfigRole] = useState<ConfigRole>("");
-  const [configDivisions, setConfigDivisions] = useState<string[]>([]);
-  const [configKams, setConfigKams] = useState<string[]>([]);
-  const [configProducts, setConfigProducts] = useState<string[]>([]);
-  const [userConfigs, setUserConfigs] = useState<UserConfig[]>([]);
-
-  // Dropdown states for user config
-  const [configBusinessDropdownOpen, setConfigBusinessDropdownOpen] = useState(false);
-  const [configDivisionDropdownOpen, setConfigDivisionDropdownOpen] = useState(false);
-  const [configKamDropdownOpen, setConfigKamDropdownOpen] = useState(false);
-  const [configProductDropdownOpen, setConfigProductDropdownOpen] = useState(false);
-
-  const handleSaveConfig = () => {
-    if (!configUserId || !configBusinessEntities.length || !configRole) {
-      toast({ title: "Error", description: "User, Business Entities, and Role are required" });
-      return;
+  // User Access
+  const handleSaveUserAccess = (data: UserAccessFormValues) => {
+    if (editingUserAccessIndex !== null) {
+      setUserAccesses(prev => prev.map((ua, idx) => idx === editingUserAccessIndex ? data : ua));
+      toast({ title: "User Access Updated", description: "Access for user updated." });
+    } else {
+      setUserAccesses(prev => [...prev, data]);
+      toast({ title: "User Access Saved", description: "Access for user saved." });
     }
+    setEditingUserAccessIndex(null);
+  };
 
-    if (configRole === "supervisor" && !configDivisions.length) {
-      toast({ title: "Error", description: "Division is required for Supervisor" });
-      return;
+  const handleEditUserAccess = (index: number) => {
+    setEditingUserAccessIndex(index);
+    setActiveTab("userConfig");
+  };
+
+  const handleDeleteUserAccess = (index: number) => {
+    setUserAccesses(prev => prev.filter((_, i) => i !== index));
+    toast({ title: "User Access Deleted", description: "User access deleted." });
+  };
+
+  // System Users
+  const handleSaveSystemUser = (user: SystemUser) => {
+    if (editingSystemUser) {
+      setSystemUserList(prev => prev.map(u => u.id === editingSystemUser.id ? { ...u, ...user } : u));
+      toast({ title: "User Updated", description: "System user updated successfully." });
+    } else {
+      setSystemUserList(prev => [...prev, { ...user, id: crypto.randomUUID() }]);
+      toast({ title: "User Created", description: "System user created successfully." });
     }
+    setEditingSystemUser(null);
+  };
 
-    if (configRole === "kam" && (!configDivisions.length || !configProducts.length)) {
-      toast({ title: "Error", description: "Division and Products are required for KAM" });
-      return;
+  const handleEditSystemUser = (user: SystemUser) => {
+    setEditingSystemUser(user);
+    setActiveTab("createSystemUser");
+  };
+
+  const handleDeleteSystemUser = (id: string) => {
+    setSystemUserList(prev => prev.filter(u => u.id !== id));
+    toast({ title: "User Deleted", description: "System user deleted successfully." });
+  };
+
+  const handleToggleStatus = (id: string, active: boolean) => {
+    setSystemUserList(prev => prev.map(u => u.id === id ? { ...u, active } : u));
+  };
+
+  // User Mapping
+  const handleSaveUserMapping = (data: UserMappingValues) => {
+    if (editingUserMappingIndex !== null) {
+      setUserMappings(prev => prev.map((m, idx) => idx === editingUserMappingIndex ? data : m));
+      toast({ title: "User Mapping Updated", description: "Mapping updated successfully." });
+    } else {
+      setUserMappings(prev => [...prev, data]);
+      toast({ title: "User Mapping Saved", description: "Mapping saved successfully." });
     }
-
-    setUserConfigs((prev) => [
-      ...prev,
-      {
-        userId: configUserId,
-        businessEntities: configBusinessEntities,
-        role: configRole,
-        divisions: configDivisions,
-        kams: configKams,
-        products: configProducts,
-      },
-    ]);
-
-    resetConfigForm();
-    toast({ title: "Configuration Saved", description: "User configuration has been saved" });
+    setEditingUserMappingIndex(null);
   };
 
-  const resetConfigForm = () => {
-    setConfigUserId("");
-    setConfigBusinessEntities([]);
-    setConfigRole("");
-    setConfigDivisions([]);
-    setConfigKams([]);
-    setConfigProducts([]);
-    setShowConfigForm(false);
+  const handleEditUserMapping = (index: number) => {
+    setEditingUserMappingIndex(index);
+    setActiveTab("userMapping");
   };
 
-  const handleEditConfig = (index: number) => {
-    const config = userConfigs[index];
-    setConfigUserId(config.userId);
-    setConfigBusinessEntities(config.businessEntities);
-    setConfigRole(config.role);
-    setConfigDivisions(config.divisions);
-    setConfigKams(config.kams);
-    setConfigProducts(config.products);
-    setShowConfigForm(true);
-    setUserConfigs(prev => prev.filter((_, i) => i !== index));
+  const handleDeleteUserMapping = (index: number) => {
+    setUserMappings(prev => prev.filter((_, idx) => idx !== index));
+    toast({ title: "Mapping Deleted", description: "Mapping deleted successfully." });
   };
 
-  const handleDeleteConfig = (index: number) => {
-    setUserConfigs(prev => prev.filter((_, i) => i !== index));
-    toast({ title: "Deleted", description: "User configuration has been deleted" });
-  };
-
+  /* ---------------- PAGE JSX ---------------- */
   return (
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-semibold">Settings</h1>
 
-      <Tabs defaultValue="teams" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="teams" className="gap-2">
-            <Users className="h-4 w-4" />
-            Teams
-          </TabsTrigger>
-          <TabsTrigger value="groups" className="gap-2">
-            <Group className="h-4 w-4" />
-            Groups
-          </TabsTrigger>
-          <TabsTrigger value="userConfig" className="gap-2">
-            <Settings2 className="h-4 w-4" />
-            User Configuration
-          </TabsTrigger>
+          <TabsTrigger value="teams" className="gap-2"><Users className="h-4 w-4" /> Teams</TabsTrigger>
+          <TabsTrigger value="groups" className="gap-2"><Group className="h-4 w-4" /> Groups</TabsTrigger>
+          <TabsTrigger value="createSystemUser" className="gap-2"><Users className="h-4 w-4" /> Create System User</TabsTrigger>
+          <TabsTrigger value="systemUserList" className="gap-2"><Users className="h-4 w-4" /> User List</TabsTrigger>
+          <TabsTrigger value="userMapping" className="gap-2"><Settings2 className="h-4 w-4" /> User Mapping</TabsTrigger>
+          <TabsTrigger value="mappedList" className="gap-2"><Users className="h-4 w-4" /> Mapped Users</TabsTrigger>
         </TabsList>
 
-        {/* ===================================================== */}
-        {/* ===================== TEAMS ========================= */}
-        {/* ===================================================== */}
-
+        {/* TEAMS TAB */}
         <TabsContent value="teams">
           <Card>
-            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div className="flex flex-col gap-2">
-                <CardTitle>Team Management</CardTitle>
-                <CardDescription>
-                  Create and manage teams with business entities, KAMs, and supervisors
-                </CardDescription>
+            <CardHeader className="flex justify-between items-center">
+              <div>
+                <CardTitle>Teams</CardTitle>
+                <CardDescription>Manage teams</CardDescription>
               </div>
-
-              <button
-                className={`px-4 py-2 text-sm font-medium text-white rounded-md transition-colors ${
-                  showTeamForm ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"
-                }`}
-                onClick={() => setShowTeamForm((prev) => !prev)}
-              >
-                {showTeamForm ? "Close Form" : "Create New Team"}
-              </button>
+              <Button onClick={() => setShowTeamForm(p => !p)} variant={showTeamForm ? "destructive" : "default"}>
+                {showTeamForm ? "Close Form" : "Create Team"}
+              </Button>
             </CardHeader>
-
-            <CardContent className="space-y-6 w-full">
+            <CardContent>
               {showTeamForm && (
-                <div className="space-y-4 border rounded-md p-4 bg-muted/50">
-                  <FloatingLabelInput
-                    id="team-name"
-                    label="Team Name"
-                    value={teamName}
-                    onChange={(e) => setTeamName(e.target.value)}
-                    className="w-full"
-                  />
-
-                  <FloatingLabelWrapper
-                    label="Business Entities"
-                    isActive={teamBusinessDropdownOpen || teamBusinesses.length > 0}
-                  >
-                    <div
-                      className="flex flex-wrap gap-1 border rounded-md px-2 py-1 min-h-[38px] cursor-pointer"
-                      onClick={() => setTeamBusinessDropdownOpen(true)}
-                    >
-                      {teamBusinesses.map((b) => (
-                        <span
-                          key={b}
-                          className="inline-flex items-center bg-blue-100 text-blue-800 rounded-full px-2 py-1 text-xs"
-                        >
-                          {b}
-                          <span
-                            className="ml-1 cursor-pointer hover:text-red-500"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setTeamBusinesses(prev => prev.filter(v => v !== b));
-                            }}
-                          >
-                            ×
-                          </span>
-                        </span>
-                      ))}
-                    </div>
-
-                    {teamBusinessDropdownOpen && (
-                      <div className="absolute z-50 mt-1 w-full border rounded-md bg-background shadow-md">
-                        <div className="max-h-48 overflow-auto">
-                          {businessEntities.map((b) => (
-                            <div
-                              key={b}
-                              className={`px-3 py-2 cursor-pointer hover:bg-muted ${
-                                teamBusinesses.includes(b) ? "bg-muted font-medium" : ""
-                              }`}
-                              onClick={() => {
-                                setTeamBusinesses(prev =>
-                                  prev.includes(b) ? prev : [...prev, b]
-                                );
-                              }}
-                            >
-                              {b}
-                            </div>
-                          ))}
-                        </div>
-                        <div className="px-3 py-2 border-t bg-background flex justify-end">
-                          <button
-                            type="button"
-                            className="px-3 py-1 text-sm text-white bg-green-600 rounded-md hover:bg-green-700"
-                            onClick={() => setTeamBusinessDropdownOpen(false)}
-                          >
-                            Confirm
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </FloatingLabelWrapper>
-
-                  <FloatingLabelWrapper
-                    label="Assign KAMs"
-                    isActive={teamKamDropdownOpen || teamKAMs.length > 0}
-                  >
-                    <div
-                      className="flex flex-wrap gap-1 border rounded-md px-2 py-1 min-h-[38px] cursor-pointer"
-                      onClick={() => setTeamKamDropdownOpen(true)}
-                    >
-                      {teamKAMs.map((id) => {
-                        const kam = kamUsers.find(k => k.id === id);
-                        if (!kam) return null;
-                        return (
-                          <span
-                            key={id}
-                            className="inline-flex items-center bg-green-100 text-green-800 rounded-full px-2 py-1 text-xs"
-                          >
-                            {kam.name}
-                            <span
-                              className="ml-1 cursor-pointer hover:text-red-500"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setTeamKAMs(prev => prev.filter(v => v !== id));
-                              }}
-                            >
-                              ×
-                            </span>
-                          </span>
-                        );
-                      })}
-                    </div>
-
-                    {teamKamDropdownOpen && (
-                      <div className="absolute z-50 mt-1 w-full border rounded-md bg-background shadow-md">
-                        <div className="max-h-48 overflow-auto">
-                          {kamUsers.map((kam) => (
-                            <div
-                              key={kam.id}
-                              className={`px-3 py-2 cursor-pointer hover:bg-muted ${
-                                teamKAMs.includes(kam.id) ? "bg-muted font-medium" : ""
-                              }`}
-                              onClick={() => {
-                                setTeamKAMs(prev =>
-                                  prev.includes(kam.id) ? prev : [...prev, kam.id]
-                                );
-                              }}
-                            >
-                              {kam.name}
-                            </div>
-                          ))}
-                        </div>
-                        <div className="px-3 py-2 border-t bg-background flex justify-end">
-                          <button
-                            type="button"
-                            className="px-3 py-1 text-sm text-white bg-green-600 rounded-md hover:bg-green-700"
-                            onClick={() => setTeamKamDropdownOpen(false)}
-                          >
-                            Confirm
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </FloatingLabelWrapper>
-
-                  <FloatingLabelWrapper
-                    label="Supervisor"
-                    isActive={teamSupervisor !== ""}
-                  >
-                    <div
-                      className="border rounded-md px-2 py-2 min-h-[38px] cursor-pointer"
-                      onClick={() => setTeamSupervisorDropdownOpen(true)}
-                    >
-                      {teamSupervisor ? (
-                        systemUsers.find(u => u.id === teamSupervisor)?.name
-                      ) : (
-                        <span className="text-muted-foreground text-sm">Select supervisor</span>
-                      )}
-                    </div>
-
-                    {teamSupervisorDropdownOpen && (
-                      <div className="absolute z-50 mt-1 w-full border rounded-md bg-background shadow-md">
-                        <div className="max-h-48 overflow-auto">
-                          {systemUsers.map((user) => (
-                            <div
-                              key={user.id}
-                              className="px-3 py-2 cursor-pointer hover:bg-muted"
-                              onClick={() => {
-                                setTeamSupervisor(user.id);
-                                setTeamSupervisorDropdownOpen(false);
-                              }}
-                            >
-                              {user.name} ({user.role})
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </FloatingLabelWrapper>
-
-                  <div className="flex gap-2">
-                    <Button onClick={handleSaveTeam}>Save Team</Button>
-                    <Button variant="outline" onClick={handleCancelTeam}>
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
+                <FloatingTeamForm
+                  kamOptions={kamOptions}
+                  supervisorOptions={supervisorOptions}
+                  onSave={handleSaveTeam}
+                  onCancel={() => { setShowTeamForm(false); setEditingTeamIndex(null); }}
+                  initialValues={editingTeamIndex !== null ? teams[editingTeamIndex] : undefined}
+                  index={editingTeamIndex ?? undefined}
+                />
               )}
-
-              <div className="overflow-x-auto">
-                <table className="table-auto w-full border-collapse border border-border">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="border border-border p-2">Team Name</th>
-                      <th className="border border-border p-2">Business Entities</th>
-                      <th className="border border-border p-2">KAMs</th>
-                      <th className="border border-border p-2">Supervisor</th>
-                      <th className="border border-border p-2">Actions</th>
+              {/* Teams Table */}
+              <table className="w-full border border-border text-sm mt-4">
+                <thead className="bg-muted"><tr><th>Name</th><th>KAMs</th><th>Supervisors</th><th>Actions</th></tr></thead>
+                <tbody>
+                  {teams.length === 0 ? (
+                    <tr><td colSpan={4} className="text-center text-muted-foreground p-4">No teams created yet</td></tr>
+                  ) : teams.map((t,i) => (
+                    <tr key={i}>
+                      <td className="border p-2 font-medium">{t.name}</td>
+                      <td className="border p-2">{t.kams.map(id => systemUserList.find(u=>u.id===id)?.fullName).join(", ")}</td>
+                      <td className="border p-2">{t.supervisors.map(id => systemUserList.find(u=>u.id===id)?.fullName).join(", ")}</td>
+                      <td className="border p-2 flex gap-2">
+                        <Button size="sm" variant="outline" onClick={()=>{ setEditingTeamIndex(i); setShowTeamForm(true); }}><Edit2 className="h-4 w-4" /></Button>
+                        <Button size="sm" variant="destructive" onClick={()=>handleDeleteTeam(i)}><Trash className="h-4 w-4"/></Button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {teams.map((team, idx) => (
-                      <tr key={idx} className="hover:bg-muted/20">
-                        <td className="border border-border p-2">{team.name}</td>
-                        <td className="border border-border p-2">{team.businesses.join(", ")}</td>
-                        <td className="border border-border p-2">
-                          {team.kams.map((id) => kamUsers.find((k) => k.id === id)?.name).join(", ")}
-                        </td>
-                        <td className="border border-border p-2">
-                          {systemUsers.find((u) => u.id === team.supervisor)?.name}
-                        </td>
-                        <td className="border border-border p-2 flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => handleEditTeam(idx)}>
-                            Edit
-                          </Button>
-                          <Button size="sm" variant="destructive" onClick={() => handleDeleteTeam(idx)}>
-                            Delete
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* ===================================================== */}
-        {/* ===================== GROUPS ======================== */}
-        {/* ===================================================== */}
-
+        {/* GROUPS TAB */}
         <TabsContent value="groups">
           <Card>
-            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div className="flex flex-col gap-2">
-                <CardTitle>Group Management</CardTitle>
-                <CardDescription>Create and manage groups</CardDescription>
+            <CardHeader className="flex justify-between items-center">
+              <div>
+                <CardTitle>Groups</CardTitle>
+                <CardDescription>Manage groups</CardDescription>
               </div>
-
-              <button
-                className={`px-4 py-2 text-sm font-medium text-white rounded-md transition-colors ${
-                  showGroupForm ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"
-                }`}
-                onClick={() => setShowGroupForm((prev) => !prev)}
-              >
-                {showGroupForm ? "Close Form" : "Create New Group"}
-              </button>
+              <Button onClick={()=>{ setShowGroupForm(p=>!p); setEditingGroupIndex(null); }} variant={showGroupForm ? "destructive" : "default"}>
+                {showGroupForm ? "Close Form" : "Create Group"}
+              </Button>
             </CardHeader>
-
-            <CardContent className="space-y-6 w-full">
+            <CardContent>
               {showGroupForm && (
-                <div className="space-y-4 border rounded-md p-4 bg-muted/50">
-                  <FloatingLabelInput
-                    id="group-name"
-                    label="Group Name"
-                    value={groupName}
-                    onChange={(e) => setGroupName(e.target.value)}
-                    className="w-full"
-                  />
-
-                  <FloatingLabelWrapper
-                    label="Teams"
-                    isActive={groupTeamsDropdownOpen || groupTeams.length > 0}
-                  >
-                    <div
-                      className="flex flex-wrap gap-1 border rounded-md px-2 py-1 min-h-[38px] cursor-pointer"
-                      onClick={() => setGroupTeamsDropdownOpen(true)}
-                    >
-                      {groupTeams.map((teamName) => (
-                        <span
-                          key={teamName}
-                          className="inline-flex items-center bg-blue-100 text-blue-800 rounded-full px-2 py-1 text-xs"
-                        >
-                          {teamName}
-                          <span
-                            className="ml-1 cursor-pointer hover:text-red-500"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setGroupTeams(prev => prev.filter(v => v !== teamName));
-                            }}
-                          >
-                            ×
-                          </span>
-                        </span>
-                      ))}
-                    </div>
-
-                    {groupTeamsDropdownOpen && (
-                      <div className="absolute z-50 mt-1 w-full border rounded-md bg-background shadow-md">
-                        <div className="max-h-48 overflow-auto">
-                          {teams.map((t) => (
-                            <div
-                              key={t.name}
-                              className={`px-3 py-2 cursor-pointer hover:bg-muted ${
-                                groupTeams.includes(t.name) ? "bg-muted font-medium" : ""
-                              }`}
-                              onClick={() =>
-                                setGroupTeams(prev =>
-                                  prev.includes(t.name) ? prev : [...prev, t.name]
-                                )
-                              }
-                            >
-                              {t.name}
-                            </div>
-                          ))}
-                        </div>
-                        <div className="px-3 py-2 border-t bg-background flex justify-end">
-                          <button
-                            type="button"
-                            className="px-3 py-1 text-sm text-white bg-green-600 rounded-md hover:bg-green-700"
-                            onClick={() => setGroupTeamsDropdownOpen(false)}
-                          >
-                            Confirm
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </FloatingLabelWrapper>
-
-                  <FloatingLabelWrapper
-                    label="Additional KAMs"
-                    isActive={groupKamDropdownOpen || groupKAMs.length > 0}
-                  >
-                    <div
-                      className="flex flex-wrap gap-1 border rounded-md px-2 py-1 min-h-[38px] cursor-pointer"
-                      onClick={() => setGroupKamDropdownOpen(true)}
-                    >
-                      {groupKAMs.map((id) => {
-                        const kam = kamUsers.find(k => k.id === id);
-                        if (!kam) return null;
-                        return (
-                          <span
-                            key={id}
-                            className="inline-flex items-center bg-green-100 text-green-800 rounded-full px-2 py-1 text-xs"
-                          >
-                            {kam.name}
-                            <span
-                              className="ml-1 cursor-pointer hover:text-red-500"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setGroupKAMs(prev => prev.filter(v => v !== id));
-                              }}
-                            >
-                              ×
-                            </span>
-                          </span>
-                        );
-                      })}
-                    </div>
-
-                    {groupKamDropdownOpen && (
-                      <div className="absolute z-50 mt-1 w-full border rounded-md bg-background shadow-md">
-                        <div className="max-h-48 overflow-auto">
-                          {kamUsers.map((kam) => (
-                            <div
-                              key={kam.id}
-                              className={`px-3 py-2 cursor-pointer hover:bg-muted ${
-                                groupKAMs.includes(kam.id) ? "bg-muted font-medium" : ""
-                              }`}
-                              onClick={() =>
-                                setGroupKAMs(prev =>
-                                  prev.includes(kam.id) ? prev : [...prev, kam.id]
-                                )
-                              }
-                            >
-                              {kam.name}
-                            </div>
-                          ))}
-                        </div>
-                        <div className="px-3 py-2 border-t bg-background flex justify-end">
-                          <button
-                            type="button"
-                            className="px-3 py-1 text-sm text-white bg-green-600 rounded-md hover:bg-green-700"
-                            onClick={() => setGroupKamDropdownOpen(false)}
-                          >
-                            Confirm
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </FloatingLabelWrapper>
-
-                  <FloatingLabelWrapper
-                    label="Supervisor"
-                    isActive={groupSupervisor !== ""}
-                  >
-                    <div
-                      className="border rounded-md px-2 py-2 min-h-[38px] cursor-pointer"
-                      onClick={() => setGroupSupervisorDropdownOpen(true)}
-                    >
-                      {groupSupervisor ? (
-                        systemUsers.find(u => u.id === groupSupervisor)?.name
-                      ) : (
-                        <span className="text-muted-foreground text-sm">Select supervisor</span>
-                      )}
-                    </div>
-
-                    {groupSupervisorDropdownOpen && (
-                      <div className="absolute z-50 mt-1 w-full border rounded-md bg-background shadow-md">
-                        <div className="max-h-48 overflow-auto">
-                          {systemUsers.map((user) => (
-                            <div
-                              key={user.id}
-                              className="px-3 py-2 cursor-pointer hover:bg-muted"
-                              onClick={() => {
-                                setGroupSupervisor(user.id);
-                                setGroupSupervisorDropdownOpen(false);
-                              }}
-                            >
-                              {user.name} ({user.role})
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </FloatingLabelWrapper>
-
+                <CreateGroupForm
+                  teamOptions={teamOptions}
+                  supervisorOptions={supervisorOptions}
+                  onSave={handleCreateOrUpdateGroup}
+                  initialValues={editingGroupIndex!==null ? groups[editingGroupIndex] : undefined}
+                  index={editingGroupIndex ?? undefined}
+                />
+              )}
+              {groups.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No groups created yet</p>
+              ) : groups.map((g,i)=>(
+                <div key={i} className="border p-3 rounded-md flex justify-between">
+                  <div>
+                    <div className="font-semibold">{g.groupName}</div>
+                    <div><span className="font-medium">Teams:</span> {g.teams.map(t=>teamOptions.find(opt=>opt.value===t)?.label).join(", ")}</div>
+                    <div><span className="font-medium">Supervisors:</span> {g.supervisors.map(s=>supervisorOptions.find(opt=>opt.value===s)?.label).join(", ")}</div>
+                  </div>
                   <div className="flex gap-2">
-                    <Button onClick={handleSaveGroup}>Save Group</Button>
-                    <Button variant="outline" onClick={handleCancelGroup}>
-                      Cancel
-                    </Button>
+                    <Button size="sm" variant="outline" onClick={()=>{ setEditingGroupIndex(i); setShowGroupForm(true); }}><Edit2 className="h-4 w-4"/></Button>
+                    <Button size="sm" variant="destructive" onClick={()=>handleCreateOrUpdateGroup({...g, groupName:"DELETE"}, i)}><Trash className="h-4 w-4"/></Button>
                   </div>
                 </div>
-              )}
-
-              <div className="overflow-x-auto">
-                <table className="table-auto w-full border-collapse border border-border">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="border border-border p-2">Group Name</th>
-                      <th className="border border-border p-2">Teams</th>
-                      <th className="border border-border p-2">Supervisor</th>
-                      <th className="border border-border p-2">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {groups.map((group, idx) => (
-                      <tr key={idx} className="hover:bg-muted/20">
-                        <td className="border border-border p-2">{group.name}</td>
-                        <td className="border border-border p-2">{group.teams.join(", ")}</td>
-                        <td className="border border-border p-2">
-                          {systemUsers.find((u) => u.id === group.supervisor)?.name}
-                        </td>
-                        <td className="border border-border p-2 flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => handleEditGroup(idx)}>
-                            Edit
-                          </Button>
-                          <Button size="sm" variant="destructive" onClick={() => handleDeleteGroup(idx)}>
-                            Delete
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              ))}
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* ===================================================== */}
-        {/* =============== USER CONFIGURATION ================== */}
-        {/* ===================================================== */}
-
+        {/* USER ACCESS TAB */}
         <TabsContent value="userConfig">
           <Card>
-            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div className="flex flex-col gap-2">
-                <CardTitle>User Configuration</CardTitle>
-                <CardDescription>
-                  Configure system users as KAM, Supervisor, or Management with role-specific settings
-                </CardDescription>
-              </div>
-
-              <button
-                className={`px-4 py-2 text-sm font-medium text-white rounded-md transition-colors ${
-                  showConfigForm ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"
-                }`}
-                onClick={() => setShowConfigForm((prev) => !prev)}
-              >
-                {showConfigForm ? "Close Form" : "Configure User"}
-              </button>
-            </CardHeader>
-
-            <CardContent className="space-y-6 w-full">
-              {showConfigForm && (
-                <div className="space-y-4 border rounded-md p-4 bg-muted/50">
-                  {/* Select User */}
-                  <FloatingLabelWrapper label="Select User" isActive={configUserId !== ""}>
-                    <Select value={configUserId} onValueChange={setConfigUserId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select user" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {systemUsers.map((user) => (
-                          <SelectItem key={user.id} value={user.id}>
-                            {user.name} ({user.email})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FloatingLabelWrapper>
-
-                  {/* Business Entities Multi-select */}
-                  <FloatingLabelWrapper
-                    label="Business Entity"
-                    isActive={configBusinessDropdownOpen || configBusinessEntities.length > 0}
-                  >
-                    <div
-                      className="flex flex-wrap gap-1 border rounded-md px-2 py-1 min-h-[38px] cursor-pointer"
-                      onClick={() => setConfigBusinessDropdownOpen(true)}
-                    >
-                      {configBusinessEntities.map((b) => (
-                        <span
-                          key={b}
-                          className="inline-flex items-center bg-blue-100 text-blue-800 rounded-full px-2 py-1 text-xs"
-                        >
-                          {b}
-                          <span
-                            className="ml-1 cursor-pointer hover:text-red-500"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setConfigBusinessEntities(prev => prev.filter(v => v !== b));
-                            }}
-                          >
-                            ×
-                          </span>
-                        </span>
-                      ))}
-                    </div>
-
-                    {configBusinessDropdownOpen && (
-                      <div className="absolute z-50 mt-1 w-full border rounded-md bg-background shadow-md">
-                        <div className="max-h-48 overflow-auto">
-                          {businessEntities.map((b) => (
-                            <div
-                              key={b}
-                              className={`px-3 py-2 cursor-pointer hover:bg-muted ${
-                                configBusinessEntities.includes(b) ? "bg-muted font-medium" : ""
-                              }`}
-                              onClick={() =>
-                                setConfigBusinessEntities(prev =>
-                                  prev.includes(b) ? prev : [...prev, b]
-                                )
-                              }
-                            >
-                              {b}
-                            </div>
-                          ))}
-                        </div>
-                        <div className="px-3 py-2 border-t bg-background flex justify-end">
-                          <button
-                            type="button"
-                            className="px-3 py-1 text-sm text-white bg-green-600 rounded-md hover:bg-green-700"
-                            onClick={() => setConfigBusinessDropdownOpen(false)}
-                          >
-                            Confirm
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </FloatingLabelWrapper>
-
-                  {/* Select Role */}
-                  <FloatingLabelWrapper label="Select Role" isActive={configRole !== ""}>
-                    <Select 
-                      value={configRole} 
-                      onValueChange={(val: ConfigRole) => {
-                        setConfigRole(val);
-                        // Reset role-specific fields when role changes
-                        setConfigDivisions([]);
-                        setConfigKams([]);
-                        setConfigProducts([]);
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="kam">KAM</SelectItem>
-                        <SelectItem value="supervisor">Supervisor</SelectItem>
-                        <SelectItem value="management">Management</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FloatingLabelWrapper>
-
-                  {/* Supervisor-specific fields */}
-                  {configRole === "supervisor" && (
-                    <>
-                      {/* Division Multi-select */}
-                      <FloatingLabelWrapper
-                        label="Select Division"
-                        isActive={configDivisionDropdownOpen || configDivisions.length > 0}
-                      >
-                        <div
-                          className="flex flex-wrap gap-1 border rounded-md px-2 py-1 min-h-[38px] cursor-pointer"
-                          onClick={() => setConfigDivisionDropdownOpen(true)}
-                        >
-                          {configDivisions.map((d) => (
-                            <span
-                              key={d}
-                              className="inline-flex items-center bg-purple-100 text-purple-800 rounded-full px-2 py-1 text-xs"
-                            >
-                              {d}
-                              <span
-                                className="ml-1 cursor-pointer hover:text-red-500"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setConfigDivisions(prev => prev.filter(v => v !== d));
-                                }}
-                              >
-                                ×
-                              </span>
-                            </span>
-                          ))}
-                        </div>
-
-                        {configDivisionDropdownOpen && (
-                          <div className="absolute z-50 mt-1 w-full border rounded-md bg-background shadow-md">
-                            <div className="max-h-48 overflow-auto">
-                              {divisions.map((d) => (
-                                <div
-                                  key={d}
-                                  className={`px-3 py-2 cursor-pointer hover:bg-muted ${
-                                    configDivisions.includes(d) ? "bg-muted font-medium" : ""
-                                  }`}
-                                  onClick={() =>
-                                    setConfigDivisions(prev =>
-                                      prev.includes(d) ? prev : [...prev, d]
-                                    )
-                                  }
-                                >
-                                  {d}
-                                </div>
-                              ))}
-                            </div>
-                            <div className="px-3 py-2 border-t bg-background flex justify-end">
-                              <button
-                                type="button"
-                                className="px-3 py-1 text-sm text-white bg-green-600 rounded-md hover:bg-green-700"
-                                onClick={() => setConfigDivisionDropdownOpen(false)}
-                              >
-                                Confirm
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </FloatingLabelWrapper>
-
-                      {/* KAM Multi-select with All option */}
-                      <FloatingLabelWrapper
-                        label="Select KAM"
-                        isActive={configKamDropdownOpen || configKams.length > 0}
-                      >
-                        <div
-                          className="flex flex-wrap gap-1 border rounded-md px-2 py-1 min-h-[38px] cursor-pointer"
-                          onClick={() => setConfigKamDropdownOpen(true)}
-                        >
-                          {configKams.includes("all") ? (
-                            <span className="inline-flex items-center bg-green-100 text-green-800 rounded-full px-2 py-1 text-xs">
-                              All KAMs
-                              <span
-                                className="ml-1 cursor-pointer hover:text-red-500"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setConfigKams([]);
-                                }}
-                              >
-                                ×
-                              </span>
-                            </span>
-                          ) : (
-                            configKams.map((id) => {
-                              const kam = kamUsers.find(k => k.id === id);
-                              if (!kam) return null;
-                              return (
-                                <span
-                                  key={id}
-                                  className="inline-flex items-center bg-green-100 text-green-800 rounded-full px-2 py-1 text-xs"
-                                >
-                                  {kam.name}
-                                  <span
-                                    className="ml-1 cursor-pointer hover:text-red-500"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setConfigKams(prev => prev.filter(v => v !== id));
-                                    }}
-                                  >
-                                    ×
-                                  </span>
-                                </span>
-                              );
-                            })
-                          )}
-                        </div>
-
-                        {configKamDropdownOpen && (
-                          <div className="absolute z-50 mt-1 w-full border rounded-md bg-background shadow-md">
-                            <div className="max-h-48 overflow-auto">
-                              <div
-                                className={`px-3 py-2 cursor-pointer hover:bg-muted font-medium border-b ${
-                                  configKams.includes("all") ? "bg-muted" : ""
-                                }`}
-                                onClick={() => {
-                                  setConfigKams(["all"]);
-                                }}
-                              >
-                                All KAMs
-                              </div>
-                              {kamUsers.map((kam) => (
-                                <div
-                                  key={kam.id}
-                                  className={`px-3 py-2 cursor-pointer hover:bg-muted ${
-                                    configKams.includes(kam.id) ? "bg-muted font-medium" : ""
-                                  } ${configKams.includes("all") ? "opacity-50" : ""}`}
-                                  onClick={() => {
-                                    if (!configKams.includes("all")) {
-                                      setConfigKams(prev =>
-                                        prev.includes(kam.id) ? prev : [...prev, kam.id]
-                                      );
-                                    }
-                                  }}
-                                >
-                                  {kam.name}
-                                </div>
-                              ))}
-                            </div>
-                            <div className="px-3 py-2 border-t bg-background flex justify-end">
-                              <button
-                                type="button"
-                                className="px-3 py-1 text-sm text-white bg-green-600 rounded-md hover:bg-green-700"
-                                onClick={() => setConfigKamDropdownOpen(false)}
-                              >
-                                Confirm
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </FloatingLabelWrapper>
-                    </>
-                  )}
-
-                  {/* KAM-specific fields */}
-                  {configRole === "kam" && (
-                    <>
-                      {/* Division Multi-select */}
-                      <FloatingLabelWrapper
-                        label="Division"
-                        isActive={configDivisionDropdownOpen || configDivisions.length > 0}
-                      >
-                        <div
-                          className="flex flex-wrap gap-1 border rounded-md px-2 py-1 min-h-[38px] cursor-pointer"
-                          onClick={() => setConfigDivisionDropdownOpen(true)}
-                        >
-                          {configDivisions.map((d) => (
-                            <span
-                              key={d}
-                              className="inline-flex items-center bg-purple-100 text-purple-800 rounded-full px-2 py-1 text-xs"
-                            >
-                              {d}
-                              <span
-                                className="ml-1 cursor-pointer hover:text-red-500"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setConfigDivisions(prev => prev.filter(v => v !== d));
-                                }}
-                              >
-                                ×
-                              </span>
-                            </span>
-                          ))}
-                        </div>
-
-                        {configDivisionDropdownOpen && (
-                          <div className="absolute z-50 mt-1 w-full border rounded-md bg-background shadow-md">
-                            <div className="max-h-48 overflow-auto">
-                              {divisions.map((d) => (
-                                <div
-                                  key={d}
-                                  className={`px-3 py-2 cursor-pointer hover:bg-muted ${
-                                    configDivisions.includes(d) ? "bg-muted font-medium" : ""
-                                  }`}
-                                  onClick={() =>
-                                    setConfigDivisions(prev =>
-                                      prev.includes(d) ? prev : [...prev, d]
-                                    )
-                                  }
-                                >
-                                  {d}
-                                </div>
-                              ))}
-                            </div>
-                            <div className="px-3 py-2 border-t bg-background flex justify-end">
-                              <button
-                                type="button"
-                                className="px-3 py-1 text-sm text-white bg-green-600 rounded-md hover:bg-green-700"
-                                onClick={() => setConfigDivisionDropdownOpen(false)}
-                              >
-                                Confirm
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </FloatingLabelWrapper>
-
-                      {/* Products Multi-select */}
-                      <FloatingLabelWrapper
-                        label="Products"
-                        isActive={configProductDropdownOpen || configProducts.length > 0}
-                      >
-                        <div
-                          className="flex flex-wrap gap-1 border rounded-md px-2 py-1 min-h-[38px] cursor-pointer"
-                          onClick={() => setConfigProductDropdownOpen(true)}
-                        >
-                          {configProducts.map((p) => (
-                            <span
-                              key={p}
-                              className="inline-flex items-center bg-orange-100 text-orange-800 rounded-full px-2 py-1 text-xs"
-                            >
-                              {p}
-                              <span
-                                className="ml-1 cursor-pointer hover:text-red-500"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setConfigProducts(prev => prev.filter(v => v !== p));
-                                }}
-                              >
-                                ×
-                              </span>
-                            </span>
-                          ))}
-                        </div>
-
-                        {configProductDropdownOpen && (
-                          <div className="absolute z-50 mt-1 w-full border rounded-md bg-background shadow-md">
-                            <div className="max-h-48 overflow-auto">
-                              {products.map((p) => (
-                                <div
-                                  key={p}
-                                  className={`px-3 py-2 cursor-pointer hover:bg-muted ${
-                                    configProducts.includes(p) ? "bg-muted font-medium" : ""
-                                  }`}
-                                  onClick={() =>
-                                    setConfigProducts(prev =>
-                                      prev.includes(p) ? prev : [...prev, p]
-                                    )
-                                  }
-                                >
-                                  {p}
-                                </div>
-                              ))}
-                            </div>
-                            <div className="px-3 py-2 border-t bg-background flex justify-end">
-                              <button
-                                type="button"
-                                className="px-3 py-1 text-sm text-white bg-green-600 rounded-md hover:bg-green-700"
-                                onClick={() => setConfigProductDropdownOpen(false)}
-                              >
-                                Confirm
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </FloatingLabelWrapper>
-                    </>
-                  )}
-
-                  {/* Save & Cancel */}
-                  <div className="flex gap-2">
-                    <Button onClick={handleSaveConfig}>Save Configuration</Button>
-                    <Button variant="outline" onClick={resetConfigForm}>
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* User Configuration Table */}
-              <div className="overflow-x-auto">
-                <table className="table-auto w-full border-collapse border border-border">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="border border-border p-2">User</th>
-                      <th className="border border-border p-2">Business Entities</th>
-                      <th className="border border-border p-2">Role</th>
-                      <th className="border border-border p-2">Divisions</th>
-                      <th className="border border-border p-2">KAMs / Products</th>
-                      <th className="border border-border p-2">Actions</th>
+            <CardHeader><CardTitle>User Access</CardTitle></CardHeader>
+            <CardContent>
+              <UserAccessForm
+                groupOptions={userAccessGroupOptions}
+                teamOptions={userAccessTeamOptions}
+                kamOptions={userAccessKamOptions}
+                onSave={handleSaveUserAccess}
+                initialValues={editingUserAccessIndex!==null ? userAccesses[editingUserAccessIndex] : undefined}
+              />
+              {/* Table */}
+              <table className="w-full border border-border text-sm mt-4">
+                <thead className="bg-muted"><tr><th>User</th><th>Groups</th><th>Teams</th><th>KAMs</th><th>Actions</th></tr></thead>
+                <tbody>
+                  {userAccesses.length===0 ? (
+                    <tr><td colSpan={5} className="p-4 text-center text-muted-foreground">No access configured yet</td></tr>
+                  ) : userAccesses.map((ua,i)=>(
+                    <tr key={i}>
+                      <td className="border p-2">{systemUserList.find(u=>u.id===ua.userId)?.fullName}</td>
+                      <td className="border p-2">{ua.groups.map(gId=>userAccessGroupOptions.find(g=>g.id===gId)?.label).join(", ")}</td>
+                      <td className="border p-2">{ua.teams.map(tId=>userAccessTeamOptions.find(t=>t.id===tId)?.label).join(", ")}</td>
+                      <td className="border p-2">{ua.kams.map(kId=>systemUserList.find(u=>u.id===kId)?.fullName).join(", ")}</td>
+                      <td className="border p-2 flex gap-2">
+                        <Button size="sm" variant="outline" onClick={()=>handleEditUserAccess(i)}><Edit2 className="h-4 w-4"/></Button>
+                        <Button size="sm" variant="destructive" onClick={()=>handleDeleteUserAccess(i)}><Trash className="h-4 w-4"/></Button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {userConfigs.map((config, idx) => {
-                      const user = systemUsers.find(u => u.id === config.userId);
-                      return (
-                        <tr key={idx} className="hover:bg-muted/20">
-                          <td className="border border-border p-2">{user?.name || config.userId}</td>
-                          <td className="border border-border p-2">{config.businessEntities.join(", ")}</td>
-                          <td className="border border-border p-2">
-                            <Badge variant="secondary" className="capitalize">{config.role}</Badge>
-                          </td>
-                          <td className="border border-border p-2">{config.divisions.join(", ") || "-"}</td>
-                          <td className="border border-border p-2">
-                            {config.role === "supervisor" && (
-                              config.kams.includes("all") 
-                                ? "All KAMs" 
-                                : config.kams.map(id => kamUsers.find(k => k.id === id)?.name).join(", ")
-                            )}
-                            {config.role === "kam" && config.products.join(", ")}
-                            {config.role === "management" && "-"}
-                          </td>
-                          <td className="border border-border p-2 flex gap-2">
-                            <Button size="sm" variant="outline" onClick={() => handleEditConfig(idx)}>
-                              Edit
-                            </Button>
-                            <Button size="sm" variant="destructive" onClick={() => handleDeleteConfig(idx)}>
-                              Delete
-                            </Button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* CREATE SYSTEM USER TAB */}
+        <TabsContent value="createSystemUser">
+          <Card>
+            <CardHeader><CardTitle>Create System User</CardTitle></CardHeader>
+            <CardContent>
+              <CreateSystemUserForm
+                initialValues={editingSystemUser ?? undefined}
+                editingUserId={editingSystemUser?.id ?? null}
+                onSave={handleSaveSystemUser}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* SYSTEM USER LIST TAB */}
+        <TabsContent value="systemUserList">
+          <Card>
+            <CardHeader><CardTitle>System Users</CardTitle></CardHeader>
+            <CardContent>
+              <SystemUserList
+                users={systemUserList}
+                onEdit={handleEditSystemUser}
+                onDelete={handleDeleteSystemUser}
+                onToggleStatus={handleToggleStatus}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* USER MAPPING TAB */}
+                  <TabsContent value="userMapping">
+            <Card>
+              <CardHeader><CardTitle>User Mapping</CardTitle></CardHeader>
+              <CardContent>
+                <UserMappingForm
+                  groupOptions={userMappingGroupOptions}
+                  teamOptions={userMappingTeamOptions}
+                  kamOptions={userMappingKamOptions}
+                  onSave={handleSaveUserMapping}
+                  initialValues={editingUserMappingIndex !== null ? userMappings[editingUserMappingIndex] : undefined}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+
+        {/* MAPPED LIST TAB */}
+                    <TabsContent value="mappedList">
+              <Card>
+                <CardHeader><CardTitle>Mapped Users</CardTitle></CardHeader>
+                <CardContent>
+                  <MappedList
+                    mappings={userMappings}
+                    systemUsers={systemUserList}
+                    groupOptions={userMappingGroupOptions.map(g => ({ id: g.id, label: g.label }))}
+                    teamOptions={userMappingTeamOptions.map(t => ({ id: t.id, label: t.label }))}
+                    onEdit={(mapping) => {
+                      const index = userMappings.findIndex(m => m.userId === mapping.userId);
+                      setEditingUserMappingIndex(index);
+                      setActiveTab("userMapping");
+                    }}
+                    onDelete={(index) => handleDeleteUserMapping(index)}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+
       </Tabs>
     </div>
   );
