@@ -21,7 +21,7 @@ export interface KAM {
   contact: string;
   email: string;
   address: string;
-  reportingTo: string;
+  reportingTo: string; // ✅ THIS is the supervisor
   division: string;
   zone: string;
   businessEntities: string[];
@@ -103,6 +103,7 @@ export interface ActivityNote {
 }
 
 export interface Activity {
+  kamId: string;
   id: string;
   clientId: string;
   type: ActivityType;
@@ -838,7 +839,8 @@ export const initialLeads: Lead[] = [
 export const initialActivities: Activity[] = [
   {
     id: "act-1",
-   clientId: "client-1",
+    kamId: "kam-1",
+    clientId: "client-1",
     type: "physical_meeting",
     title: "On-site Product Demo",
     address: "Dhaka",
@@ -850,6 +852,7 @@ export const initialActivities: Activity[] = [
   },
   {
     id: "act-2",
+    kamId: "kam-2",
     clientId: "client-2",
     type: "virtual_meeting",
     title: "Contract Review Call",
@@ -861,6 +864,7 @@ export const initialActivities: Activity[] = [
   },
   {
     id: "act-3",
+    kamId: "kam-1",
     clientId: "client-3",
     type: "call",
     title: "Discovery Call",
@@ -872,6 +876,7 @@ export const initialActivities: Activity[] = [
   },
   {
     id: "act-4",
+    kamId: "kam-2",
     clientId: "client-5",
     type: "email",
     title: "Product Brochure Sent",
@@ -883,6 +888,7 @@ export const initialActivities: Activity[] = [
   },
   {
     id: "act-5",
+    kamId: "kam-1",
     clientId: "client-1",
     type: "follow_up",
     title: "Post-Demo Follow-up",
@@ -894,6 +900,7 @@ export const initialActivities: Activity[] = [
   },
   {
     id: "act-6",
+    kamId: "kam-2",
     clientId: "client-2",
     type: "task",
     title: "Prepare Proposal",
@@ -906,6 +913,7 @@ export const initialActivities: Activity[] = [
   // Additional activities for supervisor (user-3)
   {
     id: "act-7",
+    kamId: "kam-1",
     clientId: "client-1",
     type: "virtual_meeting",
     title: "Weekly Team Sync",
@@ -917,10 +925,11 @@ export const initialActivities: Activity[] = [
   },
   {
     id: "act-8",
+    kamId: "kam-2",
     clientId: "client-2",
     type: "physical_meeting",
     title: "Client Site Visit - Global Systems",
-     address: "Chittagong",
+    address: "Chittagong",
     description: "Meet with procurement team for contract finalization",
     scheduledAt: "2025-12-18T14:00:00Z",
     completedAt: null,
@@ -929,6 +938,7 @@ export const initialActivities: Activity[] = [
   },
   {
     id: "act-9",
+    kamId: "kam-1",
     clientId: "client-3",
     type: "call",
     title: "Partner Strategy Call",
@@ -940,6 +950,7 @@ export const initialActivities: Activity[] = [
   },
   {
     id: "act-10",
+    kamId: "kam-1",
     clientId: "client-1",
     type: "task",
     title: "Q4 Performance Review",
@@ -951,6 +962,7 @@ export const initialActivities: Activity[] = [
   },
   {
     id: "act-11",
+    kamId: "kam-1",
     clientId: "client-5",
     type: "virtual_meeting",
     title: "Board Presentation Prep",
@@ -962,6 +974,7 @@ export const initialActivities: Activity[] = [
   },
   {
     id: "act-12",
+    kamId: "kam-2",
     clientId: "client-2",
     type: "email",
     title: "Send Monthly Newsletter",
@@ -973,6 +986,7 @@ export const initialActivities: Activity[] = [
   },
   {
     id: "act-13",
+    kamId: "kam-1",
     clientId: "client-1",
     type: "follow_up",
     title: "Check Deal Pipeline Status",
@@ -984,10 +998,11 @@ export const initialActivities: Activity[] = [
   },
   {
     id: "act-14",
+    kamId: "kam-2",
     clientId: "client-2",
     type: "physical_meeting",
     title: "Lunch with Enterprise Client",
-     address: "Gulshan",
+    address: "Gulshan",
     description: "Relationship building meeting with key stakeholder",
     scheduledAt: "2025-12-21T12:30:00Z",
     completedAt: null,

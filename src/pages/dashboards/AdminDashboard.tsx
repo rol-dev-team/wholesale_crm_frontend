@@ -1,3 +1,4 @@
+// AdminDashboard.tsx
 import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
@@ -86,12 +87,38 @@ const lastMonthTarget = myLastTarget?.revenueTarget || 0;
   const PAGE_SIZE = 10;
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Filters
+  //* ---------------- FILTERS ---------------- */
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
   const [activityStatusFilter, setActivityStatusFilter] = useState<"All" | "Completed" | "Pending" | "Overdue">("All");
-  const [activityTypeFilter, setActivityTypeFilter] = useState<ActivityTypeEnum[]>([]);
+  const [activityTypeFilter, setActivityTypeFilter] =
+  useState<ActivityTypeEnum | "all">("all");
   const [clientFilter, setClientFilter] = useState<string>("all");
   const [dateRangeFilter, setDateRangeFilter] = useState<{ from?: string; to?: string }>({});
+  const [kamFilter, setKamFilter] = useState<string>("all");
+  const [divisionFilter, setDivisionFilter] = useState<string>("all");
+  const [supervisorFilter, setSupervisorFilter] = useState<string>("all");
+
+  const divisions = useMemo(() => {
+    const divs = kams.map(k => k.division);
+    return Array.from(new Set(divs));
+  }, [kams]);
+
+ const supervisors = useMemo(() => {
+  const sups = kams
+    .map(k => k.reportingTo)
+    .filter(Boolean);
+
+  return Array.from(new Set(sups));
+}, [kams]);
+
+
+  const clearFilters = () => {
+    setActivityTypeFilter('all');
+    setClientFilter('all');
+    setKamFilter('all');
+    setDivisionFilter('all');
+    setDateRangeFilter({});
+  };
 
   // All activities (Admin sees everything)
   const allActivities = useMemo(() => activities, [activities]);
@@ -100,7 +127,16 @@ const lastMonthTarget = myLastTarget?.revenueTarget || 0;
   const allClients = useMemo(() => clients, [clients]);
 
   // Reset pagination on filter change
-  useEffect(() => setCurrentPage(1), [activityStatusFilter, activityTypeFilter, clientFilter, dateRangeFilter]);
+  useEffect(() => setCurrentPage(1), [
+    activityStatusFilter,
+    activityTypeFilter,
+    clientFilter,
+    kamFilter,
+    supervisorFilter,
+    divisionFilter,
+    dateRangeFilter
+  ]);
+
 
  
 
@@ -115,7 +151,8 @@ const lastMonthTarget = myLastTarget?.revenueTarget || 0;
       if (activityStatusFilter === "Pending" && (isCompleted || isPast)) return false; // future pending
       if (activityStatusFilter === "Overdue" && (isCompleted || !isPast)) return false; // past & not completed
 
-      if (activityTypeFilter.length > 0 && !activityTypeFilter.includes(a.type)) return false;
+      if (activityTypeFilter !== "all" && a.type !== activityTypeFilter) return false;
+
       if (clientFilter !== "all" && a.clientId !== clientFilter) return false;
 
       if (dateRangeFilter.from && scheduled < new Date(dateRangeFilter.from)) return false;
@@ -144,9 +181,9 @@ const lastMonthTarget = myLastTarget?.revenueTarget || 0;
     setViewingActivity(null);
   };
 
-  const handleAddNote = (note: Omit<ActivityNote, "id" | "activityId">) => {
+  const handleAddNote = (note: Omit<ActivityNote, "id" | "activityId" | "createdBy">) => {
     if (!noteActivity) return;
-    const newNote: ActivityNote = { ...note, id: `note-${Date.now()}`, activityId: noteActivity.id };
+    const newNote: ActivityNote = { ...note, id: `note-${Date.now()}`, activityId: noteActivity.id, createdBy: currentUser?.id || "user-1" };
     setActivities(prev =>
       prev.map(a => a.id === noteActivity.id ? { ...a, notes: [...(a.notes || []), newNote] } : a)
     );
@@ -266,7 +303,7 @@ const lastMonthTarget = myLastTarget?.revenueTarget || 0;
         </div>
       </div>
 
-      <FilterDrawer<string>
+      {/* <FilterDrawer<string>
         open={isFilterDrawerOpen}
         onClose={() => setIsFilterDrawerOpen(false)}
         title="Filter Activities"
@@ -301,7 +338,79 @@ const lastMonthTarget = myLastTarget?.revenueTarget || 0;
         ]}
         onReset={() => { setActivityTypeFilter([]); setClientFilter("all"); setDateRangeFilter({}); }}
         onApply={() => setIsFilterDrawerOpen(false)}
-      />
+      /> */}
+      <FilterDrawer
+                open={isFilterDrawerOpen}
+                onClose={() => setIsFilterDrawerOpen(false)}
+                title="Filter Activities"
+                filters={[
+                  {
+                    type: "single-select",
+                    label: "Activity Type",
+                    value: activityTypeFilter,
+                    onChange: (v) => setActivityTypeFilter(v as ActivityTypeEnum | "all"),
+                    options: [
+                      { label: "All Types", value: "all" },
+                      { label: "Physical Meeting", value: "physical_meeting" },
+                      { label: "Virtual Meeting", value: "virtual_meeting" },
+                      { label: "Call", value: "call" },
+                      { label: "Email", value: "email" },
+                      { label: "Task", value: "task" },
+                      { label: "Follow-up", value: "follow_up" },
+                    ],
+                  },
+                  {
+                    /** ✅ NEW: Supervisor (appears before KAM automatically) */
+                    type: "search-select",
+                    label: "Supervisor",
+                    value: supervisorFilter,
+                    onChange: setSupervisorFilter,
+                    options: [
+                      { label: "All Supervisors", value: "all" },
+                      ...supervisors.map(s => ({ label: s, value: s })),
+                    ],
+                  },
+                  {
+                    type: "search-select",
+                    label: "KAM",
+                    value: kamFilter,
+                    onChange: setKamFilter,
+                    options: [
+                      { label: "All KAMs", value: "all" },
+                      ...kams.map((k) => ({ label: k.name, value: k.id })),
+                    ],
+                  },
+                  {
+                    type: "search-select",
+                    label: "Client",
+                    value: clientFilter,
+                    onChange: setClientFilter,
+                    options: [
+                      { label: "All Clients", value: "all" },
+                      ...clients.map((c) => ({ label: c.name, value: c.id })),
+                    ],
+                  },
+                  {
+                    type: "single-select",
+                    label: "Division",
+                    value: divisionFilter,
+                    onChange: setDivisionFilter,
+                    options: [
+                      { label: "All Divisions", value: "all" },
+                      ...divisions.map((d) => ({ label: d, value: d })),
+                    ],
+                  },
+                  {
+                    type: "date-range",
+                    label: "Date Range",
+                    value: dateRangeFilter,
+                    onChange: setDateRangeFilter,
+                  },
+                ]}
+                onReset={clearFilters}
+                onApply={() => setIsFilterDrawerOpen(false)}
+              />
+      
 
 
 

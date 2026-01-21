@@ -210,9 +210,9 @@ export default function SupervisorDashboard() {
     toast({ title: 'Activity Deleted', description: 'The activity has been removed.' });
   };
 
-   const handleAddNote = (note: Omit<ActivityNote, "id" | "activityId">) => {
+   const handleAddNote = (note: { content: string; attachments?: { name: string; type: string; url: string; }[]; createdAt: string; createdById: string; createdByName: string; }) => {
       if (!noteActivity) return;
-      const newNote: ActivityNote = { ...note, id: `note-${Date.now()}`, activityId: noteActivity.id };
+      const newNote: ActivityNote = { ...note, id: `note-${Date.now()}`, activityId: noteActivity.id, createdBy: note.createdById };
       setActivities(prev =>
         prev.map(a => a.id === noteActivity.id ? { ...a, notes: [...(a.notes || []), newNote] } : a)
       );
@@ -371,22 +371,22 @@ export default function SupervisorDashboard() {
   userRole={currentUser?.role}
 />
 
-    <ActivityDetailsSheet
-  open={!!viewingActivity}
-  onClose={() => setViewingActivity(null)}
-  activity={viewingActivity}
-  client={viewingActivity ? clients.find(c => c.id === viewingActivity.clientId) : null}
-  onComplete={(id, outcome) => handleCompleteActivity(id, outcome)}
-  onAddNote={() => {
-    if (viewingActivity) {
-      setNoteActivity(viewingActivity); // set current activity
-      setNoteModalOpen(true); // ✅ actually open the modal
-    }
-  }}
-/>
+      <ActivityDetailsSheet
+        open={!!viewingActivity}
+        onClose={() => setViewingActivity(null)}
+        activity={viewingActivity}
+        client={viewingActivity ? clients.find(c => c.id === viewingActivity.clientId) : null}
+        onComplete={(id, outcome) => handleCompleteActivity(id, outcome)}
+        onAddNote={() => {
+          if (viewingActivity) {
+            setNoteActivity(viewingActivity); // set current activity
+            setNoteModalOpen(true); // ✅ actually open the modal
+          }
+        }}
+      />
 
-{/* Add Note Modal */}
-<ActivityNotesModal
+      {/* Add Note Modal */}
+      <ActivityNotesModal
         open={!!noteActivity}
         onClose={() => setNoteActivity(null)}
         activityId={noteActivity?.id || ""}
