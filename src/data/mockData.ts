@@ -97,7 +97,7 @@ export interface ActivityNote {
     type: string;
     url: string;
   }[];
-  createdBy: string;
+  createdById: string;
   createdByName: string;
   createdAt: string;
 }
@@ -114,6 +114,8 @@ export interface Activity {
   outcome: string | null;
   createdBy: string;
   notes?: ActivityNote[];
+  cancelledAt?: string;
+  cancelReason?: string;
 }
 
 // ============= Notification Types =============

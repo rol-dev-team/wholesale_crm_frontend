@@ -26,6 +26,7 @@ import {
   Clock,
   Eye,
   Plus,
+  X,
   MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -34,10 +35,11 @@ interface ActivityListProps {
   activities: Activity[];
   clients: Client[];
   onEdit: (activity: Activity) => void;
-  onComplete: (activityId: string, message: string) => void; // updated to require message
+  onComplete: (activityId: string, message: string) => void;
   onAddActivity?: () => void;
   onViewActivity?: (activity: Activity) => void;
   onAddNote?: (activity: Activity) => void;
+  onCancel: (activityId: string, reason: string) => void;
   showClientInfo?: boolean;
 }
 
@@ -49,11 +51,16 @@ export function ActivityList({
   onAddActivity,
   onViewActivity,
   onAddNote,
+  onCancel,
   showClientInfo = false,
 }: ActivityListProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
-  const [requireMessageForComplete, setRequireMessageForComplete] = useState(false);
+  const [requireMessageForComplete, setRequireMessageForComplete] =
+    useState(false);
+  const [requireMessageForCancel, setRequireMessageForCancel] = useState(false);
+
+  const now = new Date();
 
   const getClientName = (clientId: string) => {
     const client = clients.find((c) => c.id === clientId);
@@ -61,12 +68,17 @@ export function ActivityList({
   };
 
   const sortedActivities = [...activities].sort((a, b) => {
+    if (a.cancelledAt && !b.cancelledAt) return 1;
+    if (!a.cancelledAt && b.cancelledAt) return -1;
+
     if (!a.completedAt && b.completedAt) return -1;
     if (a.completedAt && !b.completedAt) return 1;
-    return new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime();
-  });
 
-  const now = new Date();
+    return (
+      new Date(a.scheduledAt).getTime() -
+      new Date(b.scheduledAt).getTime()
+    );
+  });
 
   if (activities.length === 0) {
     return (
@@ -101,22 +113,35 @@ export function ActivityList({
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
+
         <TableBody>
           {sortedActivities.map((activity) => {
             const Icon = getActivityIcon(activity.type);
             const scheduled = new Date(activity.scheduledAt);
-            const isCompleted = !!activity.completedAt;
-            const isPastDue = !isCompleted && scheduled < now;
-            const isPending = !isCompleted && scheduled >= now;
+
+            const isCancelled = !!activity.cancelledAt;
+            const isCompleted = !!activity.completedAt && !isCancelled;
+            const isPastDue =
+              !isCompleted && !isCancelled && scheduled < now;
+            const isPending =
+              !isCompleted && !isCancelled && scheduled >= now;
+
             const notesCount = activity.notes?.length || 0;
+
+            const completedLate =
+              isCompleted &&
+              activity.completedAt &&
+              new Date(activity.completedAt) > scheduled;
 
             return (
               <TableRow
                 key={activity.id}
                 className={cn(
                   "hover:bg-muted/50 cursor-pointer",
-                  isCompleted && "opacity-70",
-                  isPastDue && "bg-warning/5"
+                  isCompleted && "opacity-70 bg-green-50",
+                  isPastDue && "bg-yellow-50",
+                  completedLate && "bg-red-50",
+                  isCancelled && "opacity-50"
                 )}
               >
                 <TableCell>
@@ -124,20 +149,30 @@ export function ActivityList({
                     <div
                       className={cn(
                         "p-2 rounded-lg",
-                        isCompleted ? "bg-success/20" : "bg-muted"
+                        isCompleted
+                          ? "bg-success/20"
+                          : isCancelled
+                          ? "bg-destructive/10"
+                          : "bg-muted"
                       )}
                     >
                       <Icon
                         className={cn(
                           "h-4 w-4",
-                          isCompleted ? "text-success" : "text-muted-foreground"
+                          isCompleted
+                            ? "text-success"
+                            : isCancelled
+                            ? "text-destructive"
+                            : "text-muted-foreground"
                         )}
                       />
                     </div>
                     <div>
                       <p className="font-medium flex items-center gap-2">
                         {activity.title}
-                        {isCompleted && <CheckCircle className="h-4 w-4 text-success" />}
+                        {isCompleted && (
+                          <CheckCircle className="h-4 w-4 text-success" />
+                        )}
                         {notesCount > 0 && (
                           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                             <MessageSquare className="h-3 w-3" />
@@ -168,7 +203,9 @@ export function ActivityList({
                   <span
                     className={cn(
                       "text-sm",
-                      isPastDue ? "text-warning font-medium" : "text-muted-foreground"
+                      isPastDue
+                        ? "text-warning font-medium"
+                        : "text-muted-foreground"
                     )}
                   >
                     {formatDateTime(activity.scheduledAt)}
@@ -176,20 +213,26 @@ export function ActivityList({
                 </TableCell>
 
                 <TableCell>
-                  {isCompleted ? (
-                    <span className="inline-flex items-center gap-1 text-sm text-success">
-                      <CheckCircle className="h-3 w-3" />
-                      Completed
-                    </span>
-                  ) : isPastDue ? (
-                    <span className="inline-flex items-center gap-1 text-sm text-warning">
-                      <Clock className="h-3 w-3" />
-                      Overdue
-                    </span>
-                  ) : isPending ? (
-                    <span className="text-sm text-muted-foreground">Pending</span>
-                  ) : null}
-                </TableCell>
+  {isCancelled ? (
+    <span className="text-sm text-destructive">
+      Cancelled
+    </span>
+  ) : isCompleted ? (
+    <span className="inline-flex items-center gap-1 text-sm text-success">
+      <CheckCircle className="h-3 w-3" />
+      {completedLate ? "Completed (Late)" : "Completed"}
+    </span>
+  ) : isPastDue ? (
+    <span className="inline-flex items-center gap-1 text-sm text-warning">
+      <Clock className="h-3 w-3" />
+      Overdue
+    </span>
+  ) : (
+    <span className="text-sm text-muted-foreground">
+      Pending
+    </span>
+  )}
+</TableCell>
 
                 <TableCell>
                   <div
@@ -224,29 +267,45 @@ export function ActivityList({
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
+
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
                           onClick={() => {
                             setEditingActivity(activity);
                             setModalOpen(true);
-                            setRequireMessageForComplete(false); // normal edit
+                            setRequireMessageForComplete(false);
                           }}
                         >
                           <Edit className="h-4 w-4 mr-2" />
                           Edit
                         </DropdownMenuItem>
 
-                        {!isCompleted && (
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setEditingActivity(activity);
-                              setModalOpen(true);
-                              setRequireMessageForComplete(true); // require message for complete
-                            }}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Mark Complete
-                          </DropdownMenuItem>
+                        {!isCompleted && !isCancelled && (
+                          <>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setEditingActivity(activity);
+                                setModalOpen(true);
+                                setRequireMessageForComplete(true);
+                                setRequireMessageForCancel(false);
+                              }}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Mark Complete
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={() => {
+                                setEditingActivity(activity);
+                                setModalOpen(true);
+                                setRequireMessageForCancel(true);
+                              }}
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              Cancel
+                            </DropdownMenuItem>
+                          </>
                         )}
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -258,15 +317,16 @@ export function ActivityList({
         </TableBody>
       </Table>
 
-      {/* Activity Modal (edit or complete) */}
       <ActivityModal
         open={modalOpen}
         editingActivity={editingActivity}
         requireMessageForComplete={requireMessageForComplete}
+        requireMessageForCancel={requireMessageForCancel}
         onClose={() => {
           setModalOpen(false);
           setEditingActivity(null);
           setRequireMessageForComplete(false);
+          setRequireMessageForCancel(false);
         }}
         onSave={(updatedActivity) => {
           if (!editingActivity) return;
@@ -280,6 +340,12 @@ export function ActivityList({
           setModalOpen(false);
           setEditingActivity(null);
           setRequireMessageForComplete(false);
+        }}
+        onCancelWithReason={(id, reason) => {
+          onCancel(id, reason);
+          setModalOpen(false);
+          setEditingActivity(null);
+          setRequireMessageForCancel(false);
         }}
         clients={clients}
       />

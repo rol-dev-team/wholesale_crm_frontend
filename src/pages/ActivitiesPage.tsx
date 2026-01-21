@@ -14,6 +14,7 @@ import {
   Client,
   initialActivities,
   initialClients,
+  initialKAMs,
   type Activity,
   type ActivityType,
 } from "@/data/mockData";
@@ -32,13 +33,19 @@ const activityTypeOptions: { value: string; label: string }[] = [
 export default function ActivitiesPage() {
   const { currentUser } = useAuth();
   const { toast } = useToast();
-
+  const [kams] = useState(initialKAMs);
   const [activities, setActivities] = useState<Activity[]>(initialActivities);
   const [clients] = useState<Client[]>(initialClients);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
 
+const [divisionFilter, setDivisionFilter] = useState("all");
+
+const [supervisorFilter, setSupervisorFilter] = useState("all");
+
+const [kamFilter, setKamFilter] = useState("all");
+  
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] =
@@ -47,17 +54,38 @@ export default function ActivitiesPage() {
   const [clientFilter, setClientFilter] = useState<string>("all");
   const [dateRange, setDateRange] = useState<{ from?: string; to?: string }>({});
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
-
+  
   const clientOptions = clients.map((c) => ({ label: c.name, value: c.id }));
 
+
+  // ---------------- ROLE CHECK ----------------
+
+const role = currentUser?.role;
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
+
+
+  const isKAM = role === "kam";
+
+const isSupervisor = role === "supervisor";
+
+const isManagement = role === "boss" || role === "super_admin";
 
   // Derived stats
   const pendingActivities = activities.filter((a) => !a.completedAt);
   const overdueActivities = pendingActivities.filter(
     (a) => new Date(a.scheduledAt) < new Date()
   );
+
+  // ---------------- OPTIONS ----------------
+
+const divisions = useMemo(
+
+() => Array.from(new Set(kams.map(k => k.division))),
+
+[kams]
+
+);
 
   // Filtered activities
   const filteredActivities = useMemo(() => {
@@ -66,10 +94,23 @@ export default function ActivitiesPage() {
         activity.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         activity.description?.toLowerCase().includes(searchQuery.toLowerCase());
 
+
+        const supervisors = useMemo(
+
+() => Array.from(new Set(kams.map(k => k.reportingTo).filter(Boolean))),
+
+[kams]
+
+);
       const matchesClient =
         clientFilter === "all" || activity.clientId === clientFilter;
 
-      const matchesDate =
+       const clientOptions = clients.map(c => ({
+      label: c.name,
+      value: c.id,
+      })); 
+      
+        const matchesDate =
         (!dateRange.from || new Date(activity.scheduledAt) >= new Date(dateRange.from)) &&
         (!dateRange.to || new Date(activity.scheduledAt) <= new Date(dateRange.to));
 
@@ -85,17 +126,46 @@ export default function ActivitiesPage() {
         (statusFilter === "completed" && !!activity.completedAt) ||
         (statusFilter === "overdue" && isOverdue);
 
+
+      
+
       return matchesSearch && matchesClient && matchesDate && matchesType && matchesStatus;
     });
   }, [activities, searchQuery, statusFilter, typeFilters, clientFilter, dateRange]);
 
+  const kam = kams.find(k => k.id === a.kamId);
   const totalPages = Math.ceil(filteredActivities.length / ITEMS_PER_PAGE);
   const paginatedActivities = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredActivities.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredActivities, currentPage]);
 
+
+if (isSupervisor && divisionFilter !== "all" && kam?.division !== divisionFilter)
+  
+return false;
   useEffect(() => setCurrentPage(1), [searchQuery, statusFilter, typeFilters]);
+
+const handleCancelActivity = (activityId: string, reason: string) => {
+  setActivities(prev =>
+    prev.map(a =>
+      a.id === activityId
+        ? {
+            ...a,
+            cancelledAt: new Date().toISOString(),
+            cancelReason: reason,
+          }
+        : a
+    )
+  );
+
+  toast({
+    title: "Activity Cancelled",
+    description: "The activity has been cancelled.",
+  });
+};
+
+
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
@@ -242,6 +312,7 @@ export default function ActivitiesPage() {
           );
         }}
         onAddActivity={() => setIsModalOpen(true)}
+        onCancel={handleCancelActivity}
         showClientInfo
       />
 

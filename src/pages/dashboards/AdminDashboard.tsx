@@ -37,6 +37,8 @@ export default function AdminDashboard() {
   const [sales] = useState(initialSales);
   const [targets] = useState(initialTargets);
 
+  const [isCreateActivityOpen, setIsCreateActivityOpen] = useState(false);
+
   // Teams, activities, targets, sales metrics
 const uniqueTeams = [...new Set(kams.map(k => k.division))].length;
 const avgActivities = kams.length > 0 ? Math.round(activities.length / kams.length) : 0;
@@ -88,11 +90,12 @@ const lastMonthTarget = myLastTarget?.revenueTarget || 0;
 
   // Filters
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
-  const [activityStatusFilter, setActivityStatusFilter] = useState<"All" | "Completed" | "Pending" | "Overdue">("All");
-  const [activityTypeFilter, setActivityTypeFilter] = useState<ActivityTypeEnum[]>([]);
+   const [activityStatusFilter, setActivityStatusFilter] = useState<'all' | 'pending' | 'completed' | 'overdue' | 'cancelled'>('all');
+   const [activityTypeFilter, setActivityTypeFilter] = useState<ActivityTypeEnum | 'all'>('all');
   const [clientFilter, setClientFilter] = useState<string>("all");
   const [dateRangeFilter, setDateRangeFilter] = useState<{ from?: string; to?: string }>({});
-
+  const [kamFilter, setKamFilter] = useState<string>('all');
+    const [divisionFilter, setDivisionFilter] = useState<string>('all');
   // All activities (Admin sees everything)
   const allActivities = useMemo(() => activities, [activities]);
 
@@ -102,34 +105,56 @@ const lastMonthTarget = myLastTarget?.revenueTarget || 0;
   // Reset pagination on filter change
   useEffect(() => setCurrentPage(1), [activityStatusFilter, activityTypeFilter, clientFilter, dateRangeFilter]);
 
- 
+ const clearFilters = () => {
+    setActivityTypeFilter('all');
+    setClientFilter('all');
+    setKamFilter('all');
+    setDivisionFilter('all');
+    setDateRangeFilter({});
+  };
 
-  // Filtered activities
+//* ---------------- FILTERED ACTIVITIES ---------------- */
   const filteredActivities = useMemo(() => {
     return allActivities.filter(a => {
-      const scheduled = new Date(a.scheduledAt);
-      const isCompleted = !!a.completedAt;
-      const isPast = scheduled < now;
+      // Status filter
+    const scheduled = new Date(a.scheduledAt);
+    const completedAt = a.completedAt ? new Date(a.completedAt) : null;
+    const isCancelled = !!a.cancelledAt;
+    const isCompleted = !!completedAt && !isCancelled;
+    const isUpcoming = !completedAt && !isCancelled && scheduled >= now;
+    const isOverdue = !completedAt && !isCancelled && scheduled < now;
 
-      if (activityStatusFilter === "Completed" && !isCompleted) return false;
-      if (activityStatusFilter === "Pending" && (isCompleted || isPast)) return false; // future pending
-      if (activityStatusFilter === "Overdue" && (isCompleted || !isPast)) return false; // past & not completed
 
-      if (activityTypeFilter.length > 0 && !activityTypeFilter.includes(a.type)) return false;
-      if (clientFilter !== "all" && a.clientId !== clientFilter) return false;
+    if (activityStatusFilter === 'completed' && !isCompleted) return false;
+    if (activityStatusFilter === 'pending' && !isUpcoming) return false;
+    if (activityStatusFilter === 'overdue' && !isOverdue) return false;
+    if (activityStatusFilter === 'cancelled' && !isCancelled) return false;
 
+      // Type filter
+        if (activityTypeFilter !== "all" && a.type !== activityTypeFilter) return false;
+    if (clientFilter !== "all" && a.clientId !== clientFilter) return false;
+    if (kamFilter !== "all") {
+      const client = clients.find(c => c.id === a.clientId);
+      if (!client || client.assignedKamId !== kamFilter) return false;
+    }
+    if (divisionFilter !== "all") {
+      const client = clients.find(c => c.id === a.clientId);
+      if (!client || client.division !== divisionFilter) return false;
+    }
+      // Date range filter
       if (dateRangeFilter.from && scheduled < new Date(dateRangeFilter.from)) return false;
-      if (dateRangeFilter.to && scheduled > new Date(new Date(dateRangeFilter.to).setHours(23,59,59,999))) return false;
+    if (dateRangeFilter.to && scheduled > new Date(new Date(dateRangeFilter.to).setHours(23,59,59,999))) return false;
 
-      return true;
-    });
-  }, [allActivities, activityStatusFilter, activityTypeFilter, clientFilter, dateRangeFilter]);
+    return true;
+  });
+  }, [allActivities, activityStatusFilter, activityTypeFilter, clientFilter, kamFilter, divisionFilter, dateRangeFilter, clients]);
 
   const totalPages = Math.max(1, Math.ceil(filteredActivities.length / PAGE_SIZE));
-  const paginatedActivities = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredActivities.slice(start, start + PAGE_SIZE);
-  }, [filteredActivities, currentPage]);
+const paginatedActivities = useMemo(() => {
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const end = start + PAGE_SIZE;
+  return filteredActivities.slice(start, end);
+}, [filteredActivities, currentPage]);
 
   // Handlers
   const handleCreateActivity = (activityData: Omit<ActivityType, "id">) => {
@@ -154,6 +179,25 @@ const lastMonthTarget = myLastTarget?.revenueTarget || 0;
       setViewingActivity({ ...viewingActivity, notes: [...(viewingActivity.notes || []), newNote] });
     }
     toast({ title: "Note Added" });
+  };
+
+    const handleCancelActivity = (activityId: string, reason: string) => {
+    setActivities(prev =>
+      prev.map(a =>
+        a.id === activityId
+          ? {
+              ...a,
+              cancelledAt: new Date().toISOString(),
+              cancelReason: reason,
+            }
+          : a
+      )
+    );
+  
+    toast({
+      title: "Activity Cancelled",
+      description: "The activity has been cancelled.",
+    });
   };
 
   return (
@@ -240,15 +284,15 @@ const lastMonthTarget = myLastTarget?.revenueTarget || 0;
       {/* Filters and New Activity */}
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
-          {["All", "Pending", "Completed", "Overdue"].map(status => (
-            <Button
-              key={status}
-              variant={activityStatusFilter === status ? "default" : "outline"}
-              size="sm"
-              onClick={() => setActivityStatusFilter(status as typeof activityStatusFilter)}
-            >
-              {status}
-            </Button>
+          {['all','pending','overdue','completed','cancelled'].map(status => (
+             <Button
+                  key={status}
+                  variant={activityStatusFilter === status ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setActivityStatusFilter(status as 'all' | 'pending' | 'completed' | 'overdue' | 'cancelled')}
+                >
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                </Button>
           ))}
         </div>
 
@@ -272,19 +316,20 @@ const lastMonthTarget = myLastTarget?.revenueTarget || 0;
         title="Filter Activities"
         filters={[
           {
-            type: "multi-select",
-            label: "Activity Type",
-            value: activityTypeFilter,
-            onChange: v => setActivityTypeFilter(v as ActivityTypeEnum[]),
-            options: [
-              { label: "Physical Meeting", value: "physical_meeting" },
-              { label: "Virtual Meeting", value: "virtual_meeting" },
-              { label: "Call", value: "call" },
-              { label: "Email", value: "email" },
-              { label: "Task", value: "task" },
-              { label: "Follow-up", value: "follow_up" },
-            ],
-          },
+              type: "single-select",
+              label: "Activity Type",
+              value: activityTypeFilter,
+              onChange: (v) => setActivityTypeFilter(v as ActivityTypeEnum | "all"),
+              options: [
+                { label: "All Types", value: "all" },
+                { label: "Physical Meeting", value: "physical_meeting" },
+                { label: "Virtual Meeting", value: "virtual_meeting" },
+                { label: "Call", value: "call" },
+                { label: "Email", value: "email" },
+                { label: "Task", value: "task" },
+                { label: "Follow-up", value: "follow_up" },
+              ],
+            },
           {
             type: "search-select",
             label: "Client",
@@ -299,7 +344,7 @@ const lastMonthTarget = myLastTarget?.revenueTarget || 0;
             onChange: setDateRangeFilter,
           },
         ]}
-        onReset={() => { setActivityTypeFilter([]); setClientFilter("all"); setDateRangeFilter({}); }}
+       onReset={clearFilters}
         onApply={() => setIsFilterDrawerOpen(false)}
       />
 
@@ -308,16 +353,21 @@ const lastMonthTarget = myLastTarget?.revenueTarget || 0;
 
 
       {/* Activity List */}
-      <ActivityList
-        activities={paginatedActivities}
-        clients={allClients}
-        showClientInfo
-        onEdit={updatedActivity => setActivities(prev => prev.map(a => a.id === updatedActivity.id ? updatedActivity : a))}
-        onComplete={handleCompleteActivity}
-        onAddActivity={() => setIsActivityModalOpen(true)}
-        onViewActivity={setViewingActivity}
-        onAddNote={handleAddNoteFromList}
-      />
+       <ActivityList
+            activities={paginatedActivities}
+            clients={clients}
+            onEdit={(updatedActivity) => {
+              setActivities(prev => prev.map(a => a.id === updatedActivity.id ? updatedActivity : a));
+              toast({ title: 'Activity Updated' });
+            }}
+            onComplete={handleCompleteActivity}
+            onCancel={handleCancelActivity}
+            onAddActivity={() => setIsCreateActivityOpen(true)}
+            onViewActivity={setViewingActivity}
+            onAddNote={handleAddNoteFromList}
+            showClientInfo
+          />
+
 
       <AppPagination
         currentPage={currentPage}
@@ -327,14 +377,15 @@ const lastMonthTarget = myLastTarget?.revenueTarget || 0;
 
       {/* Modals */}
       <ActivityModal
-        open={isActivityModalOpen}
-        onClose={() => { setIsActivityModalOpen(false); setPreselectedClientId(undefined); }}
-        onSave={handleCreateActivity}
-        clients={allClients}
-        preselectedClientId={preselectedClientId}
-      />
+  open={isCreateActivityOpen}
+  onClose={() => setIsCreateActivityOpen(false)}
+  onSave={handleCreateActivity}
+  clients={clients}
+  kams={kams}
+  userRole={currentUser?.role}
+/>
 
-      <ActivityDetailsSheet
+<ActivityDetailsSheet
   open={!!viewingActivity}
   onClose={() => setViewingActivity(null)}
   activity={viewingActivity}
@@ -342,21 +393,21 @@ const lastMonthTarget = myLastTarget?.revenueTarget || 0;
   onComplete={(id, outcome) => handleCompleteActivity(id, outcome)}
   onAddNote={() => {
     if (viewingActivity) {
-      setNoteActivity(viewingActivity); // set current activity
-      setNoteModalOpen(true); // ✅ actually open the modal
+      setNoteActivity(viewingActivity);
+      setNoteModalOpen(true);
     }
   }}
 />
 
+<ActivityNotesModal
+  open={!!noteActivity}
+  onClose={() => setNoteActivity(null)}
+  activityId={noteActivity?.id || ""}
+  onSave={handleAddNote}
+  currentUserName={currentUser?.name || "User"}
+  currentUserId={currentUser?.id || "user-1"}
+/>
 
-      <ActivityNotesModal
-        open={!!noteActivity}
-        onClose={() => setNoteActivity(null)}
-        activityId={noteActivity?.id || ""}
-        onSave={handleAddNote}
-        currentUserName={currentUser?.name || "User"}
-        currentUserId={currentUser?.id || "user-1"}
-      />
     </div>
   );
 }

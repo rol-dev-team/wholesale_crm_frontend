@@ -64,7 +64,7 @@ export default function SupervisorDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
 
   //* ---------------- FILTERS ---------------- */
-  const [activityStatusFilter, setActivityStatusFilter] = useState<'all' | 'pending' | 'completed' | 'overdue'>('all');
+  const [activityStatusFilter, setActivityStatusFilter] = useState<'all' | 'pending' | 'completed' | 'overdue' | 'cancelled'>('all');
   const [activityTypeFilter, setActivityTypeFilter] = useState<ActivityTypeEnum | 'all'>('all');
   const [clientFilter, setClientFilter] = useState<string>('all');
   const [kamFilter, setKamFilter] = useState<string>('all');
@@ -145,46 +145,44 @@ export default function SupervisorDashboard() {
   const filteredActivities = useMemo(() => {
     return teamActivities.filter(a => {
       // Status filter
-      const scheduled = new Date(a.scheduledAt);
-      const isCompleted = !!a.completedAt;
-      const isPast = scheduled < now;
+    const scheduled = new Date(a.scheduledAt);
+    const completedAt = a.completedAt ? new Date(a.completedAt) : null;
+    const isCancelled = !!a.cancelledAt;
+    const isCompleted = !!completedAt && !isCancelled;
+    const isUpcoming = !completedAt && !isCancelled && scheduled >= now;
+    const isOverdue = !completedAt && !isCancelled && scheduled < now;
 
-      if (activityStatusFilter === 'completed' && !isCompleted) return false;
-      if (activityStatusFilter === 'pending' && (isCompleted || isPast)) return false;
-      if (activityStatusFilter === 'overdue' && (isCompleted || !isPast)) return false;
+
+     if (activityStatusFilter === 'completed' && !isCompleted) return false;
+    if (activityStatusFilter === 'pending' && !isUpcoming) return false;
+    if (activityStatusFilter === 'overdue' && !isOverdue) return false;
+    if (activityStatusFilter === 'cancelled' && !isCancelled) return false;
 
       // Type filter
-      if (activityTypeFilter !== 'all' && a.type !== activityTypeFilter) return false;
-
-      // Client filter
-      if (clientFilter !== 'all' && a.clientId !== clientFilter) return false;
-
-      // KAM filter
-      if (kamFilter !== 'all') {
-        const client = clients.find(c => c.id === a.clientId);
-        if (!client || client.assignedKamId !== kamFilter) return false;
-      }
-
-      // Division filter
-      if (divisionFilter !== 'all') {
-        const client = clients.find(c => c.id === a.clientId);
-        if (!client || client.division !== divisionFilter) return false;
-      }
-
+        if (activityTypeFilter !== "all" && a.type !== activityTypeFilter) return false;
+    if (clientFilter !== "all" && a.clientId !== clientFilter) return false;
+    if (kamFilter !== "all") {
+      const client = clients.find(c => c.id === a.clientId);
+      if (!client || client.assignedKamId !== kamFilter) return false;
+    }
+    if (divisionFilter !== "all") {
+      const client = clients.find(c => c.id === a.clientId);
+      if (!client || client.division !== divisionFilter) return false;
+    }
       // Date range filter
       if (dateRangeFilter.from && scheduled < new Date(dateRangeFilter.from)) return false;
-      if (dateRangeFilter.to && scheduled > new Date(new Date(dateRangeFilter.to).setHours(23, 59, 59, 999))) return false;
+    if (dateRangeFilter.to && scheduled > new Date(new Date(dateRangeFilter.to).setHours(23,59,59,999))) return false;
 
-      return true;
-    });
+    return true;
+  });
   }, [teamActivities, activityStatusFilter, activityTypeFilter, clientFilter, kamFilter, divisionFilter, dateRangeFilter, clients]);
 
   const totalPages = Math.max(1, Math.ceil(filteredActivities.length / PAGE_SIZE));
-  const paginatedActivities = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    const end = start + PAGE_SIZE;
-    return filteredActivities.slice(start, end);
-  }, [filteredActivities, currentPage]);
+const paginatedActivities = useMemo(() => {
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const end = start + PAGE_SIZE;
+  return filteredActivities.slice(start, end);
+}, [filteredActivities, currentPage]);
 
   //* ---------------- HANDLERS ---------------- */
   const handleCreateActivity = (activityData: Omit<ActivityType, 'id'>) => {
@@ -222,6 +220,26 @@ export default function SupervisorDashboard() {
       toast({ title: "Note Added" });
     };
 
+
+    const handleCancelActivity = (activityId: string, reason: string) => {
+  setActivities(prev =>
+    prev.map(a =>
+      a.id === activityId
+        ? {
+            ...a,
+            cancelledAt: new Date().toISOString(),
+            cancelReason: reason,
+          }
+        : a
+    )
+  );
+
+  toast({
+    title: "Activity Cancelled",
+    description: "The activity has been cancelled.",
+  });
+};
+
   //* ---------------- UI ---------------- */
   return (
     <div className="page-container space-y-6">
@@ -252,16 +270,17 @@ export default function SupervisorDashboard() {
         <div className="flex items-center justify-between gap-2">
           {/* Status toggles */}
           <div className="flex gap-2">
-            {['all','pending','completed','overdue'].map(status => (
-              <Button
-                key={status}
-                variant={activityStatusFilter === status ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActivityStatusFilter(status as typeof activityStatusFilter)}
-              >
-                {status.charAt(0).toUpperCase() + status.slice(1)}
-              </Button>
-            ))}
+            {['all','pending','overdue','completed','cancelled'].map(status => (
+                <Button
+                  key={status}
+                  variant={activityStatusFilter === status ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setActivityStatusFilter(status as 'all' | 'pending' | 'completed' | 'overdue' | 'cancelled')}
+                >
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                </Button>
+              ))}
+
           </div>
 
           {/* Filter + New Activity */}
@@ -340,18 +359,19 @@ export default function SupervisorDashboard() {
         />
 
         <ActivityList
-  activities={paginatedActivities}
-  clients={clients}
-  onEdit={(updatedActivity) => {
-    setActivities(prev => prev.map(a => a.id === updatedActivity.id ? updatedActivity : a));
-    toast({ title: 'Activity Updated' });
-  }}
-  onComplete={handleCompleteActivity}
-  onAddActivity={() => setIsCreateActivityOpen(true)}
-  onViewActivity={setViewingActivity}  // <-- separate viewing modal
-  onAddNote={setNoteActivity}           // <-- separate notes modal
-  showClientInfo
-/>
+            activities={paginatedActivities}
+            clients={clients}
+            onEdit={(updatedActivity) => {
+              setActivities(prev => prev.map(a => a.id === updatedActivity.id ? updatedActivity : a));
+              toast({ title: 'Activity Updated' });
+            }}
+            onComplete={handleCompleteActivity}
+            onCancel={handleCancelActivity}
+            onAddActivity={() => setIsCreateActivityOpen(true)}
+            onViewActivity={setViewingActivity}
+            onAddNote={handleAddNoteFromList}
+            showClientInfo
+          />
 
 
         <AppPagination
@@ -362,7 +382,7 @@ export default function SupervisorDashboard() {
       </div>
 
       {/* MODALS */}
-      <ActivityModal
+     <ActivityModal
   open={isCreateActivityOpen}
   onClose={() => setIsCreateActivityOpen(false)}
   onSave={handleCreateActivity}
@@ -371,7 +391,7 @@ export default function SupervisorDashboard() {
   userRole={currentUser?.role}
 />
 
-    <ActivityDetailsSheet
+<ActivityDetailsSheet
   open={!!viewingActivity}
   onClose={() => setViewingActivity(null)}
   activity={viewingActivity}
@@ -379,21 +399,20 @@ export default function SupervisorDashboard() {
   onComplete={(id, outcome) => handleCompleteActivity(id, outcome)}
   onAddNote={() => {
     if (viewingActivity) {
-      setNoteActivity(viewingActivity); // set current activity
-      setNoteModalOpen(true); // ✅ actually open the modal
+      setNoteActivity(viewingActivity);
+      setNoteModalOpen(true);
     }
   }}
 />
 
-{/* Add Note Modal */}
 <ActivityNotesModal
-        open={!!noteActivity}
-        onClose={() => setNoteActivity(null)}
-        activityId={noteActivity?.id || ""}
-        onSave={handleAddNote}
-        currentUserName={currentUser?.name || "User"}
-        currentUserId={currentUser?.id || "user-1"}
-      />
+  open={!!noteActivity}
+  onClose={() => setNoteActivity(null)}
+  activityId={noteActivity?.id || ""}
+  onSave={handleAddNote}
+  currentUserName={currentUser?.name || "User"}
+  currentUserId={currentUser?.id || "user-1"}
+/>
 
 
     </div>

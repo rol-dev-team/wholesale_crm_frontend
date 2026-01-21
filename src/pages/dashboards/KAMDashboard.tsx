@@ -59,7 +59,8 @@ const handleAddNoteFromList = (activity: ActivityType) => {
   // Filters
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
 
-  const [activityStatusFilter, setActivityStatusFilter] = useState<"All" | "Completed" | "Pending" | "Overdue">("All");
+  const [activityStatusFilter, setActivityStatusFilter] = useState< "All" | "Upcoming" | "Overdue" | "Completed" | "Cancelled">("All");
+
 
   const [activityTypeFilter, setActivityTypeFilter] =
   useState<ActivityTypeEnum[]>([]);
@@ -102,27 +103,29 @@ useEffect(() => {
 
 const filteredActivities = useMemo(() => {
   return myActivities.filter((a) => {
-    const scheduled = new Date(a.scheduledAt);
-    const isCompleted = !!a.completedAt;
-    const isPast = scheduled < now;
+   const scheduled = new Date(a.scheduledAt);
+    const completedAt = a.completedAt ? new Date(a.completedAt) : null;
+    const isCancelled = !!a.cancelledAt;
+
+    const isCompleted = !!completedAt && !isCancelled;
+    const isUpcoming = !completedAt && !isCancelled && scheduled >= now;
+    const isOverdue = !completedAt && !isCancelled && scheduled < now;
 
     // Status filter
+    
     if (activityStatusFilter === "Completed" && !isCompleted) return false;
-    if (activityStatusFilter === "Pending" && (!isCompleted && !isPast) === false) return false;
-    if (activityStatusFilter === "Overdue" && (!isCompleted || !isPast) === false) return false;
+    if (activityStatusFilter === "Upcoming" && !isUpcoming) return false;
+    if (activityStatusFilter === "Overdue" && !isOverdue) return false;
+    if (activityStatusFilter === "Cancelled" && !isCancelled) return false;
 
-    // Better version:
-    if (activityStatusFilter === "Pending" && (isCompleted || isPast)) return false; // pending = future
-    if (activityStatusFilter === "Overdue" && (isCompleted || !isPast)) return false; // overdue = past & not completed
 
     // Activity type filter
-    if (
-      activityTypeFilter.length > 0 &&
-      !activityTypeFilter.includes(a.type)
-    ) {
-      return false;
-    }
-
+      if (
+        activityTypeFilter.length > 0 &&
+        !activityTypeFilter.includes(a.type)
+      ) {
+        return false;
+      }
     // Client filter
     if (clientFilter !== "all" && a.clientId !== clientFilter) return false;
 
@@ -226,7 +229,8 @@ const paginatedActivities = useMemo(() => {
   content: note.content,
   attachments: note.attachments,
   createdAt: note.createdAt,
-  createdBy: note.createdByName, // ✅ just use a single string field
+  createdById: note.createdById,      // ✅ FIX
+  createdByName: note.createdByName // ✅ FIX
 };
 
 
@@ -248,6 +252,27 @@ const paginatedActivities = useMemo(() => {
 
   toast({ title: "Note Added", description: "Your note has been saved." });
 };
+
+const handleCancelActivity = (activityId: string, reason: string) => {
+  setActivities(prev =>
+    prev.map(a =>
+      a.id === activityId
+        ? {
+            ...a,
+            cancelledAt: new Date().toISOString(),
+            cancelReason: reason,
+          }
+        : a
+    )
+  );
+
+  toast({
+    title: "Activity Cancelled",
+    description: "The activity has been cancelled.",
+  });
+};
+
+
 
 
   /* ---------------- UI ---------------- */
@@ -316,18 +341,18 @@ const paginatedActivities = useMemo(() => {
 <div className="flex items-center justify-between">
   {/* Status Toggle – LEFT */}
   <div className="flex gap-2">
-    {["All", "Pending", "Completed", "Overdue"].map((status) => (
+    {["All", "Upcoming", "Overdue", "Completed", "Cancelled"].map((status) => (
       <Button
-        key={status}
-        variant={activityStatusFilter === status ? "default" : "outline"}
-        size="sm"
-        onClick={() =>
-          setActivityStatusFilter(status as typeof activityStatusFilter)
-        }
-      >
-        {status}
-      </Button>
-    ))}
+          key={status}
+          variant={activityStatusFilter === status ? "default" : "outline"}
+          size="sm"
+          onClick={() =>
+            setActivityStatusFilter(status as typeof activityStatusFilter)
+          }
+        >
+          {status}
+        </Button>
+      ))}
   </div>
 
   {/* RIGHT: Filter + New Activity */}
@@ -423,6 +448,7 @@ const paginatedActivities = useMemo(() => {
             onAddActivity={() => setIsActivityModalOpen(true)}
             onViewActivity={setViewingActivity}
             onAddNote={handleAddNoteFromList} // <-- updated
+            onCancel={handleCancelActivity}
             showClientInfo
         />
 
