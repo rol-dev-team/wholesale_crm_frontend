@@ -3,19 +3,14 @@
 import * as React from "react";
 import { Formik, Form } from "formik";
 import * as Yup from "yup";
-
+import { UserAPI } from "@/api/User.api";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select";
 
 import { FloatingInput } from "@/components/ui/FloatingInput";
+import { FloatingSelect } from "@/components/ui/FloatingSelect";
+import { SelectItem } from "@/components/ui/select";
 
 /* ---------------- Types ---------------- */
 export type UserRole = "Admin" | "Supervisor" | "KAM" | "Management";
@@ -29,6 +24,8 @@ export type SystemUser = {
   password: string;
   active: boolean;
   role: UserRole;
+  kamId?: string;
+  supervisorIds?: string[] | "all";
 };
 
 /* ---------------- Validation ---------------- */
@@ -49,6 +46,8 @@ interface CreateSystemUserFormProps {
   initialValues?: Partial<SystemUser>;
   editingUserId: string | null;
   onSave: (values: any) => void;
+  kamOptions: { id: string; name: string }[];
+  supervisorOptions: { id: string; name: string }[];
 }
 
 /* ---------------- Component ---------------- */
@@ -56,6 +55,8 @@ export function CreateSystemUserForm({
   initialValues,
   editingUserId,
   onSave,
+  kamOptions,
+  supervisorOptions,
 }: CreateSystemUserFormProps) {
   const defaultValues = {
     fullName: "",
@@ -66,6 +67,15 @@ export function CreateSystemUserForm({
     confirmPassword: "",
     active: true,
     role: "",
+    kamId: "",
+    supervisorIds: [] as string[],
+  };
+
+  const roleMap: Record<string, string> = {
+    Admin: "admin",
+    Supervisor: "supervisor",
+    KAM: "kam",
+    Management: "management",
   };
 
   return (
@@ -73,9 +83,39 @@ export function CreateSystemUserForm({
       initialValues={{ ...defaultValues, ...initialValues }}
       enableReinitialize
       validationSchema={UserValidationSchema}
-      onSubmit={(values, { resetForm }) => {
-        onSave(values);
-        resetForm();
+      onSubmit={async (values, { resetForm, setSubmitting }) => {
+        try {
+          setSubmitting(true);
+
+          // Prepare backend payload
+          const payload: any = {
+            fullname: values.fullName,
+            username: values.userName,
+            email: values.email,
+            phone: values.phone,
+            password: values.password,
+            role: roleMap[values.role],
+            default_kam_id: values.kamId || null,
+            supervisor_ids:
+              values.supervisorIds.length === 0 ? "all" : values.supervisorIds,
+            status: values.active ? "active" : "inactive",
+          };
+
+          if (editingUserId) {
+            await UserAPI.updateUser(editingUserId, payload);
+          } else {
+            await UserAPI.createUser(payload);
+          }
+
+          resetForm();
+          alert("User saved successfully!");
+          onSave(payload); // optional callback
+        } catch (err: any) {
+          console.error(err);
+          alert("Failed to save user. Please try again.");
+        } finally {
+          setSubmitting(false);
+        }
       }}
     >
       {({
@@ -85,6 +125,8 @@ export function CreateSystemUserForm({
         handleChange,
         handleBlur,
         setFieldValue,
+        setFieldTouched,
+        isSubmitting,
       }) => (
         <Form className="space-y-4 rounded-lg border bg-muted/50 p-4">
           {/* Full Name */}
@@ -151,27 +193,50 @@ export function CreateSystemUserForm({
           />
 
           {/* Role */}
-          <div className="space-y-1">
-            <Label>Role</Label>
-            <Select
-              value={values.role}
-              onValueChange={(v) => setFieldValue("role", v)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select role" />
-              </SelectTrigger>
-              <SelectContent>
-                {["Admin", "Supervisor", "KAM", "Management"].map((r) => (
-                  <SelectItem key={r} value={r}>
-                    {r}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {touched.role && errors.role && (
-              <p className="text-xs text-destructive">{errors.role}</p>
-            )}
-          </div>
+          <FloatingSelect
+            label="Role"
+            value={values.role}
+            onValueChange={(v) => setFieldValue("role", v)}
+            onTouched={() => setFieldTouched("role", true)}
+            error={touched.role ? errors.role : undefined}
+          >
+            {["Admin", "Supervisor", "KAM", "Management"].map((r) => (
+              <SelectItem key={r} value={r}>
+                {r}
+              </SelectItem>
+            ))}
+          </FloatingSelect>
+
+          {/* KAM */}
+          <FloatingSelect
+            label="KAM"
+            value={values.kamId}
+            onValueChange={(v) => setFieldValue("kamId", v)}
+            onTouched={() => setFieldTouched("kamId", true)}
+          >
+            {(kamOptions || []).map((k) => (
+              <SelectItem key={k.id} value={k.id}>
+                {k.name}
+              </SelectItem>
+            ))}
+          </FloatingSelect>
+
+          {/* Supervisors (multi-select) */}
+          <FloatingSelect
+            label="Supervisors"
+            value={values.supervisorIds.join(",")}
+            onValueChange={(v) => {
+              const ids = v.split(",").filter(Boolean);
+              setFieldValue("supervisorIds", ids);
+            }}
+            onTouched={() => setFieldTouched("supervisorIds", true)}
+          >
+            {(supervisorOptions || []).map((s) => (
+              <SelectItem key={s.id} value={s.id}>
+                {s.name}
+              </SelectItem>
+            ))}
+          </FloatingSelect>
 
           {/* Active */}
           <div className="flex items-center gap-3">
@@ -182,8 +247,9 @@ export function CreateSystemUserForm({
             />
           </div>
 
+          {/* Submit */}
           <div className="flex justify-end">
-            <Button type="submit">
+            <Button type="submit" disabled={isSubmitting}>
               {editingUserId ? "Update User" : "Create User"}
             </Button>
           </div>

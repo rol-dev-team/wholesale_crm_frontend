@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { UserAPI } from "@/api/User.api";
 import {
   Tabs,
   TabsContent,
@@ -108,6 +109,9 @@ export default function SettingsPage() {
     [systemUserList]
   );
 
+
+
+  
   /* ---------------- USER MAPPING OPTIONS ---------------- */
   const userMappingGroupOptions = userAccessGroupOptions;
   const userMappingTeamOptions = userAccessTeamOptions;
@@ -215,6 +219,8 @@ export default function SettingsPage() {
     setUserMappings(prev => prev.filter((_, idx) => idx !== index));
     toast({ title: "Mapping Deleted", description: "Mapping deleted successfully." });
   };
+
+
 
   /* ---------------- PAGE JSX ---------------- */
   return (

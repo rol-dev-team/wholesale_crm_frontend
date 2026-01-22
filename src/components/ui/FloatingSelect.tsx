@@ -25,9 +25,9 @@ export function FloatingSelect({
   error,
   onTouched,
 }: FloatingSelectProps) {
-  const hasValue = Boolean(value);
+  
   const [open, setOpen] = React.useState(false);
-
+ const hasValue = Boolean(value) || open;
   // ✅ track if a value was selected while dropdown is open
   const selectedWhileOpenRef = React.useRef(false);
 
