@@ -1,3 +1,4 @@
+// ActivityModal.tsx
 import { useState, useEffect, useMemo } from "react";
 import { FloatingInput } from "@/components/ui/FloatingInput";
 import { FloatingSelect } from "@/components/ui/FloatingSelect";
@@ -31,9 +32,13 @@ export interface ActivityModalProps {
   kams?: KAM[];
   userRole?: string;
 
-  // New props for "complete activity" flow
+  // Complete flow
   requireMessageForComplete?: boolean;
   onCompleteWithMessage?: (activityId: string, message: string) => void;
+
+  // Cancel flow
+  requireMessageForCancel?: boolean;
+  onCancelWithReason?: (activityId: string, reason: string) => void;
 }
 
 const activityTypes: { value: ActivityType; label: string }[] = [
@@ -56,8 +61,10 @@ export function ActivityModal({
   userRole,
   requireMessageForComplete = false,
   onCompleteWithMessage,
+  requireMessageForCancel = false,
+  onCancelWithReason,
 }: ActivityModalProps) {
-  const isSupervisor = ["supervisor", "super_admin", "boss"].includes(userRole || "");
+  const isSupervisor = ["supervisor", "super_admin", "management"].includes(userRole || "");
   const [selectedKamId, setSelectedKamId] = useState<string>("");
   const [completionMessage, setCompletionMessage] = useState("");
 
@@ -121,6 +128,17 @@ export function ActivityModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Handle cancel with mandatory reason
+    if (requireMessageForCancel && editingActivity && onCancelWithReason) {
+      if (!completionMessage.trim()) {
+        alert("Cancellation reason is required!");
+        return;
+      }
+      onCancelWithReason(editingActivity.id, completionMessage);
+      onClose();
+      return;
+    }
+
     // Handle completion with mandatory message
     if (requireMessageForComplete && editingActivity && onCompleteWithMessage) {
       if (!completionMessage.trim()) {
@@ -154,14 +172,18 @@ export function ActivityModal({
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {requireMessageForComplete
+            {requireMessageForCancel
+              ? "Cancel Activity"
+              : requireMessageForComplete
               ? "Complete Activity"
               : editingActivity
               ? "Edit Task"
               : "Create New Task"}
           </DialogTitle>
           <DialogDescription>
-            {requireMessageForComplete
+            {requireMessageForCancel
+              ? "Add a reason to cancel the activity."
+              : requireMessageForComplete
               ? "Add a message to complete the activity."
               : "Fill in the task details below."}
           </DialogDescription>
@@ -169,9 +191,14 @@ export function ActivityModal({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-4">
-            {requireMessageForComplete ? (
+            {/* Completion / Cancel input */}
+            {(requireMessageForComplete || requireMessageForCancel) ? (
               <FloatingInput
-                label="Completion Message *"
+                label={
+                  requireMessageForCancel
+                    ? "Cancellation Reason *"
+                    : "Completion Message *"
+                }
                 value={completionMessage}
                 onChange={(e) => setCompletionMessage(e.target.value)}
                 required
@@ -278,12 +305,14 @@ export function ActivityModal({
             <Button
               type="submit"
               disabled={
-                requireMessageForComplete
+                (requireMessageForComplete || requireMessageForCancel)
                   ? !completionMessage.trim()
                   : !formData.clientId || !formData.title
               }
             >
-              {requireMessageForComplete
+              {requireMessageForCancel
+                ? "Cancel Activity"
+                : requireMessageForComplete
                 ? "Complete Activity"
                 : editingActivity
                 ? "Save Changes"

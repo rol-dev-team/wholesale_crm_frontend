@@ -1,13 +1,20 @@
 // // TargetsPage.tsx
-// import React, { useState, useMemo } from 'react';
+// import React, { useState, useMemo, useEffect } from 'react';
 // import { useAuth } from '@/contexts/AuthContext';
 // import { Card, CardContent } from '@/components/ui/card';
 // import { Button } from '@/components/ui/button';
 // import SetTargetModal from '@/components/target/SetTargetModal';
-// import { Crosshair, X } from 'lucide-react';
-// import { initialKAMs, formatCurrency } from '@/data/mockData';
+// import { Crosshair, X, Filter } from 'lucide-react';
+// import { formatCurrency } from '@/data/mockData';
 // import { KAMPerformanceTable } from '@/components/tables/KAMPerformanceTable';
 // import { KAMFilterDrawer } from '@/components/filters/KAMFilterDrawer';
+// import toast, { Toaster } from 'react-hot-toast';
+
+// import { SalesTargetAPI } from '@/api/salesTarget';
+// import { KAMService } from '@/services/kam';
+// import { SupervisorService } from '@/services/supervisor';
+// import type { KAM } from '@/types/kam';
+// import type { Supervisor } from '@/types/supervisor';
 
 // const MONTHS_ARRAY = [
 //   'January','February','March','April','May','June',
@@ -18,9 +25,11 @@
 //   const { currentUser } = useAuth();
 
 //   // ---------------- STATES ----------------
-//   const [kams] = useState(initialKAMs);
-//   const [targets, setTargets] = useState<any[]>([]); // your targets data
+//   const [targets, setTargets] = useState<any[]>([]);
 //   const [isTargetModalOpen, setIsTargetModalOpen] = useState(false);
+//   const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
+//   const [kams, setKams] = useState<KAM[]>([]);
+//   const [loading, setLoading] = useState(false);
 
 //   // Filters
 //   const [divisionFilter, setDivisionFilter] = useState('all');
@@ -38,119 +47,110 @@
 //     setFilterYear(new Date().getFullYear().toString());
 //   };
 
-//   // ---------------- MEMOIZED LOGIC ----------------
-//   const teamKams = useMemo(() => {
-//     return kams.filter(k =>
-//       k.reportingTo === currentUser?.name ||
-//       currentUser?.role === 'boss' ||
-//       currentUser?.role === 'super_admin'
-//     );
-//   }, [kams, currentUser]);
-
-//   const filteredKams = useMemo(() => {
-//     return teamKams.filter(k => filterKam === 'all' || k.id === filterKam);
-//   }, [teamKams, filterKam]);
-
-//   const filteredTargets = useMemo(() => {
-//     return targets.filter(t => {
-//       const matchesDivision = divisionFilter === 'all' || t.division === divisionFilter;
-//       const matchesKam = filterKam === 'all' || t.kamId === filterKam;
-//       const matchesMonthYear = t.month === `${filterMonthName} ${filterYear}`;
-//       return matchesDivision && matchesKam && matchesMonthYear;
-//     });
-//   }, [targets, divisionFilter, filterKam, filterMonthName, filterYear]);
-
-//   // ---------------- SUMMARY STATS ----------------
-//   const summaryStats = useMemo(() => {
-//     const totalTarget = filteredTargets.reduce((sum, t) => sum + t.revenueTarget, 0);
-//     const totalAchieved = filteredTargets.reduce((sum, t) => sum + t.revenueAchieved, 0);
-//     const progress = totalTarget ? Math.round((totalAchieved / totalTarget) * 100) : 0;
-//     return { totalTarget, totalAchieved, progress };
-//   }, [filteredTargets]);
-
 //   // ---------------- MODAL STATE ----------------
 //   const [selectedDivision, setSelectedDivision] = useState('');
+//   const [selectedSupervisor, setSelectedSupervisor] = useState('');
 //   const [selectedKam, setSelectedKam] = useState('');
 //   const [targetAmount, setTargetAmount] = useState('');
 //   const [targetMonthName, setTargetMonthName] = useState(MONTHS_ARRAY[new Date().getMonth()]);
 //   const [targetYear, setTargetYear] = useState(new Date().getFullYear().toString());
-//   const [isManagement, setIsManagement] = useState(false);
 
-//   const handleSetTarget = () => {
-//     if (!selectedDivision || !selectedKam || !targetAmount) return;
+//   const isManagement = ['management', 'super_admin'].includes(currentUser?.role);
 
-//     // Save target
-//     const monthYear = `${targetMonthName} ${targetYear}`;
-//     const existingIndex = targets.findIndex(
-//       t => t.kamId === selectedKam && t.month === monthYear
+//   // ---------------- MEMO ----------------
+//   const teamKams = useMemo(() => {
+//     return kams.filter(k =>
+//       currentUser?.role === 'management' ||
+//       currentUser?.role === 'super_admin' ||
+//       k.reportingTo === currentUser?.name
 //     );
+//   }, [kams, currentUser]);
 
-//     const newTarget = {
-//       kamId: selectedKam,
-//       division: selectedDivision,
-//       month: monthYear,
-//       revenueTarget: Number(targetAmount),
-//       revenueAchieved: 0,
-//     };
+//   const filteredTargets = useMemo(() => {
+//     return targets.filter(t =>
+//       (divisionFilter === 'all' || t.division === divisionFilter) &&
+//       (filterKam === 'all' || t.kamId === filterKam) &&
+//       t.month === `${filterMonthName} ${filterYear}`
+//     );
+//   }, [targets, divisionFilter, filterKam, filterMonthName, filterYear]);
 
-//     let updatedTargets = [...targets];
-//     if (existingIndex >= 0) {
-//       updatedTargets[existingIndex] = newTarget;
-//     } else {
-//       updatedTargets.push(newTarget);
-//     }
-//     setTargets(updatedTargets);
-//     setIsTargetModalOpen(false);
+//   const summaryStats = useMemo(() => {
+//     const totalTarget = filteredTargets.reduce((s, t) => s + t.revenueTarget, 0);
+//     const totalAchieved = filteredTargets.reduce((s, t) => s + t.revenueAchieved, 0);
+//     const progress = totalTarget ? Math.round((totalAchieved / totalTarget) * 100) : 0;
+//     return { totalTarget, totalAchieved, progress };
+//   }, [filteredTargets]);
 
-//     // Reset modal fields
-//     setSelectedDivision('');
-//     setSelectedKam('');
-//     setTargetAmount('');
-//     setTargetMonthName(MONTHS_ARRAY[new Date().getMonth()]);
-//     setTargetYear(new Date().getFullYear().toString());
+//   const getTargetMonth = (monthName: string, year: string) => {
+//     const monthIndex = MONTHS_ARRAY.indexOf(monthName) + 1;
+//     return `${year}-${String(monthIndex).padStart(2, '0')}-01`;
 //   };
 
+//   // ---------------- USE EFFECT ----------------
+//   useEffect(() => {
+//     SupervisorService.getAll().then(setSupervisors);
+//     KAMService.getAll().then(setKams);
+//   }, []);
+
+//   // ---------------- HANDLER ----------------
+//   const handleSetTarget = async (formValues: any) => {
+//     const { selectedDivision, selectedSupervisor, selectedKam, targetAmount, targetMonthName, targetYear } = formValues;
+
+//     // Convert month/year to YYYY-MM-DD
+//     const monthIndex = MONTHS_ARRAY.indexOf(targetMonthName) + 1;
+//     const targetMonth = `${targetYear}-${String(monthIndex).padStart(2, '0')}-01`;
+
+//     // Determine posted_by
+//     let posted_by = 2; // default supervisor
+//     if (currentUser.role === 'super_admin') posted_by = 0;
+//     else if (currentUser.role === 'management') posted_by = 1;
+
+//     const payload = {
+//       target_month: targetMonth,
+//       division: selectedDivision,
+//       supervisor_id: Number(selectedSupervisor),
+//       kam_id: Number(selectedKam),
+//       amount: Number(targetAmount),
+//       posted_by,
+//     };
+
+//     setLoading(true);
+//     const toastId = toast.loading('Saving target...');
+//     try {
+//       // Simulate small delay for loader
+//       await new Promise(res => setTimeout(res, 1000));
+
+//       const response = await SalesTargetAPI.create(payload);
+//       setTargets(prev => [...prev, response]);
+//       setIsTargetModalOpen(false);
+//       toast.success('Target set successfully! 🎯', { id: toastId });
+//     } catch (err) {
+//       console.error(err);
+//       toast.error('Failed to set target!', { id: toastId });
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   // ---------------- UI ----------------
 //   return (
 //     <div className="page-container space-y-6">
-//       {/* ---------------- HEADER ---------------- */}
-//       <div className="flex items-center justify-between flex-wrap gap-4">
+//       <Toaster position="top-right" reverseOrder={false} />
+
+//       {/* HEADER */}
+//       <div className="flex items-center justify-between">
 //         <div>
-//           <h1 className="text-2xl font-bold tracking-tight">Targets Management</h1>
+//           <h1 className="text-2xl font-bold">Targets Management</h1>
 //           <p className="text-sm text-muted-foreground">
 //             Set and track revenue goals for {currentMonthLabel}
 //           </p>
 //         </div>
-//         <div className="flex items-center gap-2">
-//           {hasFilters && (
-//             <Button
-//               variant="ghost"
-//               size="sm"
-//               onClick={clearFilters}
-//               className="text-destructive hover:text-destructive hover:bg-destructive/10"
-//             >
-//               <X className="h-4 w-4 mr-2" /> Reset
-//             </Button>
-//           )}
-//           <KAMFilterDrawer
-//             division={divisionFilter} setDivision={setDivisionFilter}
-//             kam={filterKam} setKam={setFilterKam} kams={teamKams}
-//             dateRange="monthly" setDateRange={() => {}}
-//             startMonth={filterMonthName} setStartMonth={setFilterMonthName}
-//             endMonth={filterMonthName} setEndMonth={setFilterMonthName}
-//             startYear={filterYear} setStartYear={setFilterYear}
-//             endYear={filterYear} setEndYear={setFilterYear}
-//             onFilterChange={() => {}}
-//           />
-//           <Button
-//             onClick={() => setIsTargetModalOpen(true)}
-//             className="gap-2 shadow-sm"
-//           >
-//             <Crosshair className="h-4 w-4" /> Set Target
-//           </Button>
-//         </div>
+//         <Button onClick={() => setIsTargetModalOpen(true)} disabled={loading}>
+//           <Crosshair className="h-4 w-4 mr-2" /> Set Target
+//         </Button>
 //       </div>
 
-//       {/* ---------------- SUMMARY CARDS ---------------- */}
+//       {/* SUMMARY */}
 //       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 //         <Card className="overflow-hidden">
 //           <CardContent className="p-0">
@@ -164,7 +164,7 @@
 //               </div>
 //             </div>
 //             <div className="bg-muted/30 border-t px-4 py-2 text-xs text-muted-foreground">
-//               Last Month Target: {summaryStats.progress}
+//               Overall Progress: {summaryStats.progress}%
 //             </div>
 //           </CardContent>
 //         </Card>
@@ -181,16 +181,44 @@
 //               </div>
 //             </div>
 //             <div className="bg-muted/30 border-t px-4 py-2 text-xs text-muted-foreground">
-//               Last Month Achieved: {summaryStats.progress}
+//               Success Rate: {summaryStats.progress}%
 //             </div>
 //           </CardContent>
 //         </Card>
 //       </div>
 
-//       {/* ---------------- PERFORMANCE TABLE ---------------- */}
+//       {/* FILTER */}
+//       <div className="flex justify-end items-center gap-2">
+//         {hasFilters && (
+//           <Button variant="ghost" size="sm" onClick={clearFilters} className="text-destructive">
+//             <X className="h-4 w-4 mr-2" /> Reset
+//           </Button>
+//         )}
+//         <KAMFilterDrawer
+//           trigger={<Button variant="outline" size="sm"><Filter className="h-4 w-4 mr-2" /> Filter</Button>}
+//           division={divisionFilter}
+//           setDivision={setDivisionFilter}
+//           kam={filterKam}
+//           setKam={setFilterKam}
+//           kams={teamKams}
+//           dateRange="monthly"
+//           setDateRange={() => {}}
+//           startMonth={filterMonthName}
+//           setStartMonth={setFilterMonthName}
+//           endMonth={filterMonthName}
+//           setEndMonth={setFilterMonthName}
+//           startYear={filterYear}
+//           setStartYear={setFilterYear}
+//           endYear={filterYear}
+//           setEndYear={setFilterYear}
+//           onFilterChange={() => {}}
+//         />
+//       </div>
+
+//       {/* TABLE */}
 //       <KAMPerformanceTable
 //         sales={filteredTargets}
-//         filteredKams={filteredKams}
+//         filteredKams={teamKams}
 //         dateRangeType="monthly"
 //         startMonth={filterMonthName}
 //         endMonth={filterMonthName}
@@ -199,12 +227,16 @@
 //         divisionFilter={divisionFilter}
 //       />
 
-//       {/* ---------------- SET TARGET MODAL ---------------- */}
+//       {/* MODAL */}
 //       <SetTargetModal
 //         open={isTargetModalOpen}
 //         onOpenChange={setIsTargetModalOpen}
+//         supervisors={supervisors.map(s => ({ ...s, id: String(s.id) }))}
+//         kams={kams.map(kam => ({ ...kam, id: String(kam.id) }))}
 //         selectedDivision={selectedDivision}
 //         setSelectedDivision={setSelectedDivision}
+//         selectedSupervisor={selectedSupervisor}
+//         setSelectedSupervisor={setSelectedSupervisor}
 //         selectedKam={selectedKam}
 //         setSelectedKam={setSelectedKam}
 //         targetAmount={targetAmount}
@@ -219,16 +251,25 @@
 //     </div>
 //   );
 // }
+
+
 // TargetsPage.tsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import SetTargetModal from '@/components/target/SetTargetModal';
-import { Crosshair, X, Table as TableIcon } from 'lucide-react';
-import { initialKAMs, formatCurrency } from '@/data/mockData';
+import { Crosshair, X, Filter } from 'lucide-react';
+import { formatCurrency } from '@/data/mockData';
 import { KAMPerformanceTable } from '@/components/tables/KAMPerformanceTable';
 import { KAMFilterDrawer } from '@/components/filters/KAMFilterDrawer';
+import toast, { Toaster } from 'react-hot-toast';
+
+import { SalesTargetAPI } from '@/api/salesTarget';
+import { KAMService } from '@/services/kam';
+import { SupervisorService } from '@/services/supervisor';
+import type { KAM } from '@/types/kam';
+import type { Supervisor } from '@/types/supervisor';
 
 const MONTHS_ARRAY = [
   'January','February','March','April','May','June',
@@ -238,10 +279,11 @@ const MONTHS_ARRAY = [
 export default function TargetsPage() {
   const { currentUser } = useAuth();
 
-  // ---------------- STATES ----------------
-  const [kams] = useState(initialKAMs);
-  const [targets, setTargets] = useState<any[]>([]); // your targets data
+  const [targets, setTargets] = useState<any[]>([]);
   const [isTargetModalOpen, setIsTargetModalOpen] = useState(false);
+  const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
+  const [kams, setKams] = useState<KAM[]>([]);
+  const [loading, setLoading] = useState(false);
 
   // Filters
   const [divisionFilter, setDivisionFilter] = useState('all');
@@ -259,98 +301,97 @@ export default function TargetsPage() {
     setFilterYear(new Date().getFullYear().toString());
   };
 
-  // ---------------- MEMOIZED LOGIC ----------------
-  const teamKams = useMemo(() => {
-    return kams.filter(k =>
-      k.reportingTo === currentUser?.name ||
-      currentUser?.role === 'boss' ||
-      currentUser?.role === 'super_admin'
-    );
-  }, [kams, currentUser]);
-
-  const filteredKams = useMemo(() => {
-    return teamKams.filter(k => filterKam === 'all' || k.id === filterKam);
-  }, [teamKams, filterKam]);
-
-  const filteredTargets = useMemo(() => {
-    return targets.filter(t => {
-      const matchesDivision = divisionFilter === 'all' || t.division === divisionFilter;
-      const matchesKam = filterKam === 'all' || t.kamId === filterKam;
-      const matchesMonthYear = t.month === `${filterMonthName} ${filterYear}`;
-      return matchesDivision && matchesKam && matchesMonthYear;
-    });
-  }, [targets, divisionFilter, filterKam, filterMonthName, filterYear]);
-
-  // ---------------- SUMMARY STATS ----------------
-  const summaryStats = useMemo(() => {
-    const totalTarget = filteredTargets.reduce((sum, t) => sum + t.revenueTarget, 0);
-    const totalAchieved = filteredTargets.reduce((sum, t) => sum + t.revenueAchieved, 0);
-    const progress = totalTarget ? Math.round((totalAchieved / totalTarget) * 100) : 0;
-    return { totalTarget, totalAchieved, progress };
-  }, [filteredTargets]);
-
-  // ---------------- MODAL STATE ----------------
+  // Modal state
   const [selectedDivision, setSelectedDivision] = useState('');
+  const [selectedSupervisor, setSelectedSupervisor] = useState('');
   const [selectedKam, setSelectedKam] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
   const [targetMonthName, setTargetMonthName] = useState(MONTHS_ARRAY[new Date().getMonth()]);
   const [targetYear, setTargetYear] = useState(new Date().getFullYear().toString());
-  const [isManagement, setIsManagement] = useState(false);
 
-  const handleSetTarget = () => {
-    if (!selectedDivision || !selectedKam || !targetAmount) return;
+  const isManagement = ['management', 'super_admin'].includes(currentUser?.role);
 
-    const monthYear = `${targetMonthName} ${targetYear}`;
-    const existingIndex = targets.findIndex(
-      t => t.kamId === selectedKam && t.month === monthYear
+  const teamKams = useMemo(() => {
+    return kams.filter(k =>
+      currentUser?.role === 'management' ||
+      currentUser?.role === 'super_admin' ||
+      k.reportingTo === currentUser?.name
     );
+  }, [kams, currentUser]);
 
-    const newTarget = {
-      kamId: selectedKam,
+  const filteredTargets = useMemo(() => {
+    return targets.filter(t =>
+      (divisionFilter === 'all' || t.division === divisionFilter) &&
+      (filterKam === 'all' || t.kamId === filterKam) &&
+      t.month === `${filterMonthName} ${filterYear}`
+    );
+  }, [targets, divisionFilter, filterKam, filterMonthName, filterYear]);
+
+  const summaryStats = useMemo(() => {
+    const totalTarget = filteredTargets.reduce((s, t) => s + t.revenueTarget, 0);
+    const totalAchieved = filteredTargets.reduce((s, t) => s + t.revenueAchieved, 0);
+    const progress = totalTarget ? Math.round((totalAchieved / totalTarget) * 100) : 0;
+    return { totalTarget, totalAchieved, progress };
+  }, [filteredTargets]);
+
+  useEffect(() => {
+    SupervisorService.getAll().then(setSupervisors);
+    KAMService.getAll().then(setKams);
+  }, []);
+
+  const handleSetTarget = async (formValues: any) => {
+    const { selectedDivision, selectedSupervisor, selectedKam, targetAmount, targetMonthName, targetYear } = formValues;
+
+    const monthIndex = MONTHS_ARRAY.indexOf(targetMonthName) + 1;
+    const targetMonth = `${targetYear}-${String(monthIndex).padStart(2, '0')}-01`;
+
+    let posted_by = 2; // default supervisor
+    if (currentUser.role === 'super_admin') posted_by = 0;
+    else if (currentUser.role === 'management') posted_by = 1;
+
+    const payload = {
+      target_month: targetMonth,
       division: selectedDivision,
-      month: monthYear,
-      revenueTarget: Number(targetAmount),
-      revenueAchieved: 0,
+      supervisor_id: Number(selectedSupervisor),
+      kam_id: Number(selectedKam),
+      amount: Number(targetAmount),
+      posted_by,
     };
 
-    let updatedTargets = [...targets];
-    if (existingIndex >= 0) {
-      updatedTargets[existingIndex] = newTarget;
-    } else {
-      updatedTargets.push(newTarget);
+    setLoading(true);
+    const toastId = toast.loading('Saving target...');
+    try {
+      await new Promise(res => setTimeout(res, 1000)); // 1s loader
+      const response = await SalesTargetAPI.create(payload);
+      setTargets(prev => [...prev, response]);
+      setIsTargetModalOpen(false);
+      toast.success('Target set successfully! 🎯', { id: toastId });
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to set target!', { id: toastId });
+    } finally {
+      setLoading(false);
     }
-    setTargets(updatedTargets);
-    setIsTargetModalOpen(false);
-
-    setSelectedDivision('');
-    setSelectedKam('');
-    setTargetAmount('');
-    setTargetMonthName(MONTHS_ARRAY[new Date().getMonth()]);
-    setTargetYear(new Date().getFullYear().toString());
   };
 
   return (
     <div className="page-container space-y-6">
-      {/* ---------------- HEADER ---------------- */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <Toaster position="top-right" reverseOrder={false} />
+
+      {/* HEADER */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Targets Management</h1>
+          <h1 className="text-2xl font-bold">Targets Management</h1>
           <p className="text-sm text-muted-foreground">
             Set and track revenue goals for {currentMonthLabel}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {/* Filters removed from here */}
-          <Button
-            onClick={() => setIsTargetModalOpen(true)}
-            className="gap-2 shadow-sm"
-          >
-            <Crosshair className="h-4 w-4" /> Set Target
-          </Button>
-        </div>
+        <Button onClick={() => setIsTargetModalOpen(true)} disabled={loading}>
+          <Crosshair className="h-4 w-4 mr-2" /> Set Target
+        </Button>
       </div>
 
-      {/* ---------------- SUMMARY CARDS ---------------- */}
+      {/* SUMMARY */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="overflow-hidden">
           <CardContent className="p-0">
@@ -387,49 +428,56 @@ export default function TargetsPage() {
         </Card>
       </div>
 
-      {/* ---------------- PERFORMANCE TABLE WITH INTEGRATED FILTERS ---------------- */}
-      <div className="space-y-4">
-        <div className="flex justify-end items-center gap-2">
-              {hasFilters && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearFilters}
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10 h-9"
-                >
-                  <X className="h-4 w-4 mr-2" /> Reset
-                </Button>
-              )}
-              <KAMFilterDrawer
-                division={divisionFilter} setDivision={setDivisionFilter}
-                kam={filterKam} setKam={setFilterKam} kams={teamKams}
-                dateRange="monthly" setDateRange={() => {}}
-                startMonth={filterMonthName} setStartMonth={setFilterMonthName}
-                endMonth={filterMonthName} setEndMonth={setFilterMonthName}
-                startYear={filterYear} setStartYear={setFilterYear}
-                endYear={filterYear} setEndYear={setFilterYear}
-                onFilterChange={() => {}}
-              />
-        </div>
-
-        <KAMPerformanceTable
-          sales={filteredTargets}
-          filteredKams={filteredKams}
-          dateRangeType="monthly"
+      {/* FILTER */}
+      <div className="flex justify-end items-center gap-2">
+        {hasFilters && (
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="text-destructive">
+            <X className="h-4 w-4 mr-2" /> Reset
+          </Button>
+        )}
+        <KAMFilterDrawer
+          trigger={<Button variant="outline" size="sm"><Filter className="h-4 w-4 mr-2" /> Filter</Button>}
+          division={divisionFilter}
+          setDivision={setDivisionFilter}
+          kam={filterKam}
+          setKam={setFilterKam}
+          kams={teamKams}
+          dateRange="monthly"
+          setDateRange={() => {}}
           startMonth={filterMonthName}
+          setStartMonth={setFilterMonthName}
           endMonth={filterMonthName}
+          setEndMonth={setFilterMonthName}
           startYear={filterYear}
+          setStartYear={setFilterYear}
           endYear={filterYear}
-          divisionFilter={divisionFilter}
+          setEndYear={setFilterYear}
+          onFilterChange={() => {}}
         />
       </div>
 
-      {/* ---------------- SET TARGET MODAL ---------------- */}
+      {/* TABLE */}
+      <KAMPerformanceTable
+        sales={filteredTargets}
+        filteredKams={teamKams}
+        dateRangeType="monthly"
+        startMonth={filterMonthName}
+        endMonth={filterMonthName}
+        startYear={filterYear}
+        endYear={filterYear}
+        divisionFilter={divisionFilter}
+      />
+
+      {/* MODAL */}
       <SetTargetModal
         open={isTargetModalOpen}
         onOpenChange={setIsTargetModalOpen}
+        supervisors={supervisors.map(s => ({ ...s, id: String(s.id) }))}
+        kams={kams.map(kam => ({ ...kam, id: String(kam.id) }))}
         selectedDivision={selectedDivision}
         setSelectedDivision={setSelectedDivision}
+        selectedSupervisor={selectedSupervisor}
+        setSelectedSupervisor={setSelectedSupervisor}
         selectedKam={selectedKam}
         setSelectedKam={setSelectedKam}
         targetAmount={targetAmount}

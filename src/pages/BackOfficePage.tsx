@@ -74,7 +74,7 @@ export default function BackOfficePage() {
 
   // Get back office user IDs (no helpdesk role exists anymore)
   const backOfficeUserIds = systemUsers
-    .filter(u => u.role === 'boss' || u.role === 'super_admin')
+    .filter(u => u.role === 'management' || u.role === 'super_admin')
     .map(u => u.id);
 
   // Pending leads: status is pending_review

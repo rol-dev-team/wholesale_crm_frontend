@@ -58,10 +58,10 @@ export default function SalesPage() {
   /* ---------------- ROLE BASED FILTERING ---------------- */
   const isAdminOrSupervisor =
     currentUser?.role === "supervisor" ||
-    currentUser?.role === "boss" ||
+    currentUser?.role === "management" ||
     currentUser?.role === "super_admin";
 
-  const isManagement = currentUser?.role === "boss" || currentUser?.role === "super_admin";
+  const isManagement = currentUser?.role === "management" || currentUser?.role === "super_admin";
 
   const myKam = kams.find((k) => k.userId === currentUser?.id);
 

@@ -1,5 +1,6 @@
+// src/data/mockData.ts
 // ============= User & Role Types =============
-export type UserRole = "kam" | "supervisor" | "boss" | "super_admin";
+export type UserRole = "kam" | "supervisor" | "management" | "super_admin";
 
 export interface SystemUser {
   id: string;
@@ -314,7 +315,7 @@ export const systemUsers: SystemUser[] = [
     division: "Khulna",
     zone: "North",
     reportingTo: "David Brown",
-    role: "boss",
+    role: "management",
   },
   {
     id: "user-7",

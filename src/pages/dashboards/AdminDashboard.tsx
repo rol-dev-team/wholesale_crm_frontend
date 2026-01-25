@@ -30,6 +30,8 @@ import { toast } from "@/hooks/use-toast";
 
 export default function AdminDashboard() {
   const { currentUser } = useAuth();
+  const storedUser = localStorage.getItem("user");
+  // const currentUser = storedUser ? JSON.parse(storedUser) : null;
 
   const [clients] = useState<Client[]>(initialClients);
   const [activities, setActivities] = useState<ActivityType[]>(initialActivities);

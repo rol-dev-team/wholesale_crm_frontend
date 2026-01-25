@@ -49,7 +49,7 @@ export function KAMModal({ open, onOpenChange, onSave, editingKAM }: KAMModalPro
 
   // Get supervisors and managers for reporting dropdown
   const reportingOptions = systemUsers.filter(
-    (user) => user.role === "supervisor" || user.role === "boss" || user.role === "super_admin"
+    (user) => user.role === "supervisor" || user.role === "management" || user.role === "super_admin"
   );
 
   useEffect(() => {

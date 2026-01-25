@@ -1,6 +1,9 @@
+
+// src/pages/SettingsPage.tsx
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { UserAPI } from "@/api/user";
 import {
   Tabs,
   TabsContent,
@@ -18,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Users, Group, Settings2, Edit2, Trash } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
-import { systemUsers as mockSystemUsers } from "@/data/mockData";
+
 
 import FloatingTeamForm, { TeamPayload, SelectOption } from "@/components/teams/createTeamForm";
 import { CreateGroupFormValues, CreateGroupForm } from "@/components/groups/CreateGroupForm";
@@ -27,6 +30,9 @@ import { CreateSystemUserForm, SystemUser } from "@/components/user/CreateSystem
 import { SystemUserList } from "@/components/user/SystemUserList";
 import { UserAccessForm as UserMappingForm, UserAccessFormValues as UserMappingValues } from "@/components/user/UserMapping";
 import { MappedList } from "@/components/user/MappedList";
+
+
+
 
 
 /* ================= PAGE ================= */
@@ -51,18 +57,86 @@ export default function SettingsPage() {
   const [systemUserList, setSystemUserList] = useState<SystemUser[]>([]);
   const [editingSystemUser, setEditingSystemUser] = useState<SystemUser | null>(null);
 
+
+  // useEffect(() => {
+  // const fetchUsers = async () => {
+  //   const res = await UserAPI.getUsers();
+  //   const mapped = res.data.data.map((u: any) => ({
+  //     id: u.id.toString(),
+  //     fullName: u.fullname,
+  //     userName: u.username,
+  //     email: u.email,
+  //     phone: u.phone || "",
+  //     role:
+  //       u.role === "admin"
+  //         ? "Admin"
+  //         : u.role === "supervisor"
+  //         ? "Supervisor"
+  //         : u.role === "kam"
+  //         ? "KAM"
+  //         : "Management",
+  //     status: u.status, // ✅ KEEP ENUM AS-IS
+  //     password: "",
+  //     kamId: u.default_kam_id ?? "",
+  //     supervisorIds: [],
+  //   }));
+
+  //   setSystemUserList(mapped);
+  // };
+const fetchUsers = async () => {
+  try {
+    const res = await UserAPI.getUsers();
+    console.log("UserAPI response:", res);
+
+    if (!res?.data || !Array.isArray(res.data)) {
+      console.warn("UserAPI returned no data or unexpected format");
+      setSystemUserList([]);
+      return;
+    }
+
+    const mapped: SystemUser[] = res.data.map((u: any) => ({
+      id: u.id.toString(),
+      fullName: u.fullname || "",
+      userName: u.username || "",
+      email: u.email || "",
+      phone: u.phone || "",
+      role:
+        u.role === "super_admin"
+          ? "Admin"
+          : u.role === "supervisor"
+          ? "Supervisor"
+          : u.role === "kam"
+          ? "KAM"
+          : "Management",
+      status: u.status ?? "active",
+      password: "",
+      kamId: u.default_kam_id ?? "",
+      supervisorIds: u.supervisor_ids ?? [],
+    }));
+
+    setSystemUserList(mapped);
+  } catch (err) {
+    console.error("Failed to fetch users:", err);
+    setSystemUserList([]);
+  }
+};
+
+
+  useEffect(() => {
+  fetchUsers();
+}, []);
   /* ---------------- USER MAPPING ---------------- */
   const [userMappings, setUserMappings] = useState<UserMappingValues[]>([]);
   const [editingUserMappingIndex, setEditingUserMappingIndex] = useState<number | null>(null);
 
   /* ---------------- OPTIONS ---------------- */
   const kamOptions: SelectOption[] = useMemo(
-    () => systemUserList.filter(u => u.role.toLowerCase() === "kam").map(u => ({ label: u.fullName, value: u.id })),
+    () => systemUserList.filter(u => u.role === "KAM").map(u => ({ label: u.fullName, value: u.id })),
     [systemUserList]
   );
 
   const supervisorOptions: SelectOption[] = useMemo(
-    () => systemUserList.filter(u => u.role.toLowerCase() === "supervisor").map(u => ({ label: u.fullName, value: u.id })),
+    () => systemUserList.filter(u => u.role === "Supervisor").map(u => ({ label: u.fullName, value: u.id })),
     [systemUserList]
   );
 
@@ -104,10 +178,13 @@ export default function SettingsPage() {
   );
 
   const userAccessKamOptions = useMemo(
-    () => systemUserList.filter(u => u.role.toLowerCase() === "kam").map(u => ({ label: u.fullName, value: u.id })),
+    () => systemUserList.filter(u => u.role === "KAM").map(u => ({ label: u.fullName, value: u.id })),
     [systemUserList]
   );
 
+
+
+  
   /* ---------------- USER MAPPING OPTIONS ---------------- */
   const userMappingGroupOptions = userAccessGroupOptions;
   const userMappingTeamOptions = userAccessTeamOptions;
@@ -178,6 +255,7 @@ export default function SettingsPage() {
       toast({ title: "User Created", description: "System user created successfully." });
     }
     setEditingSystemUser(null);
+    setActiveTab("systemUserList");
   };
 
   const handleEditSystemUser = (user: SystemUser) => {
@@ -190,8 +268,8 @@ export default function SettingsPage() {
     toast({ title: "User Deleted", description: "System user deleted successfully." });
   };
 
-  const handleToggleStatus = (id: string, active: boolean) => {
-    setSystemUserList(prev => prev.map(u => u.id === id ? { ...u, active } : u));
+  const handleToggleStatus = (id: string, status: "active" | "inactive") => {
+    setSystemUserList(prev => prev.map(u => u.id === id ? { ...u, status } : u));
   };
 
   // User Mapping
@@ -215,6 +293,8 @@ export default function SettingsPage() {
     setUserMappings(prev => prev.filter((_, idx) => idx !== index));
     toast({ title: "Mapping Deleted", description: "Mapping deleted successfully." });
   };
+
+
 
   /* ---------------- PAGE JSX ---------------- */
   return (
@@ -344,7 +424,6 @@ export default function SettingsPage() {
                       <td className="border p-2">{ua.kams.map(kId=>systemUserList.find(u=>u.id===kId)?.fullName).join(", ")}</td>
                       <td className="border p-2 flex gap-2">
                         <Button size="sm" variant="outline" onClick={()=>handleEditUserAccess(i)}><Edit2 className="h-4 w-4"/></Button>
-                        <Button size="sm" variant="destructive" onClick={()=>handleDeleteUserAccess(i)}><Trash className="h-4 w-4"/></Button>
                       </td>
                     </tr>
                   ))}
@@ -359,29 +438,37 @@ export default function SettingsPage() {
           <Card>
             <CardHeader><CardTitle>Create System User</CardTitle></CardHeader>
             <CardContent>
-              <CreateSystemUserForm
+             <CreateSystemUserForm
                 initialValues={editingSystemUser ?? undefined}
                 editingUserId={editingSystemUser?.id ?? null}
+                kamOptions={kamOptions}
+                supervisorOptions={supervisorOptions}
                 onSave={handleSaveSystemUser}
               />
+
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* SYSTEM USER LIST TAB */}
-        <TabsContent value="systemUserList">
+       <TabsContent
+          value="systemUserList"
+          className="overflow-visible data-[state=active]:animate-none data-[state=inactive]:hidden"
+        >
           <Card>
-            <CardHeader><CardTitle>System Users</CardTitle></CardHeader>
-            <CardContent>
+            <CardHeader>
+              <CardTitle>System Users</CardTitle>
+            </CardHeader>
+
+            <CardContent className="overflow-visible">
               <SystemUserList
                 users={systemUserList}
                 onEdit={handleEditSystemUser}
-                onDelete={handleDeleteSystemUser}
-                onToggleStatus={handleToggleStatus}
               />
             </CardContent>
           </Card>
         </TabsContent>
+
 
         {/* USER MAPPING TAB */}
                   <TabsContent value="userMapping">
@@ -407,7 +494,10 @@ export default function SettingsPage() {
                 <CardContent>
                   <MappedList
                     mappings={userMappings}
-                    systemUsers={systemUserList}
+                    systemUsers={systemUserList.map(u => ({
+                        id: u.id,
+                        name: u.fullName,
+                      }))}
                     groupOptions={userMappingGroupOptions.map(g => ({ id: g.id, label: g.label }))}
                     teamOptions={userMappingTeamOptions.map(t => ({ id: t.id, label: t.label }))}
                     onEdit={(mapping) => {

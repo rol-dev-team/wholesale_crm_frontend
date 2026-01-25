@@ -1,3 +1,4 @@
+// App.tsx
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -5,6 +6,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { ProtectedRoute } from "@/components/route/ProtectedRoute";
+import { GuestRoute } from "@/components/route/GuestRoute";
+
 import KAMPage from "./pages/KAMPage";
 import ActivitiesPage from "./pages/ActivitiesPage";
 import ClientsPage from "./pages/ClientsPage";
@@ -27,16 +31,32 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        }}>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route element={<MainLayout />}>
+            {/* Guest-only route: Login */}
+            <Route
+              path="/login"
+              element={
+                <GuestRoute>
+                  <Login />
+                </GuestRoute>
+              }
+            />
+
+            {/* Protected routes: All pages requiring login */}
+            <Route
+              element={
+                <ProtectedRoute>
+                  <MainLayout />
+                </ProtectedRoute>
+              }
+            >
+              {/* Dashboard redirect */}
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<DashboardRouter />} />
-              <Route path="/kam" element={<KAMPage />} />           
+
+              {/* Main app pages */}
+              <Route path="/kam" element={<KAMPage />} />
               <Route path="/kam-performance" element={<KAMPerformancePage />} />
               <Route path="/activities" element={<ActivitiesPage />} />
               <Route path="/clients" element={<ClientsPage />} />
@@ -46,6 +66,8 @@ const App = () => (
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/help" element={<PlaceholderPage title="Help" />} />
             </Route>
+
+            {/* 404 */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
@@ -54,29 +76,32 @@ const App = () => (
   </QueryClientProvider>
 );
 
+export default App;
+
+// --- Dashboard Router based on role ---
 function DashboardRouter() {
   const { currentUser } = useAuth();
-  
-  switch (currentUser?.role) {
-    case 'kam':
+
+  switch (currentUser?.role?.toLowerCase()) {
+    case "kam":
       return <KAMDashboard />;
-    case 'supervisor':
+    case "supervisor":
       return <SupervisorDashboard />;
-    case 'boss':
-    case 'super_admin':
+    case "management":
+    case "boss": // backend may send boss
+    case "super_admin":
       return <AdminDashboard />;
     default:
       return <KAMDashboard />;
   }
 }
 
+// --- Placeholder page for incomplete routes ---
 function PlaceholderPage({ title }: { title: string }) {
   return (
-    <div className="page-container">
-      <h1 className="page-title">{title}</h1>
-      <p className="text-muted-foreground">This page is coming soon.</p>
+    <div className="page-container p-8">
+      <h1 className="page-title text-2xl font-bold">{title}</h1>
+      <p className="text-muted-foreground mt-2">This page is coming soon.</p>
     </div>
   );
 }
-
-export default App;
