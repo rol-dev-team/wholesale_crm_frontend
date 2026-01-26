@@ -382,7 +382,7 @@ export const initialKAMs: KAM[] = [
 
 export const initialClients: Client[] = [
   {
-    id: "client-1",
+    id: 1,
     name: "Tech Corporation",
     businessEntities: ["Earth Telecommunication Ltd."],
     businessType: "Technology",
@@ -392,17 +392,17 @@ export const initialClients: Client[] = [
     address: "100 Tech Blvd, New York, NY 10001",
     division: "Dhaka",
     zone: "North",
-    assignedKamId: "kam-1",
-    createdBy: "kam-1",
+    assignedKamId: 1,
+    createdBy: 1,
     products: ["Enterprise Software License", "Cloud Platform Subscription"],
     latitude: 40.7128,
     longitude: -74.006,
     createdAt: "2024-01-01T10:00:00Z",
     updatedAt: "2024-01-01T10:00:00Z",
-    licensed: true, // licensed
+    licensed: true,
   },
   {
-    id: "client-2",
+    id: 2,
     name: "Global Systems Inc",
     businessEntities: ["Race Online Ltd.", "Orbit Internet"],
     businessType: "Software",
@@ -412,17 +412,17 @@ export const initialClients: Client[] = [
     address: "200 Global Ave, Los Angeles, CA 90001",
     division: "Chittagong",
     zone: "West",
-    assignedKamId: "kam-2",
-    createdBy: "kam-2",
+    assignedKamId: 2,
+    createdBy: 2,
     products: ["CRM System", "Security Suite", "Communication Tools"],
     latitude: 34.0522,
     longitude: -118.2437,
     createdAt: "2024-01-02T10:00:00Z",
     updatedAt: "2024-01-02T10:00:00Z",
-    licensed: false, // unlicensed
+    licensed: false,
   },
   {
-    id: "client-3",
+    id: 3,
     name: "StartupXYZ",
     businessEntities: ["Dhaka COLO"],
     businessType: "SaaS",
@@ -432,15 +432,15 @@ export const initialClients: Client[] = [
     address: "300 Innovation St, San Francisco, CA 94101",
     division: "Dhaka",
     zone: "West",
-    assignedKamId: "kam-1",
-    createdBy: "kam-1",
+    assignedKamId: 1,
+    createdBy: 1,
     products: ["Data Analytics Suite", "Project Management"],
     createdAt: "2024-01-05T10:00:00Z",
     updatedAt: "2024-01-05T10:00:00Z",
-    licensed: false, // unlicensed
+    licensed: false,
   },
   {
-    id: "client-4",
+    id: 4,
     name: "EduTech Academy",
     businessEntities: ["Orbit Internet"],
     businessType: "Education",
@@ -450,15 +450,15 @@ export const initialClients: Client[] = [
     address: "400 Learning St, Austin, TX 73301",
     division: "Sylhet",
     zone: "South",
-    assignedKamId: "kam-2",
-    createdBy: "kam-2",
+    assignedKamId: 2,
+    createdBy: 2,
     products: ["Learning Management Platform"],
     createdAt: "2024-01-06T10:00:00Z",
     updatedAt: "2024-01-06T10:00:00Z",
-    licensed: false, // unlicensed
+    licensed: false,
   },
   {
-    id: "client-5",
+    id: 5,
     name: "FreshFoods Co",
     businessEntities: ["Dhaka COLO"],
     businessType: "Retail",
@@ -468,14 +468,15 @@ export const initialClients: Client[] = [
     address: "500 Supply St, Phoenix, AZ 85001",
     division: "Barishal",
     zone: "Central",
-    assignedKamId: "kam-1",
-    createdBy: "kam-1",
+    assignedKamId: 1,
+    createdBy: 1,
     products: ["Supply Chain Management Suite"],
     createdAt: "2024-01-07T10:00:00Z",
     updatedAt: "2024-01-07T10:00:00Z",
-    licensed: false, // unlicensed
+    licensed: false,
   },
 ];
+
 
 export const getClientsByLicense = (clients: Client[], licensed: boolean): Client[] => {
   return clients.filter(client => client.licensed === licensed);

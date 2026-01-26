@@ -1,7 +1,8 @@
-import { Outlet } from "react-router-dom";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "./AppSidebar";
-import { RoleSwitcher } from "./RoleSwitcher";
+// src/components/layout/MainLayout.tsx
+import { Outlet } from 'react-router-dom';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { AppSidebar } from './AppSidebar';
+import { RoleSwitcher } from './RoleSwitcher';
 
 export function MainLayout() {
   return (

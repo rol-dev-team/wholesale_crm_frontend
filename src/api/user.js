@@ -1,3 +1,4 @@
+// user.js
 import api from './axiosInstance';
 
 export const UserAPI = {

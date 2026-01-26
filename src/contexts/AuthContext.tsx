@@ -1,15 +1,9 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
-import { SystemUser, UserRole, systemUsers } from '@/data/mockData';
+// AuthContext.tsx
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+// import { SystemUser, UserRole, systemUsers } from '@/data/mockData';
+import { SystemUser, UserRole } from '@/data/mockData';
 
-interface AuthContextType {
-  currentUser: SystemUser | null;
-  login: (userId: string) => void;
-  logout: () => void;
-  switchRole: (role: UserRole) => void;
-  hasPermission: (permission: Permission) => boolean;
-}
-
-export type Permission = 
+export type Permission =
   | 'view_own_leads'
   | 'view_team_leads'
   | 'view_all_leads'
@@ -39,6 +33,15 @@ export type Permission =
   | 'set_targets'
   | 'view_back_office_queue';
 
+interface AuthContextType {
+  currentUser: SystemUser | null;
+  // login: (userId: string) => void;
+  login: (user: SystemUser) => void;
+  logout: () => void;
+  switchRole: (role: UserRole) => void;
+  hasPermission: (permission: Permission) => boolean;
+}
+
 const rolePermissions: Record<UserRole, Permission[]> = {
   kam: [
     'view_own_leads',
@@ -64,12 +67,7 @@ const rolePermissions: Record<UserRole, Permission[]> = {
     'create_client',
     'view_reports',
   ],
-  boss: [
-    'view_all_leads',
-    'view_all_activities',
-    'view_all_kpis',
-    'view_reports',
-  ],
+  management: ['view_all_leads', 'view_all_activities', 'view_all_kpis', 'view_reports'],
   super_admin: [
     'view_own_leads',
     'view_team_leads',
@@ -105,30 +103,34 @@ const rolePermissions: Record<UserRole, Permission[]> = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Default to super_admin for demo purposes
-  const [currentUser, setCurrentUser] = useState<SystemUser | null>(
-    systemUsers.find(u => u.role === 'super_admin') || null
-  );
+  const [currentUser, setCurrentUser] = useState<SystemUser | null>(null);
 
-  const login = (userId: string) => {
-    const user = systemUsers.find(u => u.id === userId);
-    if (user) {
-      setCurrentUser(user);
-    }
+  // Load user from localStorage on mount
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) setCurrentUser(JSON.parse(storedUser));
+  }, []);
+
+  const login = (user: SystemUser) => {
+    setCurrentUser(user);
+    localStorage.setItem('user', JSON.stringify(user));
   };
 
   const logout = () => {
     setCurrentUser(null);
+    localStorage.removeItem('user');
+    localStorage.removeItem('access_token');
   };
 
   const switchRole = (role: UserRole) => {
-    const user = systemUsers.find(u => u.role === role);
+    const user = systemUsers.find((u) => u.role === role);
     if (user) {
       setCurrentUser(user);
+      localStorage.setItem('user', JSON.stringify(user));
     }
   };
 
-  const hasPermission = (permission: Permission): boolean => {
+  const hasPermission = (permission: Permission) => {
     if (!currentUser) return false;
     return rolePermissions[currentUser.role]?.includes(permission) || false;
   };
@@ -142,8 +144,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 }
