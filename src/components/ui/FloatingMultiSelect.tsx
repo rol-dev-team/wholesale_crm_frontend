@@ -72,30 +72,27 @@ export function FloatingMultiSelect({
               "focus:ring-1 focus:ring-primary"
             )}
           >
-            {hasValue ? (
-              selectedOptions.map((opt) => (
-                <span
-                  key={opt.value}
-                  className="flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs"
-                >
-                  {opt.label}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeChip(opt.value);
-                    }}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <X size={12} />
-                  </button>
-                </span>
-              ))
-            ) : (
-              <span className="text-muted-foreground">
-                {placeholder}
-              </span>
-            )}
+           {hasValue ? (
+  selectedOptions.map((opt) => (
+    <span
+      key={opt.value}
+      className="flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs"
+    >
+      {opt.label}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          removeChip(opt.value);
+        }}
+        className="text-muted-foreground hover:text-foreground"
+      >
+        <X size={12} />
+      </button>
+    </span>
+  ))
+) : null /* <-- no placeholder text */}
+
           </div>
         </PopoverTrigger>
 

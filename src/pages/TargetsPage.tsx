@@ -24,7 +24,7 @@ const MONTHS_ARRAY = [
 
 export default function TargetsPage() {
   const { currentUser } = useAuth();
-  console.log('Current User in TargetsPage:', currentUser);
+  // console.log('Current User in TargetsPage:', currentUser);
 
   const [targets, setTargets] = useState<any[]>([]);
   const [isTargetModalOpen, setIsTargetModalOpen] = useState(false);
