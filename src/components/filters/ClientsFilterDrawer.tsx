@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { X, Filter, RotateCcw } from "lucide-react";
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { X, Filter, RotateCcw } from 'lucide-react';
 import {
   Drawer,
   DrawerContent,
@@ -11,9 +11,9 @@ import {
   DrawerFooter,
   DrawerTitle,
   DrawerClose,
-} from "@/components/ui/drawer";
-import { FloatingSelect } from "@/components/ui/FloatingSelect";
-import { SelectItem } from "@/components/ui/select";
+} from '@/components/ui/drawer';
+import { FloatingSelect } from '@/components/ui/FloatingSelect';
+import { SelectItem } from '@/components/ui/select';
 
 interface Kam {
   id: string;
@@ -75,23 +75,22 @@ export default function ClientsFilterDrawer({
 
   // Clear filters (local + parent)
   const handleClear = () => {
-    setClientLocal("all");
-    setDivisionLocal("all");
-    setKamLocal("all");
+    setClientLocal('all');
+    setDivisionLocal('all');
+    setKamLocal('all');
 
-    setClient("all");
-    setDivision("all");
-    setKam("all");
+    setClient('all');
+    setDivision('all');
+    setKam('all');
 
     onClear();
   };
 
   // ✅ Show placeholder by default
-  const getDisplayValue = (val: string) => (val === "all" ? "" : val);
+  const getDisplayValue = (val: string) => (val === 'all' ? '' : val);
 
   // Compute local active filters for showing Clear button
-  const hasLocalFilters =
-    clientLocal !== "all" || divisionLocal !== "all" || kamLocal !== "all";
+  const hasLocalFilters = clientLocal !== 'all' || divisionLocal !== 'all' || kamLocal !== 'all';
 
   return (
     <>
@@ -165,8 +164,8 @@ export default function ClientsFilterDrawer({
 
             {/* Clear Filters */}
             {hasLocalFilters && (
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 className="w-full text-destructive hover:text-destructive flex gap-2 py-4"
                 onClick={handleClear}
               >

@@ -1,4 +1,6 @@
-import { useState } from 'react';
+'use client';
+
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -10,52 +12,68 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Building2,
-  Search,
-  MapPin,
-} from 'lucide-react';
-import {
-  initialClients,
-  initialKAMs,
-  divisions,
-  type Client,
-} from '@/data/mockData';
+import { Building2, Search, MapPin } from 'lucide-react';
 import ClientsFilterDrawer from '@/components/filters/ClientsFilterDrawer';
+import { ClientAPI } from '@/api/clientApi';
+import { divisions, initialKAMs } from '@/data/mockData';
+
+/* ---------- CLIENT TYPE (MATCH BACKEND) ---------- */
+interface Client {
+  id: string;
+  name: string;
+  contact: string;
+  phone?: string;
+  division: string;
+  zone: string;
+  businessType: string;
+  assignedKamId: string;
+}
 
 export default function ClientsPage() {
-  const [clients, setClients] = useState<Client[]>(initialClients);
+  const [clients, setClients] = useState<Client[]>([]);
   const [kams] = useState(initialKAMs);
   const [searchQuery, setSearchQuery] = useState('');
 
   // === FILTER STATES ===
-  const [filterClient, setFilterClient] = useState<string>('all');
-  const [filterDivision, setFilterDivision] = useState<string>('all');
-  const [filterKam, setFilterKam] = useState<string>('all');
+  const [filterClient, setFilterClient] = useState('all');
+  const [filterDivision, setFilterDivision] = useState('all');
+  const [filterKam, setFilterKam] = useState('all');
+
+  /* ---------- FETCH CLIENTS FROM BACKEND ---------- */
+  useEffect(() => {
+    ClientAPI.getClients().then((res) => {
+      const mappedClients: Client[] = res.data.map((c: any, index: number) => ({
+        id: String(index + 1),
+        name: c.full_name,
+        contact: c.full_name,
+        phone: c.mobile,
+        division: c.division,
+        zone: c.zone,
+        businessType: 'Customer',
+        assignedKamId: c.assigned_kam,
+      }));
+
+      setClients(mappedClients);
+    });
+  }, []);
 
   // === FILTER LOGIC ===
-  const filteredClients = clients.filter(client => {
+  const filteredClients = clients.filter((client) => {
     const matchesSearch =
       client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.contact.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.businessType.toLowerCase().includes(searchQuery.toLowerCase());
+      client.contact.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesClient =
-      filterClient === 'all' || client.id === filterClient;
+    const matchesClient = filterClient === 'all' || client.id === filterClient;
 
-    const matchesDivision =
-      filterDivision === 'all' || client.division === filterDivision;
+    const matchesDivision = filterDivision === 'all' || client.division === filterDivision;
 
-    const matchesKam =
-      filterKam === 'all' || client.assignedKamId === filterKam;
+    const matchesKam = filterKam === 'all' || client.assignedKamId === filterKam;
 
     return matchesSearch && matchesClient && matchesDivision && matchesKam;
   });
 
   const hasActiveFilters =
-    filterClient !== 'all' ||
-    filterDivision !== 'all' ||
-    filterKam !== 'all';
+    filterClient !== 'all' || filterDivision !== 'all' || filterKam !== 'all';
 
   const clearFilters = () => {
     setFilterClient('all');
@@ -75,57 +93,29 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      {/* ===== IMPROVED TWO CARDS ===== */}
+      {/* CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Total Number of Clients */}
-        <Card className="overflow-hidden">
-          <CardContent className="p-0">
-            <div className="p-4 pb-3 flex items-center gap-3">
-              {/* Icon Container with Gradient Background */}
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-500/5">
-                <Building2 className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Clients</p>
-                <p className="text-2xl font-bold">{clients.length}</p>
-              </div>
-            </div>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-sm text-muted-foreground">Total Clients</p>
+            <p className="text-2xl font-bold">{clients.length}</p>
           </CardContent>
         </Card>
 
-        {/* Division Count Card */}
-        <Card className="overflow-hidden">
-          <CardContent className="p-0">
-            <div className="p-4 pb-3 flex items-center gap-3">
-              {/* Icon Container with Gradient Background */}
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-indigo-500/20 to-indigo-500/5">
-                <MapPin className="h-5 w-5 text-indigo-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Divisions</p>
-                <p className="text-2xl font-bold">{divisions.length}</p>
-              </div>
-            </div>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-sm text-muted-foreground">Total Divisions</p>
+            <p className="text-2xl font-bold">{divisions.length}</p>
           </CardContent>
         </Card>
 
-        {/* KAM Count Card */}
-        <Card className="overflow-hidden">
-          <CardContent className="p-0">
-            <div className="p-4 pb-3 flex items-center gap-3">
-              {/* Icon Container with Gradient Background */}
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-indigo-500/20 to-indigo-500/5">
-                <MapPin className="h-5 w-5 text-indigo-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total KAM</p>
-                <p className="text-2xl font-bold">{kams.length}</p>
-              </div>
-            </div>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-sm text-muted-foreground">Total KAM</p>
+            <p className="text-2xl font-bold">{kams.length}</p>
           </CardContent>
         </Card>
       </div>
-      {/* ===== END CARDS ===== */}
 
       {/* SEARCH + FILTER */}
       <div className="flex gap-2">
@@ -139,7 +129,6 @@ export default function ClientsPage() {
           />
         </div>
 
-        {/* FILTER DRAWER */}
         <ClientsFilterDrawer
           currentClient={filterClient}
           setClient={setFilterClient}
@@ -147,67 +136,53 @@ export default function ClientsPage() {
           setDivision={setFilterDivision}
           currentKam={filterKam}
           setKam={setFilterKam}
-          clients={clients}
+          clients={clients.map((c) => ({ id: c.id, name: c.name }))}
           divisions={divisions}
-          kams={initialKAMs}
+          kams={kams}
           hasActiveFilters={hasActiveFilters}
           onApply={() => {}}
           onClear={clearFilters}
         />
       </div>
 
-      {/* CLIENT LIST TABLE */}
+      {/* TABLE */}
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader>
           <CardTitle>Client List</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="hidden md:block rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Division</TableHead>
-                  <TableHead>Zone</TableHead>
-                  <TableHead>Assigned KAM</TableHead>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Client</TableHead>
+                <TableHead>Contact</TableHead>
+                <TableHead>Division</TableHead>
+                <TableHead>Zone</TableHead>
+                <TableHead>Assigned KAM</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredClients.map((client) => (
+                <TableRow key={client.id}>
+                  <TableCell>
+                    <p className="font-medium">{client.name}</p>
+                    <p className="text-sm text-muted-foreground">{client.businessType}</p>
+                  </TableCell>
+                  <TableCell>
+                    <p>{client.contact}</p>
+                    <p className="text-sm text-muted-foreground">{client.phone || '-'}</p>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{client.division}</Badge>
+                  </TableCell>
+                  <TableCell>{client.zone}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{client.assignedKamId}</Badge>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredClients.map(client => {
-                  const kam = kams.find(k => k.id === client.assignedKamId);
-
-                  return (
-                    <TableRow key={client.id}>
-                      <TableCell>
-                        <p className="font-medium">{client.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {client.businessType}
-                        </p>
-                      </TableCell>
-                      <TableCell>
-                        <p>{client.contact}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {client.phone || '-'}
-                        </p>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{client.division}</Badge>
-                      </TableCell>
-                      <TableCell>{client.zone}</TableCell>
-                      <TableCell>
-                        {kam ? (
-                          <Badge variant="outline">{kam.name}</Badge>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>
