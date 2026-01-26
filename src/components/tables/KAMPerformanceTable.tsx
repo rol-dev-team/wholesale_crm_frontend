@@ -286,8 +286,6 @@
 //   );
 // };
 
-
-
 // src/components/tables/KAMPerformanceTable.tsx
 'use client';
 
@@ -371,18 +369,18 @@ export const KAMPerformanceTable: React.FC<Props> = ({
       }
 
       // Accumulate data from backend
-      kamMap[kamName].periodData[periodKey].clientCount +=
-        Number(row.total_client_count || 0);
-      kamMap[kamName].periodData[periodKey].achieved +=
-        Number(row.total_voucher_amount || 0);
-      kamMap[kamName].periodData[periodKey].selfAchieved +=
-        Number(row.self_client_voucher_amount || 0);
-      kamMap[kamName].periodData[periodKey].transferredAchieved +=
-        Number(row.transferred_client_voucher_amount || 0);
-      kamMap[kamName].periodData[periodKey].transferredUpDown +=
-        Number(row.transfer_up_down_voucher || 0);
-      kamMap[kamName].periodData[periodKey].targetAmount +=
-        Number(row.target_amount || 0);
+      kamMap[kamName].periodData[periodKey].clientCount += Number(row.total_client_count || 0);
+      kamMap[kamName].periodData[periodKey].achieved += Number(row.total_voucher_amount || 0);
+      kamMap[kamName].periodData[periodKey].selfAchieved += Number(
+        row.self_client_voucher_amount || 0
+      );
+      kamMap[kamName].periodData[periodKey].transferredAchieved += Number(
+        row.transferred_client_voucher_amount || 0
+      );
+      kamMap[kamName].periodData[periodKey].transferredUpDown += Number(
+        row.transfer_up_down_voucher || 0
+      );
+      kamMap[kamName].periodData[periodKey].targetAmount += Number(row.target_amount || 0);
     });
 
     // Convert to array with ordered periods
@@ -429,9 +427,7 @@ export const KAMPerformanceTable: React.FC<Props> = ({
   if (loading) {
     return (
       <Card className="shadow-sm border-muted/60">
-        <CardContent className="p-6 text-center text-muted-foreground">
-          Loading data...
-        </CardContent>
+        <CardContent className="p-6 text-center text-muted-foreground">Loading data...</CardContent>
       </Card>
     );
   }
@@ -550,9 +546,7 @@ export const KAMPerformanceTable: React.FC<Props> = ({
                       </TableCell>
                       <TableCell
                         className={`text-center border-r border-b font-semibold text-sm ${
-                          stat.upDown >= 0
-                            ? 'text-emerald-600'
-                            : 'text-red-600'
+                          stat.upDown >= 0 ? 'text-emerald-600' : 'text-red-600'
                         }`}
                       >
                         {formatCurrency(stat.transferredUpDown)}

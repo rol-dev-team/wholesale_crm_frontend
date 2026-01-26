@@ -361,9 +361,6 @@
 //   );
 // }
 
-
-
-
 // "use client";
 
 // import React, { useState, useEffect, useMemo } from 'react';
@@ -738,10 +735,6 @@
 //   );
 // }
 
-
-
-
-
 // "use client";
 
 // import React, { useState, useEffect, useMemo } from 'react';
@@ -1114,11 +1107,7 @@
 //   );
 // }
 
-
-
-
-
-"use client";
+'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -1137,11 +1126,21 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { KamPerformanceApi } from "@/api/kamPerformanceApi";
+import { KamPerformanceApi } from '@/api/kamPerformanceApi';
 
 const MONTHS_ARRAY = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 interface KAM {
@@ -1175,7 +1174,8 @@ export default function KAMPerformancePage() {
   const [startYear, setStartYear] = useState(defaultYear);
   const [endYear, setEndYear] = useState(defaultYear);
 
-  const hasFilters = divisionFilter !== 'all' || kamFilter !== 'all' || clientTypeFilter !== 'All Client';
+  const hasFilters =
+    divisionFilter !== 'all' || kamFilter !== 'all' || clientTypeFilter !== 'All Client';
 
   const clearFilters = () => {
     setDivisionFilter('all');
@@ -1244,10 +1244,10 @@ export default function KAMPerformancePage() {
     const periods: any[] = [];
 
     if (dateRangeType === 'monthly') {
-      let sYear = parseInt(startYear);
-      let eYear = parseInt(endYear);
-      let sMonth = MONTHS_ARRAY.indexOf(startMonth);
-      let eMonth = MONTHS_ARRAY.indexOf(endMonth);
+      const sYear = parseInt(startYear);
+      const eYear = parseInt(endYear);
+      const sMonth = MONTHS_ARRAY.indexOf(startMonth);
+      const eMonth = MONTHS_ARRAY.indexOf(endMonth);
 
       let year = sYear;
       let month = sMonth;
@@ -1319,7 +1319,7 @@ export default function KAMPerformancePage() {
 
   // Generate label for top performers
   const topPerformerRangeLabel = useMemo(() => {
-    if (dateRangeType === "monthly") {
+    if (dateRangeType === 'monthly') {
       if (startMonth === endMonth && startYear === endYear) {
         return `${startMonth} ${startYear}`;
       }
@@ -1473,9 +1473,7 @@ export default function KAMPerformancePage() {
                         ? 'bg-primary/5 border-primary/40 ring-1 ring-primary/20'
                         : 'hover:bg-muted/50 border-transparent'
                     }`}
-                    onClick={() =>
-                      setSelectedKamId(selectedKamId === kam.name ? null : kam.name)
-                    }
+                    onClick={() => setSelectedKamId(selectedKamId === kam.name ? null : kam.name)}
                   >
                     <div className="flex items-center gap-3">
                       <div
@@ -1489,16 +1487,12 @@ export default function KAMPerformancePage() {
                       </div>
 
                       <div className="truncate">
-                        <p className="text-sm font-semibold text-slate-800 truncate">
-                          {kam.name}
-                        </p>
+                        <p className="text-sm font-semibold text-slate-800 truncate">{kam.name}</p>
                       </div>
                     </div>
 
                     <div className="text-right shrink-0 ml-2">
-                      <p className="text-sm font-bold text-primary">
-                        {formatCurrency(kam.total)}
-                      </p>
+                      <p className="text-sm font-bold text-primary">{formatCurrency(kam.total)}</p>
                     </div>
                   </div>
                 ))}

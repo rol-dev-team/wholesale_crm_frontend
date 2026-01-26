@@ -18,4 +18,6 @@ export const TaskAPI = {
   deleteTask: (id) => api.delete(`/tasks/${id}`),
 
   getSummary: (kamId) => api.get(`/tasks/summary/${kamId}`),
+
+  addNote: (payload) => api.post('/tasks/notes', payload),
 };

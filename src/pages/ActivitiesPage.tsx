@@ -3,6 +3,8 @@ import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ActivityModal } from '@/components/activities/ActivityModal';
+import { ActivityNotesModal } from '@/components/activities/ActivityNotesModal';
+import { ActivityDetailsSheet } from '@/components/activities/ActivityDetailsSheet';
 import { FilterDrawer } from '@/components/filters/ActivityFilterDrawer';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -21,6 +23,7 @@ import { AppPagination } from '@/components/common/AppPagination';
 import { ActivityTypeAPI, TaskAPI } from '@/api';
 import { PrismAPI } from '@/api';
 import { getUserInfo } from '@/utility/utility';
+import { set } from 'date-fns';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -33,6 +36,9 @@ export default function ActivitiesPage() {
   >([]);
 
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [noteActivity, setNoteActivity] = useState<Activity | null>(null);
+  const [viewingActivity, setViewingActivity] = useState<Activity | null>(null);
+
   const [activitySummary, setActivitySummary] = useState<any>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -272,6 +278,29 @@ export default function ActivitiesPage() {
     },
   ];
 
+  const handleAddNote = async (note: { content: string }) => {
+    if (!noteActivity) return;
+
+    const payload = {
+      task_id: noteActivity.id,
+      note: note.content,
+    };
+
+    try {
+      await TaskAPI.addNote(payload);
+
+      toast({ title: 'Note added successfully' });
+
+      setNoteActivity(null);
+      fetchTasks(currentPage);
+    } catch (error) {
+      toast({
+        title: 'Failed to add note',
+        variant: 'destructive',
+      });
+    }
+  };
+
   console.log('dddddd', activities);
   console.log('kamOptions', kamOptions);
   console.log(getUserInfo()?.id);
@@ -423,14 +452,16 @@ export default function ActivitiesPage() {
         }}
         onComplete={(id, outcome) => {}}
         onAddActivity={() => setIsModalOpen(true)}
+        onViewActivity={(activity) => {
+          setViewingActivity(activity);
+        }}
+        onAddNote={(activity) => {
+          setNoteActivity(activity); // ✅ THIS opens modal
+        }}
+        showClientInfo
       />
 
       {/* PAGINATION */}
-      {/* <AppPagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-      /> */}
 
       <AppPagination
         currentPage={currentPage}
@@ -474,6 +505,18 @@ export default function ActivitiesPage() {
         clients={clients}
         activityTypes={activityTypeOptions}
         userId={getUserInfo()?.id}
+      />
+
+      <ActivityDetailsSheet
+        open={!!viewingActivity}
+        onClose={() => setViewingActivity(null)}
+        activity={viewingActivity}
+      />
+
+      <ActivityNotesModal
+        open={!!noteActivity}
+        onClose={() => setNoteActivity(null)}
+        onSave={handleAddNote}
       />
     </div>
   );

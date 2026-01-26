@@ -88,9 +88,8 @@ export function ActivityList({
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [requireMessageForComplete, setRequireMessageForComplete] = useState(false);
 
-  console.log('Activities:', activities);
   const now = new Date();
-
+  console.log('activitylist---', activities);
   if (activities.length === 0) {
     return (
       <Card>
@@ -157,12 +156,11 @@ export function ActivityList({
                       <p className="font-medium flex items-center gap-2">
                         {activity.title}
                         {isCompleted && <CheckCircle className="h-4 w-4 text-success" />}
-                        {/* {notesCount > 0 && (
-                          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                            <MessageSquare className="h-3 w-3" />
-                            {notesCount}
-                          </span>
-                        )} */}
+
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          <MessageSquare className="h-3 w-3" />
+                          {activity.notes_count}
+                        </span>
                       </p>
                       <p className="text-sm text-muted-foreground line-clamp-1">
                         {activity.description}
