@@ -562,8 +562,8 @@ export default function SettingsPage() {
               <CreateSystemUserForm
                 initialValues={editingSystemUser ?? undefined}
                 editingUserId={editingSystemUser?.id ?? null}
-                kamOptions={kamOptions}
-                supervisorOptions={supervisorOptions}
+                // kamOptions={kamOptions}
+                // supervisorOptions={supervisorOptions}
                 onSave={handleSaveSystemUser}
               />
             </CardContent>

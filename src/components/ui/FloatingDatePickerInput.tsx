@@ -24,7 +24,7 @@ export const FloatingDatePickerInput = forwardRef<HTMLButtonElement, FloatingDat
           variant="outline"
           className={cn(
             // Matching FloatingInput: h-11, specific padding, and background
-            'peer h-11 w-full rounded-md border border-input bg-background px-4 pt-3 pb-1 text-sm leading-5 focus:border-primary focus:ring-0 focus:outline-none',
+            'peer h-11 w-full justify-start rounded-md border border-input bg-background px-4 pt-3 pb-1 text-sm leading-5 focus:border-primary focus:ring-0 focus:outline-none',
             hasValue ? 'border-primary' : '',
             error ? 'border-red-500' : ''
           )}
