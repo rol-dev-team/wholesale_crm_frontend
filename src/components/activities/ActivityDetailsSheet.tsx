@@ -259,7 +259,7 @@ export function ActivityDetailsSheet({ open, onClose, activity }: ActivityDetail
         <SheetHeader className="pb-4 border-b">
           <SheetTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5 text-primary" />
-            Activity Details
+            Task Details
           </SheetTitle>
         </SheetHeader>
 

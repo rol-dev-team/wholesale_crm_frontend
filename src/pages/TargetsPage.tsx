@@ -1,6 +1,5 @@
-// TargetsPage.tsx
+// src/pages/TargetsPage.tsx
 import React, { useState, useMemo, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import SetTargetModal from '@/components/target/SetTargetModal';
@@ -15,6 +14,8 @@ import { KAMService } from '@/services/kam';
 import { SupervisorService } from '@/services/supervisor';
 import type { KAM } from '@/types/kam';
 import type { Supervisor } from '@/types/supervisor';
+// Authenticated user context
+import { useAuth } from '@/contexts/AuthContext';
 
 const MONTHS_ARRAY = [
   'January',
@@ -33,6 +34,7 @@ const MONTHS_ARRAY = [
 
 export default function TargetsPage() {
   const { currentUser } = useAuth();
+  // console.log('Current User in TargetsPage:', currentUser);
 
   const [targets, setTargets] = useState<any[]>([]);
   const [isTargetModalOpen, setIsTargetModalOpen] = useState(false);
@@ -57,7 +59,9 @@ export default function TargetsPage() {
   };
 
   // Modal state
-  const [selectedDivision, setSelectedDivision] = useState('');
+  // const [selectedDivision, setSelectedDivision] = useState('');
+  const [selectedDivisionId, setSelectedDivisionId] = useState('');
+  const [selectedDivisionName, setSelectedDivisionName] = useState('');
   const [selectedSupervisor, setSelectedSupervisor] = useState('');
   const [selectedKam, setSelectedKam] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
@@ -96,41 +100,37 @@ export default function TargetsPage() {
     KAMService.getAll().then(setKams);
   }, []);
 
-  const handleSetTarget = async (formValues: any) => {
-    const {
-      selectedDivision,
-      selectedSupervisor,
-      selectedKam,
-      targetAmount,
-      targetMonthName,
-      targetYear,
-    } = formValues;
+  const handleSetTarget = async () => {
+    if (!selectedDivisionId || !selectedSupervisor || !selectedKam || !targetAmount) {
+      toast.error('Please fill all fields!');
+      return;
+    }
 
     const monthIndex = MONTHS_ARRAY.indexOf(targetMonthName) + 1;
     const targetMonth = `${targetYear}-${String(monthIndex).padStart(2, '0')}-01`;
 
-    let posted_by = 2; // default supervisor
+    let posted_by = 2;
     if (currentUser.role === 'super_admin') posted_by = 0;
     else if (currentUser.role === 'management') posted_by = 1;
 
     const payload = {
       target_month: targetMonth,
-      division: selectedDivision,
+      division: selectedDivisionName, // ✅ NAME save হবে
+      division_id: Number(selectedDivisionId), // (optional কিন্তু ভালো)
       supervisor_id: Number(selectedSupervisor),
       kam_id: Number(selectedKam),
       amount: Number(targetAmount),
-      posted_by,
+      posted_by: Number(currentUser?.id),
     };
 
     setLoading(true);
     const toastId = toast.loading('Saving target...');
     try {
-      await new Promise((res) => setTimeout(res, 1000)); // 1s loader
       const response = await SalesTargetAPI.create(payload);
       setTargets((prev) => [...prev, response]);
       setIsTargetModalOpen(false);
       toast.success('Target set successfully! 🎯', { id: toastId });
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
       toast.error('Failed to set target!', { id: toastId });
     } finally {
@@ -164,7 +164,9 @@ export default function TargetsPage() {
                 <Crosshair className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Total Revenue Target</p>
+                <p className="text-sm text-muted-foreground">
+                  Total Revenue Target <span className="text-xs text-blue-600"> (This Month)</span>
+                </p>
                 <p className="text-2xl font-bold mt-1">
                   {formatCurrency(summaryStats.totalTarget)}
                 </p>
@@ -183,7 +185,9 @@ export default function TargetsPage() {
                 <Crosshair className="h-5 w-5 text-emerald-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Total Achieved</p>
+                <p className="text-sm text-muted-foreground">
+                  Total Achieved <span className="text-xs text-blue-600"> (This Month)</span>
+                </p>
                 <p className="text-2xl font-bold mt-1 text-emerald-600">
                   {formatCurrency(summaryStats.totalAchieved)}
                 </p>
@@ -244,10 +248,12 @@ export default function TargetsPage() {
       <SetTargetModal
         open={isTargetModalOpen}
         onOpenChange={setIsTargetModalOpen}
-        supervisors={supervisors.map((s) => ({ ...s, id: String(s.id) }))}
-        kams={kams.map((kam) => ({ ...kam, id: String(kam.id) }))}
-        selectedDivision={selectedDivision}
-        setSelectedDivision={setSelectedDivision}
+        supervisors={supervisors.map((s) => ({ id: String(s.id), name: s.name }))}
+        kams={kams.map((k) => ({ id: String(k.id), name: k.name }))}
+        selectedDivisionId={selectedDivisionId}
+        setSelectedDivisionId={setSelectedDivisionId}
+        selectedDivisionName={selectedDivisionName}
+        setSelectedDivisionName={setSelectedDivisionName}
         selectedSupervisor={selectedSupervisor}
         setSelectedSupervisor={setSelectedSupervisor}
         selectedKam={selectedKam}

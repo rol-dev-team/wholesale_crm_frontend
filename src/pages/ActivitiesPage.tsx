@@ -311,7 +311,7 @@ export default function ActivitiesPage() {
       {/* HEADER */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Activities</h1>
+          <h1 className="text-2xl font-bold">Tasks</h1>
           <p className="text-muted-foreground">Manage meetings, calls, and tasks</p>
         </div>
       </div>
