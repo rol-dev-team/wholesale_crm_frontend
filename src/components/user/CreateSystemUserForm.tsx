@@ -3,6 +3,7 @@
 
 import * as React from 'react';
 import { Formik, Form } from 'formik';
+import { PrismAPI } from '@/api/prismAPI';
 import * as Yup from 'yup';
 import { UserAPI } from '@/api/user';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,11 @@ import { Switch } from '@/components/ui/switch';
 
 import { FloatingInput } from '@/components/ui/FloatingInput';
 import { FloatingSelect } from '@/components/ui/FloatingSelect';
+import { FloatingSearchSelect } from '@/components/ui/FloatingSearchSelect';
+import { FloatingMultiSelect } from '@/components/ui/FloatingMultiSelect';
+
 import { SelectItem } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 
 /* ---------------- Types ---------------- */
 export type UserRole = 'Admin' | 'Supervisor' | 'KAM' | 'Management';
@@ -45,7 +50,7 @@ const UserValidationSchema = (isEditing: boolean) =>
       .matches(/^01[3-9]\d{8}$/, 'Phone number must be a valid Bangladesh number (01XXXXXXXXX)')
       .required('Phone number is required'),
     role: Yup.string().required('Role is required'),
-
+    kamId: Yup.string().required('KAM is required'),
     password: isEditing
       ? Yup.string().min(6, 'Minimum 6 characters').notRequired()
       : Yup.string().min(6, 'Minimum 6 characters').required('Password is required'),
@@ -69,8 +74,8 @@ interface CreateSystemUserFormProps {
   initialValues?: Partial<SystemUser>;
   editingUserId: string | null;
   onSave: (values: any) => void;
-  kamOptions: SelectOption[];
-  supervisorOptions: SelectOption[];
+  // kamOptions: SelectOption[];
+  // supervisorOptions: SelectOption[];
 }
 
 /* ---------------- Component ---------------- */
@@ -78,9 +83,44 @@ export function CreateSystemUserForm({
   initialValues,
   editingUserId,
   onSave,
-  kamOptions,
-  supervisorOptions,
+  // kamOptions,
+  // supervisorOptions,
 }: CreateSystemUserFormProps) {
+  const { toast } = useToast();
+  const [kamOptions, setKamOptions] = React.useState<SelectOption[]>([]);
+  const [supervisorOptions, setSupervisorOptions] = React.useState<SelectOption[]>([]);
+
+  // Fetch KAMs and Supervisors
+  // Fetch KAMs and Supervisors
+  React.useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        const [kamRes, supRes] = await Promise.all([PrismAPI.getKams(), PrismAPI.getSupervisors()]);
+
+        // ✅ KAMs - match your API response structure
+        // If your API returns { data: [...] }, use kamRes.data
+        setKamOptions(
+          kamRes.data.map((k: any) => ({
+            label: k.kam_name, // display name
+            value: String(k.kam_id),
+          }))
+        );
+
+        // ✅ Supervisors
+        setSupervisorOptions(
+          supRes.data.map((s: any) => ({
+            label: s.supervisor,
+            value: String(s.supervisor_id),
+          }))
+        );
+      } catch (err) {
+        console.error('Failed to fetch KAMs or Supervisors:', err);
+      }
+    };
+
+    fetchOptions();
+  }, []);
+
   const defaultValues = {
     fullName: '',
     userName: '',
@@ -94,6 +134,15 @@ export function CreateSystemUserForm({
     supervisorIds: [] as string[],
   };
 
+  const mappedInitialValues = editingUserId
+    ? {
+        ...defaultValues,
+        ...initialValues,
+        password: '',
+        confirmPassword: '',
+      }
+    : defaultValues;
+
   const roleMap: Record<string, string> = {
     Admin: 'super_admin',
     Supervisor: 'supervisor',
@@ -101,56 +150,41 @@ export function CreateSystemUserForm({
     Management: 'management',
   };
 
-  const mappedInitialValues = editingUserId
-    ? {
-        fullName: initialValues?.fullName ?? '',
-        userName: initialValues?.userName ?? '',
-        email: initialValues?.email ?? '',
-        phone: initialValues?.phone ?? '',
-        role: initialValues?.role ?? '',
-        status: initialValues?.status ?? 'active',
-        kamId: initialValues?.kamId ?? '',
-        supervisorIds: initialValues?.supervisorIds ?? [],
-        password: '',
-        confirmPassword: '',
-      }
-    : defaultValues;
-
   return (
     <Formik
       initialValues={mappedInitialValues}
       enableReinitialize
       validationSchema={UserValidationSchema(!!editingUserId)}
-      onSubmit={async (values, { resetForm, setSubmitting, setFieldError }) => {
+      onSubmit={async (values, { resetForm, setSubmitting }) => {
         try {
           setSubmitting(true);
-
-          // Prepare backend payload
-          const payload: any = {
+          const payload = {
             fullname: values.fullName,
             username: values.userName,
             email: values.email,
             phone: values.phone,
             password: values.password,
             role: roleMap[values.role],
-            default_kam_id: values.kamId || null,
-            supervisor_ids: values.supervisorIds.length === 0 ? 'all' : values.supervisorIds,
+            default_kam_id: values.kamId ? Number(values.kamId) : null,
+            supervisor_ids:
+              values.supervisorIds.length === supervisorOptions.length
+                ? 'all'
+                : values.supervisorIds,
             status: values.status,
           };
 
           if (editingUserId) {
-            payload.password = values.password;
             await UserAPI.updateUser(editingUserId, payload);
           } else {
             await UserAPI.createUser(payload);
           }
 
           resetForm();
-          alert('User saved successfully!');
-          onSave(payload); // optional callback
-        } catch (err: any) {
+          toast({ title: 'User saved successfully!' });
+          onSave(payload);
+        } catch (err) {
           console.error(err);
-          alert('Failed to save user. Please try again.');
+          toast({ title: 'ailed to save user. Please try again.' });
         } finally {
           setSubmitting(false);
         }
@@ -167,7 +201,6 @@ export function CreateSystemUserForm({
         isSubmitting,
       }) => (
         <Form className="space-y-4 rounded-lg border bg-muted/50 p-4">
-          {/* Full Name */}
           <FloatingInput
             label="Full Name"
             name="fullName"
@@ -176,8 +209,6 @@ export function CreateSystemUserForm({
             onBlur={handleBlur}
             error={touched.fullName ? errors.fullName : undefined}
           />
-
-          {/* User Name */}
           <FloatingInput
             label="User Name"
             name="userName"
@@ -186,8 +217,6 @@ export function CreateSystemUserForm({
             onBlur={handleBlur}
             error={touched.userName ? errors.userName : undefined}
           />
-
-          {/* Email */}
           <FloatingInput
             label="Email"
             type="email"
@@ -197,8 +226,6 @@ export function CreateSystemUserForm({
             onBlur={handleBlur}
             error={touched.email ? errors.email : undefined}
           />
-
-          {/* Phone */}
           <FloatingInput
             label="Phone Number"
             name="phone"
@@ -207,8 +234,6 @@ export function CreateSystemUserForm({
             onBlur={handleBlur}
             error={touched.phone ? errors.phone : undefined}
           />
-
-          {/* Password */}
           <FloatingInput
             label="Password"
             type="password"
@@ -218,8 +243,6 @@ export function CreateSystemUserForm({
             onBlur={handleBlur}
             error={touched.password ? errors.password : undefined}
           />
-
-          {/* Confirm Password */}
           <FloatingInput
             label="Confirm Password"
             type="password"
@@ -230,7 +253,6 @@ export function CreateSystemUserForm({
             error={touched.confirmPassword ? errors.confirmPassword : undefined}
           />
 
-          {/* Role */}
           <FloatingSelect
             label="Role"
             value={values.role}
@@ -245,38 +267,39 @@ export function CreateSystemUserForm({
             ))}
           </FloatingSelect>
 
-          {/* KAM */}
-          <FloatingSelect
+          <FloatingSearchSelect
             label="KAM"
             value={values.kamId}
+            searchable
             onValueChange={(v) => setFieldValue('kamId', v)}
             onTouched={() => setFieldTouched('kamId', true)}
           >
-            {(kamOptions || []).map((k) => (
+            {kamOptions.map((k) => (
               <SelectItem key={k.value} value={k.value}>
                 {k.label}
               </SelectItem>
             ))}
-          </FloatingSelect>
+          </FloatingSearchSelect>
 
-          {/* Supervisors (multi-select) */}
-          <FloatingSelect
+          <FloatingMultiSelect
             label="Supervisors"
-            value={values.supervisorIds.join(',')}
-            onValueChange={(v) => {
-              const ids = v.split(',').filter(Boolean);
-              setFieldValue('supervisorIds', ids);
-            }}
-            onTouched={() => setFieldTouched('supervisorIds', true)}
-          >
-            {(supervisorOptions || []).map((s) => (
-              <SelectItem key={s.value} value={s.value}>
-                {s.label}
-              </SelectItem>
-            ))}
-          </FloatingSelect>
+            options={[{ label: 'Select All', value: 'all' }, ...supervisorOptions]}
+            value={values.supervisorIds}
+            searchable
+            onChange={(vals) => {
+              if (vals.includes('all')) {
+                // toggle behavior
+                const allIds = supervisorOptions.map((s) => s.value);
 
-          {/* Active */}
+                const isAllSelected = values.supervisorIds.length === allIds.length;
+
+                setFieldValue('supervisorIds', isAllSelected ? [] : allIds);
+              } else {
+                setFieldValue('supervisorIds', vals);
+              }
+            }}
+          />
+
           <div className="flex items-center gap-3">
             <Label>Status</Label>
             <Switch
@@ -290,7 +313,6 @@ export function CreateSystemUserForm({
             </span>
           </div>
 
-          {/* Submit */}
           <div className="flex justify-end">
             <Button type="submit" disabled={isSubmitting}>
               {editingUserId ? 'Update User' : 'Create User'}

@@ -22,7 +22,7 @@ import { MappedList } from '@/components/user/MappedList';
 
 /* ================= PAGE ================= */
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState('teams');
+  const [activeTab, setActiveTab] = useState('createSystemUser');
 
   /* ---------------- TEAMS ---------------- */
   const [showTeamForm, setShowTeamForm] = useState(false);
@@ -70,7 +70,6 @@ export default function SettingsPage() {
   const fetchUsers = async () => {
     try {
       const res = await UserAPI.getUsers();
-      console.log('UserAPI response:', res);
 
       if (!res?.data || !Array.isArray(res.data)) {
         console.warn('UserAPI returned no data or unexpected format');
@@ -245,13 +244,14 @@ export default function SettingsPage() {
       setSystemUserList((prev) =>
         prev.map((u) => (u.id === editingSystemUser.id ? { ...u, ...user } : u))
       );
-      toast({ title: 'User Updated', description: 'System user updated successfully.' });
+      toast({ title: 'System user updated successfully.' });
     } else {
       setSystemUserList((prev) => [...prev, { ...user, id: crypto.randomUUID() }]);
-      toast({ title: 'User Created', description: 'System user created successfully.' });
+      toast({ title: 'System user created successfully.' });
     }
     setEditingSystemUser(null);
     setActiveTab('systemUserList');
+    fetchUsers();
   };
 
   const handleEditSystemUser = (user: SystemUser) => {
@@ -297,24 +297,24 @@ export default function SettingsPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="teams" className="gap-2">
+          {/* <TabsTrigger value="teams" className="gap-2">
             <Users className="h-4 w-4" /> Teams
           </TabsTrigger>
           <TabsTrigger value="groups" className="gap-2">
             <Group className="h-4 w-4" /> Groups
-          </TabsTrigger>
+          </TabsTrigger> */}
           <TabsTrigger value="createSystemUser" className="gap-2">
             <Users className="h-4 w-4" /> Create System User
           </TabsTrigger>
           <TabsTrigger value="systemUserList" className="gap-2">
             <Users className="h-4 w-4" /> User List
           </TabsTrigger>
-          <TabsTrigger value="userMapping" className="gap-2">
+          {/* <TabsTrigger value="userMapping" className="gap-2">
             <Settings2 className="h-4 w-4" /> User Mapping
           </TabsTrigger>
           <TabsTrigger value="mappedList" className="gap-2">
             <Users className="h-4 w-4" /> Mapped Users
-          </TabsTrigger>
+          </TabsTrigger> */}
         </TabsList>
 
         {/* TEAMS TAB */}
@@ -562,8 +562,8 @@ export default function SettingsPage() {
               <CreateSystemUserForm
                 initialValues={editingSystemUser ?? undefined}
                 editingUserId={editingSystemUser?.id ?? null}
-                kamOptions={kamOptions}
-                supervisorOptions={supervisorOptions}
+                // kamOptions={kamOptions}
+                // supervisorOptions={supervisorOptions}
                 onSave={handleSaveSystemUser}
               />
             </CardContent>
