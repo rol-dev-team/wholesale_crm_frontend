@@ -1,3 +1,5 @@
+
+
 // src/pages/TargetsPage.tsx
 import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,6 +14,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import { SalesTargetAPI } from '@/api/salesTarget';
 import { KAMService } from '@/services/kam';
 import { SupervisorService } from '@/services/supervisor';
+import { KamPerformanceApi } from '@/api/kamPerformanceApi';
 import type { KAM } from '@/types/kam';
 import type { Supervisor } from '@/types/supervisor';
 // Authenticated user context
@@ -41,21 +44,29 @@ export default function TargetsPage() {
   const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
   const [kams, setKams] = useState<KAM[]>([]);
   const [loading, setLoading] = useState(false);
+  const [kamPerformanceLoading, setKamPerformanceLoading] = useState(false);
+  const [kamPerformance, setKamPerformance] = useState<any[]>([]);
+  const [apiKams, setApiKams] = useState<any[]>([]);
 
   // Filters
   const [divisionFilter, setDivisionFilter] = useState('all');
   const [filterKam, setFilterKam] = useState('all');
-  const [filterMonthName, setFilterMonthName] = useState(MONTHS_ARRAY[new Date().getMonth()]);
-  const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
+  const [clientTypeFilter, setClientTypeFilter] = useState('All Client');
+  const [startMonth, setStartMonth] = useState(MONTHS_ARRAY[new Date().getMonth()]);
+  const [endMonth, setEndMonth] = useState(MONTHS_ARRAY[new Date().getMonth()]);
+  const [startYear, setStartYear] = useState(new Date().getFullYear().toString());
+  const [endYear, setEndYear] = useState(new Date().getFullYear().toString());
 
-  const currentMonthLabel = `${filterMonthName} ${filterYear}`;
+  const currentMonthLabel = `${startMonth} ${startYear}`;
   const hasFilters = divisionFilter !== 'all' || filterKam !== 'all';
 
   const clearFilters = () => {
     setDivisionFilter('all');
     setFilterKam('all');
-    setFilterMonthName(MONTHS_ARRAY[new Date().getMonth()]);
-    setFilterYear(new Date().getFullYear().toString());
+    setStartMonth(MONTHS_ARRAY[new Date().getMonth()]);
+    setEndMonth(MONTHS_ARRAY[new Date().getMonth()]);
+    setStartYear(new Date().getFullYear().toString());
+    setEndYear(new Date().getFullYear().toString());
   };
 
   // Modal state
@@ -68,37 +79,179 @@ export default function TargetsPage() {
   const [targetMonthName, setTargetMonthName] = useState(MONTHS_ARRAY[new Date().getMonth()]);
   const [targetYear, setTargetYear] = useState(new Date().getFullYear().toString());
 
-  const isManagement = ['management', 'super_admin'].includes(currentUser?.role);
+  const isManagement = ['boss', 'super_admin'].includes(currentUser?.role);
 
   const teamKams = useMemo(() => {
     return kams.filter(
       (k) =>
-        currentUser?.role === 'management' ||
+        currentUser?.role === 'boss' ||
         currentUser?.role === 'super_admin' ||
         k.reportingTo === currentUser?.name
     );
   }, [kams, currentUser]);
 
   const filteredTargets = useMemo(() => {
-    return targets.filter(
-      (t) =>
-        (divisionFilter === 'all' || t.division === divisionFilter) &&
-        (filterKam === 'all' || t.kamId === filterKam) &&
-        t.month === `${filterMonthName} ${filterYear}`
-    );
-  }, [targets, divisionFilter, filterKam, filterMonthName, filterYear]);
+    return targets.filter((t) => {
+      // Safety check: ensure t.target_month exists
+      if (!t.target_month) {
+        return false;
+      }
 
+      // Parse target_month (format: "YYYY-MM-DD" or "YYYY-MM-01")
+      let tYear: number;
+      let tMonth: number;
+
+      try {
+        const dateParts = t.target_month.split('-');
+        tYear = parseInt(dateParts[0]);
+        tMonth = parseInt(dateParts[1]) - 1; // Convert to 0-based index
+      } catch {
+        return false;
+      }
+
+      // Check if target falls within the selected date range
+      let isInDateRange = false;
+
+      if (startYear === endYear) {
+        // Same year: check if month is between startMonth and endMonth
+        const sMonth = MONTHS_ARRAY.indexOf(startMonth);
+        const eMonth = MONTHS_ARRAY.indexOf(endMonth);
+
+        if (tYear === parseInt(startYear) && tMonth >= sMonth && tMonth <= eMonth) {
+          isInDateRange = true;
+        }
+      } else {
+        // Different years: check if target is between date range
+        const sYear = parseInt(startYear);
+        const eYear = parseInt(endYear);
+        const sMonth = MONTHS_ARRAY.indexOf(startMonth);
+        const eMonth = MONTHS_ARRAY.indexOf(endMonth);
+
+        if (
+          (tYear > sYear || (tYear === sYear && tMonth >= sMonth)) &&
+          (tYear < eYear || (tYear === eYear && tMonth <= eMonth))
+        ) {
+          isInDateRange = true;
+        }
+      }
+
+      return (
+        (divisionFilter === 'all' || t.division === divisionFilter) &&
+        (filterKam === 'all' || t.kam_id === filterKam) &&
+        isInDateRange
+      );
+    });
+  }, [targets, divisionFilter, filterKam, startMonth, endMonth, startYear, endYear]);
+
+  // Calculate summary stats from KAM Performance data
   const summaryStats = useMemo(() => {
-    const totalTarget = filteredTargets.reduce((s, t) => s + t.revenueTarget, 0);
-    const totalAchieved = filteredTargets.reduce((s, t) => s + t.revenueAchieved, 0);
-    const progress = totalTarget ? Math.round((totalAchieved / totalTarget) * 100) : 0;
-    return { totalTarget, totalAchieved, progress };
-  }, [filteredTargets]);
+    // Sum all achieved amounts from kamPerformance
+    const totalAchieved = kamPerformance.reduce((sum, kam) => {
+      return sum + Number(kam.total_voucher_amount || 0);
+    }, 0);
+
+    // Sum all target amounts from filteredTargets
+    // The API returns 'amount' field for the target value
+    const totalTarget = filteredTargets.reduce((sum, target) => {
+      return sum + Number(target.amount || 0);
+    }, 0);
+
+    // Calculate progress percentage
+    const progress = totalTarget > 0 ? Math.round((totalAchieved / totalTarget) * 100) : 0;
+
+    return { 
+      totalTarget, 
+      totalAchieved, 
+      progress,
+    };
+  }, [kamPerformance, filteredTargets]);
 
   useEffect(() => {
     SupervisorService.getAll().then(setSupervisors);
     KAMService.getAll().then(setKams);
+    
+    // Fetch KAMs for filter
+    KamPerformanceApi.getKams()
+      .then((response) => {
+        const data = response.data?.data || response.data || [];
+        setApiKams(data);
+      })
+      .catch((err) => {
+        console.error('Error fetching KAMs:', err);
+        setApiKams([]);
+      });
+
+    // Fetch all targets from API
+    SalesTargetAPI.getAll()
+      .then((response) => {
+        const data = response.data || response || [];
+        setTargets(data);
+      })
+      .catch((err) => {
+        console.error('Error fetching targets:', err);
+        setTargets([]);
+      });
   }, []);
+
+  // Fetch KAM Performance data
+  useEffect(() => {
+    const fetchKamPerformance = async () => {
+      setKamPerformanceLoading(true);
+      try {
+        const startDateObj = new Date(`${startYear}-${(MONTHS_ARRAY.indexOf(startMonth) + 1).toString().padStart(2, '0')}-01`);
+        const endDateObj = new Date(`${endYear}-${(MONTHS_ARRAY.indexOf(endMonth) + 1).toString().padStart(2, '0')}-28`);
+        
+        const startDate = startDateObj.toISOString().split('T')[0];
+        const endDate = endDateObj.toISOString().split('T')[0];
+
+        const response = await KamPerformanceApi.getKamUsersRevenue({
+          start_date: startDate,
+          end_date: endDate,
+          client_type: clientTypeFilter !== 'All Client' ? clientTypeFilter : undefined,
+          view_mode: 'monthly',
+          search: filterKam !== 'all' ? filterKam : undefined,
+          per_page: 1000,
+        });
+
+        const data = response.data || response || [];
+        setKamPerformance(data);
+      } catch (err) {
+        console.error('Error fetching KAM performance:', err);
+        setKamPerformance([]);
+      }
+      setKamPerformanceLoading(false);
+    };
+
+    fetchKamPerformance();
+  }, [startMonth, endMonth, startYear, endYear, filterKam, clientTypeFilter]);
+
+  // Generate tablePeriods for KAMPerformanceTable - supports multiple months
+  const tablePeriods = useMemo(() => {
+    const periods: any[] = [];
+    const sYear = parseInt(startYear);
+    const eYear = parseInt(endYear);
+    const sMonth = MONTHS_ARRAY.indexOf(startMonth);
+    const eMonth = MONTHS_ARRAY.indexOf(endMonth);
+
+    let year = sYear;
+    let month = sMonth;
+
+    while (year < eYear || (year === eYear && month <= eMonth)) {
+      periods.push({
+        month,
+        year,
+        label: `${MONTHS_ARRAY[month]} ${year}`,
+      });
+
+      month++;
+      if (month > 11) {
+        month = 0;
+        year++;
+      }
+    }
+
+    return periods;
+  }, [startMonth, endMonth, startYear, endYear]);
 
   const handleSetTarget = async () => {
     if (!selectedDivisionId || !selectedSupervisor || !selectedKam || !targetAmount) {
@@ -110,13 +263,13 @@ export default function TargetsPage() {
     const targetMonth = `${targetYear}-${String(monthIndex).padStart(2, '0')}-01`;
 
     let posted_by = 2;
-    if (currentUser.role === 'super_admin') posted_by = 0;
-    else if (currentUser.role === 'management') posted_by = 1;
+    if (currentUser?.role === 'super_admin') posted_by = 0;
+    else if (currentUser?.role === 'boss') posted_by = 1;
 
     const payload = {
       target_month: targetMonth,
-      division: selectedDivisionName, // ✅ NAME save হবে
-      division_id: Number(selectedDivisionId), // (optional কিন্তু ভালো)
+      division: selectedDivisionName,
+      division_id: Number(selectedDivisionId),
       supervisor_id: Number(selectedSupervisor),
       kam_id: Number(selectedKam),
       amount: Number(targetAmount),
@@ -155,7 +308,7 @@ export default function TargetsPage() {
         </Button>
       </div>
 
-      {/* SUMMARY */}
+      {/* SUMMARY - ORIGINAL DESIGN */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="overflow-hidden">
           <CardContent className="p-0">
@@ -165,7 +318,7 @@ export default function TargetsPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">
-                  Total Revenue Target <span className="text-xs text-blue-600"> (This Month)</span>
+                  Total Target <span className="text-xs text-blue-600"></span>
                 </p>
                 <p className="text-2xl font-bold mt-1">
                   {formatCurrency(summaryStats.totalTarget)}
@@ -186,7 +339,7 @@ export default function TargetsPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">
-                  Total Achieved <span className="text-xs text-blue-600"> (This Month)</span>
+                  Total Achieved <span className="text-xs text-blue-600"></span>
                 </p>
                 <p className="text-2xl font-bold mt-1 text-emerald-600">
                   {formatCurrency(summaryStats.totalAchieved)}
@@ -200,56 +353,58 @@ export default function TargetsPage() {
         </Card>
       </div>
 
-      {/* FILTER */}
-      <div className="flex justify-end items-center gap-2">
-        {hasFilters && (
-          <Button variant="ghost" size="sm" onClick={clearFilters} className="text-destructive">
-            <X className="h-4 w-4 mr-2" /> Reset
-          </Button>
-        )}
-        <KAMFilterDrawer
-          trigger={
-            <Button variant="outline" size="sm">
-              <Filter className="h-4 w-4 mr-2" /> Filter
-            </Button>
-          }
-          division={divisionFilter}
-          setDivision={setDivisionFilter}
-          kam={filterKam}
-          setKam={setFilterKam}
-          kams={teamKams}
-          dateRange="monthly"
-          setDateRange={() => {}}
-          startMonth={filterMonthName}
-          setStartMonth={setFilterMonthName}
-          endMonth={filterMonthName}
-          setEndMonth={setFilterMonthName}
-          startYear={filterYear}
-          setStartYear={setFilterYear}
-          endYear={filterYear}
-          setEndYear={setFilterYear}
-          onFilterChange={() => {}}
+      {/* KAM PERFORMANCE SECTION */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">KAM Performance</h2>
+          <div className="flex justify-end items-center gap-2">
+            {hasFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-destructive">
+                <X className="h-4 w-4 mr-2" /> Reset Filters
+              </Button>
+            )}
+            <KAMFilterDrawer
+              division={divisionFilter}
+              setDivision={setDivisionFilter}
+              kam={filterKam}
+              setKam={setFilterKam}
+              clientType={clientTypeFilter}
+              setClientType={setClientTypeFilter}
+              kams={apiKams}
+              dateRange="monthly"
+              setDateRange={() => {}}
+              viewMode="monthly"
+              setViewMode={() => {}}
+              startMonth={startMonth}
+              setStartMonth={setStartMonth}
+              endMonth={endMonth}
+              setEndMonth={setEndMonth}
+              startYear={startYear}
+              setStartYear={setStartYear}
+              endYear={endYear}
+              setEndYear={setEndYear}
+              onFilterChange={() => {}}
+            />
+          </div>
+        </div>
+
+        {/* KAM PERFORMANCE TABLE */}
+        <KAMPerformanceTable
+          sales={kamPerformance}
+          dateRangeType="monthly"
+          startMonth={startMonth}
+          endMonth={endMonth}
+          startYear={startYear}
+          endYear={endYear}
+          tablePeriods={tablePeriods}
+          loading={kamPerformanceLoading}
         />
       </div>
-
-      {/* TABLE */}
-      <KAMPerformanceTable
-        sales={filteredTargets}
-        filteredKams={teamKams}
-        dateRangeType="monthly"
-        startMonth={filterMonthName}
-        endMonth={filterMonthName}
-        startYear={filterYear}
-        endYear={filterYear}
-        divisionFilter={divisionFilter}
-      />
 
       {/* MODAL */}
       <SetTargetModal
         open={isTargetModalOpen}
         onOpenChange={setIsTargetModalOpen}
-        supervisors={supervisors.map((s) => ({ id: String(s.id), name: s.name }))}
-        kams={kams.map((k) => ({ id: String(k.id), name: k.name }))}
         selectedDivisionId={selectedDivisionId}
         setSelectedDivisionId={setSelectedDivisionId}
         selectedDivisionName={selectedDivisionName}
