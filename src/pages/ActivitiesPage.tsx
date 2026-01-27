@@ -450,7 +450,9 @@ export default function ActivitiesPage() {
           setEditingActivity(a);
           setIsModalOpen(true);
         }}
-        onComplete={(id, outcome) => {}}
+        onComplete={(payload) => {
+          console.log('mark button', payload);
+        }}
         onAddActivity={() => setIsModalOpen(true)}
         onViewActivity={(activity) => {
           setViewingActivity(activity);

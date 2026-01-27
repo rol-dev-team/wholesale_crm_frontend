@@ -20,6 +20,7 @@ import { ActivityTypeBadge, getActivityIcon } from './ActivityTypeBadge';
 import { formatDateTime } from '@/data/mockData';
 import { dateTimeFormat } from '@/utility/utility';
 import type { Activity, Client } from '@/data/mockData';
+import { ActivityStatusModal } from './ActivityStatusModal';
 import {
   MoreHorizontal,
   Edit,
@@ -87,6 +88,9 @@ export function ActivityList({
   const [modalOpen, setModalOpen] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [requireMessageForComplete, setRequireMessageForComplete] = useState(false);
+
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [statusAction, setStatusAction] = useState<'completed' | 'cancelled' | null>(null);
 
   const now = new Date();
   console.log('activitylist---', activities);
@@ -250,18 +254,27 @@ export function ActivityList({
                           Edit
                         </DropdownMenuItem>
 
-                        {!isCompleted && (
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setEditingActivity(activity);
-                              setModalOpen(true);
-                              setRequireMessageForComplete(true); // require message for complete
-                            }}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Mark Complete
-                          </DropdownMenuItem>
-                        )}
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setEditingActivity(activity);
+                            setStatusAction('completed');
+                            setStatusModalOpen(true);
+                          }}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Mark Complete
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setEditingActivity(activity);
+                            setStatusAction('cancelled');
+                            setStatusModalOpen(true);
+                          }}
+                        >
+                          <XCircle className="h-4 w-4 mr-2" />
+                          Mark Cancel
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -296,6 +309,23 @@ export function ActivityList({
           setRequireMessageForComplete(false);
         }}
         // clients={clients}
+      />
+
+      <ActivityStatusModal
+        open={statusModalOpen}
+        activity={editingActivity}
+        status={statusAction!}
+        onClose={() => {
+          setStatusModalOpen(false);
+          setEditingActivity(null);
+          setStatusAction(null);
+        }}
+        onSubmit={(id, status, message) => {
+          onComplete(id, status, message); // or pass status to backend
+          setStatusModalOpen(false);
+          setEditingActivity(null);
+          setStatusAction(null);
+        }}
       />
     </div>
   );
