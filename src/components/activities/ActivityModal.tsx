@@ -40,8 +40,6 @@
 //   onCompleteWithMessage?: (activityId: string, message: string) => void;
 // }
 
-
-
 // export function ActivityModal({
 //   open,
 //   onClose,
@@ -295,10 +293,7 @@
 //   );
 // }
 
-
-
-
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -306,13 +301,14 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { FloatingInput } from "@/components/ui/FloatingInput";
-import { FloatingSelect } from "@/components/ui/FloatingSelect";
-import { FloatingDatePicker } from "@/components/ui/FloatingDatePicker";
-import { SelectItem } from "@/components/ui/select";
-import type { Client } from "@/data/mockData";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { FloatingInput } from '@/components/ui/FloatingInput';
+import { FloatingSelect } from '@/components/ui/FloatingSelect';
+import { FloatingDatePicker } from '@/components/ui/FloatingDatePicker';
+import { SelectItem } from '@/components/ui/select';
+import type { Client } from '@/data/mockData';
+import { PrismAPI } from '@/api';
 
 /* -------------------- TYPES -------------------- */
 export interface KAM {
@@ -331,25 +327,30 @@ interface ActivityModalProps {
     label: string;
   }[];
 
-  kams?: KAM[];
+  // kams?: KAM[];
   userRole?: string;
   userId: number; // logged-in user id
 }
+export interface KAM {
+  value: number;
+  label: string;
+}
+type ClientOption = {
+  value: number;
+  label: string;
+};
 
 /* -------------------- COMPONENT -------------------- */
 export function ActivityModal({
   open,
   onClose,
   onSave,
-  clients,
-  activityTypes=[],
+  activityTypes = [],
   kams = [],
   userRole,
   userId,
 }: ActivityModalProps) {
-  const isSupervisor = ["supervisor", "super_admin", "boss"].includes(
-    userRole || ""
-  );
+  const isSupervisor = ['supervisor', 'super_admin', 'boss'].includes(userRole || '');
 
   /* -------------------- FORM STATE (BACKEND KEYS) -------------------- */
   const [formData, setFormData] = useState<{
@@ -369,20 +370,14 @@ export function ActivityModal({
     activity_type_id: null,
     posted_by: userId,
 
-    title: "",
-    description: "",
-    meeting_location: "",
-    activity_schedule: "",
-    status: "upcoming",
+    title: '',
+    description: '',
+    meeting_location: '',
+    activity_schedule: '',
+    status: 'upcoming',
   });
 
-  /* -------------------- FILTER CLIENTS BY KAM -------------------- */
-  const filteredClients = useMemo(() => {
-    if (!isSupervisor || !formData.kam_id) return clients;
-    return clients.filter(
-      (client) => client.assignedKamId === formData.kam_id
-    );
-  }, [clients, formData.kam_id, isSupervisor]);
+  const [clientsByKam, setClientsByKam] = useState<ClientOption[]>([]);
 
   /* -------------------- RESET ON OPEN -------------------- */
   useEffect(() => {
@@ -393,11 +388,11 @@ export function ActivityModal({
         activity_type_id: null,
         posted_by: userId,
 
-        title: "",
-        description: "",
-        meeting_location: "",
-        activity_schedule: "",
-        status: "upcoming",
+        title: '',
+        description: '',
+        meeting_location: '',
+        activity_schedule: '',
+        status: 'upcoming',
       });
     }
   }, [open, userId]);
@@ -422,59 +417,76 @@ export function ActivityModal({
     // onClose();
   };
 
+  console.log(clientsByKam);
   /* -------------------- UI -------------------- */
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Task</DialogTitle>
-          <DialogDescription>
-            Fill in the task details below.
-          </DialogDescription>
+          <DialogDescription>Fill in the task details below.</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* -------------------- KAM (SUPERVISOR ONLY) -------------------- */}
-  
-            {/* <FloatingSelect
-              label="KAM *"
-              value={formData.kam_id?.toString() ?? ""}
-              onValueChange={(value) =>
-                setFormData({
-                  ...formData,
-                  kam_id: Number(value),
-                  client_id: null,
-                })
-              }
-            >
-              {kams.map((kam) => (
-                <SelectItem key={kam.id} value={kam.id.toString()}>
-                  {kam.name}
-                </SelectItem>
-              ))}
-            </FloatingSelect> */}
-            <FloatingSelect
+
+          {/* <FloatingSelect
             label="Kam *"
-            value={formData.kam_id?.toString() ?? ""}
+            value={formData.kam_id?.toString() ?? ''}
             onValueChange={(value) =>
               setFormData({
                 ...formData,
                 kam_id: Number(value),
+                client_id: null,
               })
             }
           >
-            {filteredClients.map((client) => (
-              <SelectItem key={client.id} value={client.id.toString()}>
-                {client.name}
+            {kams.map((kam) => (
+              <SelectItem key={kam.value} value={kam.value.toString()}>
+                {kam.label}
+              </SelectItem>
+            ))}
+          </FloatingSelect> */}
+
+          <FloatingSelect
+            label="KAM *"
+            value={formData.kam_id?.toString() ?? ''}
+            onValueChange={async (value) => {
+              const kamId = Number(value);
+
+              setFormData({
+                ...formData,
+                kam_id: kamId,
+                client_id: null, // 👈 reset client
+              });
+
+              // 👇 fetch clients by kam_id
+              try {
+                const res = await PrismAPI.getKamWiseClients(kamId);
+
+                const options = (res.data || []).map((item: any) => ({
+                  value: item.party_id,
+                  label: item.client,
+                }));
+
+                setClientsByKam(options);
+              } catch (err) {
+                console.error('Failed to fetch clients', err);
+                setClientsByKam([]);
+              }
+            }}
+          >
+            {kams.map((kam) => (
+              <SelectItem key={kam.value} value={kam.value.toString()}>
+                {kam.label}
               </SelectItem>
             ))}
           </FloatingSelect>
-       
 
           {/* -------------------- CLIENT -------------------- */}
-          <FloatingSelect
+          {/* <FloatingSelect
             label="Client *"
-            value={formData.client_id?.toString() ?? ""}
+            value={formData.client_id?.toString() ?? ''}
             onValueChange={(value) =>
               setFormData({
                 ...formData,
@@ -487,12 +499,30 @@ export function ActivityModal({
                 {client.name}
               </SelectItem>
             ))}
+          </FloatingSelect> */}
+
+          <FloatingSelect
+            label="Client *"
+            value={formData.client_id?.toString() ?? ''}
+            onValueChange={(value) =>
+              setFormData({
+                ...formData,
+                client_id: Number(value),
+              })
+            }
+            disabled={!formData.kam_id} // 👈 KAM না হলে disable
+          >
+            {clientsByKam.map((client) => (
+              <SelectItem key={client.value} value={client.value.toString()}>
+                {client.label}
+              </SelectItem>
+            ))}
           </FloatingSelect>
 
           {/* -------------------- ACTIVITY TYPE -------------------- */}
           <FloatingSelect
             label="Activity Type *"
-            value={formData.activity_type_id?.toString() ?? ""}
+            value={formData.activity_type_id?.toString() ?? ''}
             onValueChange={(value) =>
               setFormData({
                 ...formData,
@@ -512,27 +542,21 @@ export function ActivityModal({
             label="Title *"
             required
             value={formData.title}
-            onChange={(e) =>
-              setFormData({ ...formData, title: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
           />
 
           {/* -------------------- DESCRIPTION -------------------- */}
           <FloatingInput
             label="Description"
             value={formData.description}
-            onChange={(e) =>
-              setFormData({ ...formData, description: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           />
 
           {/* -------------------- SCHEDULE -------------------- */}
           <FloatingDatePicker
             label="Scheduled Date & Time"
             value={formData.activity_schedule}
-            onChange={(value) =>
-              setFormData({ ...formData, activity_schedule: value })
-            }
+            onChange={(value) => setFormData({ ...formData, activity_schedule: value })}
           />
 
           {/* -------------------- MEETING LOCATION -------------------- */}

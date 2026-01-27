@@ -22,7 +22,7 @@ import { MappedList } from '@/components/user/MappedList';
 
 /* ================= PAGE ================= */
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState('teams');
+  const [activeTab, setActiveTab] = useState('createSystemUser');
 
   /* ---------------- TEAMS ---------------- */
   const [showTeamForm, setShowTeamForm] = useState(false);
@@ -297,24 +297,24 @@ export default function SettingsPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="teams" className="gap-2">
+          {/* <TabsTrigger value="teams" className="gap-2">
             <Users className="h-4 w-4" /> Teams
           </TabsTrigger>
           <TabsTrigger value="groups" className="gap-2">
             <Group className="h-4 w-4" /> Groups
-          </TabsTrigger>
+          </TabsTrigger> */}
           <TabsTrigger value="createSystemUser" className="gap-2">
             <Users className="h-4 w-4" /> Create System User
           </TabsTrigger>
           <TabsTrigger value="systemUserList" className="gap-2">
             <Users className="h-4 w-4" /> User List
           </TabsTrigger>
-          <TabsTrigger value="userMapping" className="gap-2">
+          {/* <TabsTrigger value="userMapping" className="gap-2">
             <Settings2 className="h-4 w-4" /> User Mapping
           </TabsTrigger>
           <TabsTrigger value="mappedList" className="gap-2">
             <Users className="h-4 w-4" /> Mapped Users
-          </TabsTrigger>
+          </TabsTrigger> */}
         </TabsList>
 
         {/* TEAMS TAB */}

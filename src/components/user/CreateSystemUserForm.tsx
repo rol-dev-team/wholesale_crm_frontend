@@ -414,8 +414,7 @@ React.useEffect(() => {
             password: values.password,
             role: roleMap[values.role],
             default_kam_id:  values.kamId ? Number(values.kamId) : null,
-            
-  supervisor_ids: values.supervisorIds.length === supervisorOptions.length ? "All" : values.supervisorIds,
+            supervisor_ids: values.supervisorIds.length === supervisorOptions.length ? "all" : values.supervisorIds,
             status: values.status,
           };
 
@@ -468,13 +467,30 @@ React.useEffect(() => {
           </FloatingSearchSelect>
 
 
-        <FloatingMultiSelect
-  label="Supervisors"
-  options={supervisorOptions}
-  value={values.supervisorIds}
-  onChange={(vals) => setFieldValue("supervisorIds", vals)}
-  searchable
-/>
+       <FloatingMultiSelect
+          label="Supervisors"
+          options={[{ label: 'Select All', value: 'all' }, ...supervisorOptions]}
+          value={values.supervisorIds}
+          searchable
+          onChange={(vals) => {
+            if (vals.includes('all')) {
+              // toggle behavior
+              const allIds = supervisorOptions.map((s) => s.value);
+
+              const isAllSelected =
+                values.supervisorIds.length === allIds.length;
+
+              setFieldValue(
+                'supervisorIds',
+                isAllSelected ? [] : allIds
+              );
+            } else {
+              setFieldValue('supervisorIds', vals);
+            }
+          }}
+        />
+
+
 
           <div className="flex items-center gap-3">
             <Label>Status</Label>

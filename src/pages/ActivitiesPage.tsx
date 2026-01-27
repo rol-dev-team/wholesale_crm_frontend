@@ -3,6 +3,8 @@ import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ActivityModal } from '@/components/activities/ActivityModal';
+import { ActivityNotesModal } from '@/components/activities/ActivityNotesModal';
+import { ActivityDetailsSheet } from '@/components/activities/ActivityDetailsSheet';
 import { FilterDrawer } from '@/components/filters/ActivityFilterDrawer';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,256 +20,291 @@ import {
   type ActivityType,
 } from '@/data/mockData';
 import { AppPagination } from '@/components/common/AppPagination';
-import { ActivityTypeAPI ,TaskAPI} from '@/api';
+import { ActivityTypeAPI, TaskAPI } from '@/api';
+import { PrismAPI } from '@/api';
+import { getUserInfo } from '@/utility/utility';
+import { set } from 'date-fns';
 
 const ITEMS_PER_PAGE = 10;
 
-
-
 export default function ActivitiesPage() {
   const { currentUser } = useAuth();
+  const user = getUserInfo();
   const { toast } = useToast();
-const [activityTypeOptions, setActivityTypeOptions] = useState<
-  { value: number; label: string }[]
->([]);
+  const [activityTypeOptions, setActivityTypeOptions] = useState<
+    { value: number; label: string }[]
+  >([]);
 
-  const [activities, setActivities] = useState<Activity[]>(initialActivities);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [noteActivity, setNoteActivity] = useState<Activity | null>(null);
+  const [viewingActivity, setViewingActivity] = useState<Activity | null>(null);
+
+  const [activitySummary, setActivitySummary] = useState<any>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+
   const [clients] = useState<Client[]>(initialClients);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
 
   // ---------------- FILTER STATES ----------------
-const [divisionFilter, setDivisionFilter] = useState("all");
-const [supervisorFilter, setSupervisorFilter] = useState("all");
-const [kamFilter, setKamFilter] = useState("all");
+  const [divisionFilter, setDivisionFilter] = useState('all');
+  const [supervisorFilter, setSupervisorFilter] = useState('all');
+  const [kamFilter, setKamFilter] = useState('all');
 
+  // ---------------- ROLE CHECK ----------------
+  const role = currentUser?.role;
 
+  const isKAM = role === 'kam';
+  const isSupervisor = role === 'supervisor';
+  const isManagement = role === 'boss' || role === 'super_admin';
 
+  // ---------------- OPTIONS ----------------
+  const kams = [
+    {
+      id: 1,
+      name: 'Ashik Rahman',
+      division: 'Dhaka',
+      reportingTo: 'Supervisor A',
+    },
+    {
+      id: 2,
+      name: 'Tanvir Hasan',
+      division: 'Chattogram',
+      reportingTo: 'Supervisor B',
+    },
+    {
+      id: 3,
+      name: 'Nusrat Jahan',
+      division: 'Dhaka',
+      reportingTo: 'Supervisor A',
+    },
+  ];
 
+  const divisions = useMemo(() => Array.from(new Set(kams.map((k) => k.division))), [kams]);
 
-// ---------------- ROLE CHECK ----------------
-const role = currentUser?.role;
-
-const isKAM = role === "kam";
-const isSupervisor = role === "supervisor";
-const isManagement = role === "boss" || role === "super_admin";
-
-// ---------------- OPTIONS ----------------
- const kams = [
-  {
-    id: 1,
-    name: "Ashik Rahman",
-    division: "Dhaka",
-    reportingTo: "Supervisor A",
-  },
-  {
-    id: 2,
-    name: "Tanvir Hasan",
-    division: "Chattogram",
-    reportingTo: "Supervisor B",
-  },
-  {
-    id: 3,
-    name: "Nusrat Jahan",
-    division: "Dhaka",
-    reportingTo: "Supervisor A",
-  },
-];
-
-
-
-const divisions = useMemo(
-() => Array.from(new Set(kams.map(k => k.division))),
-[kams]
-);
-
-const supervisors = useMemo(
-() => Array.from(new Set(kams.map(k => k.reportingTo).filter(Boolean))),
-[kams]
-);
-
+  const supervisors = useMemo(
+    () => Array.from(new Set(kams.map((k) => k.reportingTo).filter(Boolean))),
+    [kams]
+  );
 
   // Filters
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed' | 'overdue'>(
-    'all'
-  );
   const [typeFilters, setTypeFilters] = useState<ActivityType[]>([]);
   const [clientFilter, setClientFilter] = useState<string>('all');
   const [dateRange, setDateRange] = useState<{ from?: string; to?: string }>({});
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
 
-  const clientOptions = clients.map((c) => ({ label: c.name, value: c.id }));
+  // state
+  const [kamOptions, setKamOptions] = useState<{ value: number; label: string }[]>([]);
+  const [clientOptions, setKamFilterOptions] = useState<{ value: number; label: string }[]>([]);
+  const [supervisorOptions, setSupervisorOptions] = useState<{ value: number; label: string }[]>(
+    []
+  );
+  const [divisionOptions, setDivisionOptions] = useState<{ value: number; label: string }[]>([]);
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-
-  // Derived stats
-  const pendingActivities = activities.filter((a) => !a.completedAt);
-  const overdueActivities = pendingActivities.filter((a) => new Date(a.scheduledAt) < new Date());
-
-  // Filtered activities
-  const filteredActivities = useMemo(() => {
-    return activities.filter((activity) => {
-      const matchesSearch =
-        activity.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        activity.description?.toLowerCase().includes(searchQuery.toLowerCase());
-
-      const matchesClient = clientFilter === 'all' || activity.clientId === clientFilter;
-
-      const matchesDate =
-        (!dateRange.from || new Date(activity.scheduledAt) >= new Date(dateRange.from)) &&
-        (!dateRange.to || new Date(activity.scheduledAt) <= new Date(dateRange.to));
-
-      const matchesType = typeFilters.length === 0 || typeFilters.includes(activity.type);
-
-      const isOverdue = !activity.completedAt && new Date(activity.scheduledAt) < new Date();
-      const isPending = !activity.completedAt && !isOverdue;
-
-      const matchesStatus =
-        statusFilter === 'all' ||
-        (statusFilter === 'pending' && isPending) ||
-        (statusFilter === 'completed' && !!activity.completedAt) ||
-        (statusFilter === 'overdue' && isOverdue);
-
-      return matchesSearch && matchesClient && matchesDate && matchesType && matchesStatus;
-    });
-  }, [activities, searchQuery, statusFilter, typeFilters, clientFilter, dateRange]);
-
-  const totalPages = Math.ceil(filteredActivities.length / ITEMS_PER_PAGE);
-  const paginatedActivities = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredActivities.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredActivities, currentPage]);
-
-  useEffect(() => setCurrentPage(1), [searchQuery, statusFilter, typeFilters]);
-
-
-const fetchTasks = async () => {
-  try {
-    const res = await TaskAPI.getTasks();
-    // setActivities(res.data ?? res.data);
-  } catch {
-    toast({
-      title: "Failed to load activities",
-      variant: "destructive",
-    });
-  }
-};
-
-useEffect(() => {
-  fetchTasks();
-}, []);
-
-
-useEffect(() => {
-  const fetchActivityTypes = async () => {
+  const fetchTasks = async (page = 1) => {
     try {
-      const res = await ActivityTypeAPI.getActivityTypes();
+      const res = await TaskAPI.getTasks({
+        page,
+        per_page: ITEMS_PER_PAGE,
+        kam_id: getUserInfo()?.default_kam_id || undefined,
+        search: searchQuery || undefined,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+      });
 
-      const options = (res.data || []).map((item: any) => ({
-        value: item.id,
-        label: item.activity_type_name,
-      }));
-      setActivityTypeOptions(options);
+      setActivities(res.data);
+      setCurrentPage(res.meta.current_page);
+      setTotalPages(res.meta.last_page);
     } catch (error) {
+      console.log(error);
       toast({
-        title: 'Failed to load activity types',
+        title: 'Failed to load activities',
         variant: 'destructive',
       });
     }
   };
 
-  fetchActivityTypes();
-}, []);
+  useEffect(() => {
+    fetchTasks(1);
+  }, [searchQuery, statusFilter]);
 
+  const fetchKams = async () => {
+    try {
+      const res = await PrismAPI.getKams();
+      const options = (res.data || []).map((item: any) => ({
+        value: item.kam_id,
+        label: item.kam_name,
+      }));
+      setKamOptions(options);
+    } catch {
+      toast({
+        title: 'Failed to load activities',
+        variant: 'destructive',
+      });
+    }
+  };
 
-// ---------------- FILTER CONFIG ----------------
-const filters = [
-  // -------- DIVISION (STRING) --------
-  {
-    type: "search-select" as const,
-    label: "Division",
-    value: divisionFilter,
-    onChange: setDivisionFilter,
-    options: [
-      { label: "All", value: "all" },
-      ...divisions.map((d) => ({
-        label: d,
-        value: d, // ✅ string
+  const fetchClients = async (id) => {
+    try {
+      const res = await PrismAPI.getKamWiseClients(id);
+      setClientOptions(res.data ?? res.data);
+    } catch {
+      toast({
+        title: 'Failed to load activities',
+        variant: 'destructive',
+      });
+    }
+  };
+  const fetchSummary = async (id) => {
+    try {
+      const res = await TaskAPI.getSummary(id);
+      setActivitySummary(res.data);
+    } catch {
+      toast({
+        title: 'Failed to load activities Summary',
+        variant: 'destructive',
+      });
+    }
+  };
+  useEffect(() => {
+    fetchKams();
+    fetchSummary(user?.default_kam_id);
+  }, []);
+
+  useEffect(() => {
+    const fetchActivityTypes = async () => {
+      try {
+        const res = await ActivityTypeAPI.getActivityTypes();
+
+        const options = (res.data || []).map((item: any) => ({
+          value: item.id,
+          label: item.activity_type_name,
+        }));
+        setActivityTypeOptions(options);
+      } catch (error) {
+        toast({
+          title: 'Failed to load activity types',
+          variant: 'destructive',
+        });
+      }
+    };
+
+    fetchActivityTypes();
+  }, []);
+
+  // ---------------- FILTER CONFIG ----------------
+  const filters = [
+    // -------- DIVISION (STRING) --------
+    {
+      type: 'search-select' as const,
+      label: 'Division',
+      value: divisionFilter,
+      onChange: setDivisionFilter,
+      options: [
+        { label: 'All', value: 'all' },
+        ...divisions.map((d) => ({
+          label: d,
+          value: d, // ✅ string
+        })),
+      ],
+    },
+
+    // -------- SUPERVISOR (NUMBER) --------
+    {
+      type: 'search-select' as const,
+      label: 'Supervisor',
+      value: supervisorFilter,
+      onChange: setSupervisorFilter,
+      options: [
+        { label: 'All', value: 'all' },
+        ...supervisors.map((s, index) => ({
+          label: s,
+          value: index + 1, // ✅ number ID
+        })),
+      ],
+    },
+
+    // -------- KAM (NUMBER) --------
+    {
+      type: 'search-select' as const,
+      label: 'KAM',
+      value: kamFilter,
+      onChange: setKamFilter,
+      options: [
+        { label: 'All', value: 'all' },
+        ...kams.map((k) => ({
+          label: k.name,
+          value: k.id, // ✅ number
+        })),
+      ],
+    },
+
+    // -------- ACTIVITY TYPE (NUMBER[]) --------
+    {
+      type: 'multi-select' as const,
+      label: 'Activity Type',
+      value: typeFilters,
+      onChange: setTypeFilters,
+      options: activityTypeOptions.map((o) => ({
+        label: o.label,
+        value: o.value, // ✅ number
       })),
-    ],
-  },
+    },
 
-  // -------- SUPERVISOR (NUMBER) --------
-  {
-    type: "search-select" as const,
-    label: "Supervisor",
-    value: supervisorFilter,
-    onChange: setSupervisorFilter,
-    options: [
-      { label: "All", value: "all" },
-      ...supervisors.map((s, index) => ({
-        label: s,
-        value: index + 1, // ✅ number ID
-      })),
-    ],
-  },
+    // -------- CLIENT (NUMBER) --------
+    {
+      type: 'search-select' as const,
+      label: 'Client',
+      value: clientFilter,
+      onChange: setClientFilter,
+      options: [
+        { label: 'All', value: 'all' },
+        ...clients.map((c) => ({
+          label: c.name,
+          value: c.id, // ✅ number
+        })),
+      ],
+    },
 
-  // -------- KAM (NUMBER) --------
-  {
-    type: "search-select" as const,
-    label: "KAM",
-    value: kamFilter,
-    onChange: setKamFilter,
-    options: [
-      { label: "All", value: "all" },
-      ...kams.map((k) => ({
-        label: k.name,
-        value: k.id, // ✅ number
-      })),
-    ],
-  },
+    // -------- DATE RANGE --------
+    {
+      type: 'date-range' as const,
+      label: 'Date Range',
+      value: dateRange,
+      onChange: setDateRange,
+    },
+  ];
 
-  // -------- ACTIVITY TYPE (NUMBER[]) --------
-  {
-    type: "multi-select" as const,
-    label: "Activity Type",
-    value: typeFilters,
-    onChange: setTypeFilters,
-    options: activityTypeOptions.map((o) => ({
-      label: o.label,
-      value: o.value, // ✅ number
-    })),
-  },
+  const handleAddNote = async (note: { content: string }) => {
+    if (!noteActivity) return;
 
-  // -------- CLIENT (NUMBER) --------
-  {
-    type: "search-select" as const,
-    label: "Client",
-    value: clientFilter,
-    onChange: setClientFilter,
-    options: [
-      { label: "All", value: "all" },
-      ...clients.map((c) => ({
-        label: c.name,
-        value: c.id, // ✅ number
-      })),
-    ],
-  },
+    const payload = {
+      task_id: noteActivity.id,
+      note: note.content,
+    };
 
-  // -------- DATE RANGE --------
-  {
-    type: "date-range" as const,
-    label: "Date Range",
-    value: dateRange,
-    onChange: setDateRange,
-  },
-];
+    try {
+      await TaskAPI.addNote(payload);
 
+      toast({ title: 'Note added successfully' });
 
-console.log('dddddd',activities);
+      setNoteActivity(null);
+      fetchTasks(currentPage);
+    } catch (error) {
+      toast({
+        title: 'Failed to add note',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  console.log('dddddd', activities);
+  console.log('kamOptions', kamOptions);
+  console.log(getUserInfo()?.id);
+  console.log('userkam', user?.default_kam_id);
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
@@ -281,17 +318,17 @@ console.log('dddddd',activities);
 
       <div className="grid sm:grid-cols-2 gap-4">
         <KpiCard
-          title="Pending Activities"
+          title="Upcoming Activities"
           icon={<ListTodo className="h-5 w-5 text-amber-600" />}
           iconBg="bg-gradient-to-br from-amber-500/20 to-amber-500/5"
-          value={pendingActivities.length}
+          value={activitySummary?.upcoming}
         />
 
         <KpiCard
           title="Overdue Activities"
           icon={<Clock className="h-5 w-5 text-rose-600" />}
           iconBg="bg-gradient-to-br from-rose-500/20 to-rose-500/5"
-          value={overdueActivities.length}
+          value={activitySummary?.overdue}
         />
       </div>
 
@@ -305,7 +342,7 @@ console.log('dddddd',activities);
               key={status}
               size="sm"
               variant={statusFilter === status ? 'default' : 'outline'}
-              onClick={() => setStatusFilter(status as typeof statusFilter)}
+              onClick={() => setStatusFilter(status)}
             >
               {status.charAt(0).toUpperCase() + status.slice(1)}
             </Button>
@@ -390,46 +427,46 @@ console.log('dddddd',activities);
       /> */}
 
       {/* FILTER DRAWER */}
-      <FilterDrawer
+      {/* <FilterDrawer
         open={isFilterDrawerOpen}
         onClose={() => setIsFilterDrawerOpen(false)}
         title="Filter Activities"
         filters={filters}
         onReset={() => {
-          setDivisionFilter("all");
-          setSupervisorFilter("all");
-          setKamFilter("all");
+          setDivisionFilter('all');
+          setSupervisorFilter('all');
+          setKamFilter('all');
           setTypeFilters([]);
-          setClientFilter("all");
+          setClientFilter('all');
           setDateRange({});
         }}
         onApply={() => setIsFilterDrawerOpen(false)}
-      />
+      /> */}
 
       {/* ACTIVITY LIST */}
       <ActivityList
-        activities={paginatedActivities}
-        clients={clients}
+        activities={activities}
         onEdit={(a) => {
           setEditingActivity(a);
           setIsModalOpen(true);
         }}
-        onComplete={(id, outcome) => {
-          setActivities((prev) =>
-            prev.map((a) =>
-              a.id === id ? { ...a, completedAt: new Date().toISOString(), outcome } : a
-            )
-          );
-        }}
+        onComplete={(id, outcome) => {}}
         onAddActivity={() => setIsModalOpen(true)}
+        onViewActivity={(activity) => {
+          setViewingActivity(activity);
+        }}
+        onAddNote={(activity) => {
+          setNoteActivity(activity); // ✅ THIS opens modal
+        }}
         showClientInfo
       />
 
       {/* PAGINATION */}
+
       <AppPagination
         currentPage={currentPage}
         totalPages={totalPages}
-        onPageChange={setCurrentPage}
+        onPageChange={(page) => fetchTasks(page)}
       />
 
       {/* MODAL */}
@@ -451,24 +488,35 @@ console.log('dddddd',activities);
         //   setIsModalOpen(false);
         // }}
         onSave={async (payload) => {
-    try {
-      await TaskAPI.createTask(payload);
-      toast({ title: "Activity created successfully" });
-      setIsModalOpen(false);
-      fetchTasks();
-    } catch (error: any) {
-      toast({
-        title: "Failed to create activity",
-        description: error?.response?.data?.message,
-        variant: "destructive",
-      });
-    }
-  }}
-
-
+          try {
+            await TaskAPI.createTask(payload);
+            toast({ title: 'Activity created successfully' });
+            setIsModalOpen(false);
+            fetchTasks();
+          } catch (error: any) {
+            toast({
+              title: 'Failed to create activity',
+              description: error?.response?.data?.message,
+              variant: 'destructive',
+            });
+          }
+        }}
+        kams={kamOptions}
         clients={clients}
         activityTypes={activityTypeOptions}
-        userId={1}
+        userId={getUserInfo()?.id}
+      />
+
+      <ActivityDetailsSheet
+        open={!!viewingActivity}
+        onClose={() => setViewingActivity(null)}
+        activity={viewingActivity}
+      />
+
+      <ActivityNotesModal
+        open={!!noteActivity}
+        onClose={() => setNoteActivity(null)}
+        onSave={handleAddNote}
       />
     </div>
   );
