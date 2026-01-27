@@ -31,117 +31,111 @@
 
 // interface Props {
 //   sales: any[];
-//   filteredKams: any[];
 //   dateRangeType: 'monthly' | 'yearly';
 //   startMonth: string;
 //   endMonth: string;
 //   startYear: string;
 //   endYear: string;
-//   divisionFilter: string;
+//   tablePeriods: any[];
+//   loading?: boolean;
 // }
 
 // export const KAMPerformanceTable: React.FC<Props> = ({
 //   sales,
-//   filteredKams,
 //   dateRangeType,
 //   startMonth,
 //   endMonth,
 //   startYear,
 //   endYear,
-//   divisionFilter,
+//   tablePeriods,
+//   loading = false,
 // }) => {
-//   // ---------------- PERIODS FOR TABLE ----------------
-//   const tablePeriods = useMemo(() => {
-//     const periods: any[] = [];
-
-//     if (dateRangeType === 'monthly') {
-//       const sYear = parseInt(startYear);
-//       const eYear = parseInt(endYear);
-//       const sMonth = MONTHS_ARRAY.indexOf(startMonth);
-//       const eMonth = MONTHS_ARRAY.indexOf(endMonth);
-
-//       let year = sYear;
-//       let month = sMonth;
-
-//       while (year < eYear || (year === eYear && month <= eMonth)) {
-//         periods.push({
-//           month,
-//           year,
-//           label: `${MONTHS_ARRAY[month].substring(0, 3)}-${year.toString().slice(-2)}`,
-//         });
-
-//         month++;
-//         if (month > 11) {
-//           month = 0;
-//           year++;
-//         }
-//       }
-//     } else {
-//       const sYear = parseInt(startYear);
-//       const eYear = parseInt(endYear);
-
-//       for (let y = sYear; y <= eYear; y++) {
-//         periods.push({
-//           year: y,
-//           label: `${y}`,
-//         });
-//       }
-//     }
-
-//     return periods;
-//   }, [dateRangeType, startMonth, endMonth, startYear, endYear]);
-
-//   // ---------------- KAM PERFORMANCE DATA ----------------
+//   // Process data by KAM and period
 //   const kamPerformanceData = useMemo(() => {
-//     // dummy data
-//     const dummyKams = Array.from({ length: 15 }).map((_, i) => ({
-//       id: `dummy-${i}`,
-//       name: `Dummy Officer ${i + 1}`,
-//     }));
+//     const kamMap: any = {};
 
-//     const combinedKams = [...filteredKams, ...dummyKams];
+//     // Group all sales by current_supervisor
+//     sales.forEach((row) => {
+//       const kamName = row.current_supervisor;
 
-//     return combinedKams.map((kam) => {
+//       if (!kamMap[kamName]) {
+//         kamMap[kamName] = {
+//           id: kamName,
+//           name: kamName,
+//           periodData: {},
+//         };
+//       }
+
+//       // Create period key matching tablePeriods format (e.g., "December 2025")
+//       let periodKey: string;
+
+//       if (dateRangeType === 'monthly') {
+//         periodKey = `${MONTHS_ARRAY[row.voucher_month_number - 1]} ${row.voucher_year}`;
+//       } else {
+//         periodKey = `${row.voucher_year}`;
+//       }
+
+//       if (!kamMap[kamName].periodData[periodKey]) {
+//         kamMap[kamName].periodData[periodKey] = {
+//           clientCount: 0,
+//           achieved: 0,
+//           selfAchieved: 0,
+//           transferredAchieved: 0,
+//           selfUpDown: 0,
+//           transferredUpDown: 0,
+//           targetAmount: 0,
+//         };
+//       }
+
+//       // Accumulate data from backend
+//       kamMap[kamName].periodData[periodKey].clientCount +=
+//         Number(row.total_client_count || 0);
+//       kamMap[kamName].periodData[periodKey].achieved +=
+//         Number(row.total_voucher_amount || 0);
+//       kamMap[kamName].periodData[periodKey].selfAchieved +=
+//         Number(row.self_client_voucher_amount || 0);
+//       kamMap[kamName].periodData[periodKey].selfUpDown +=
+//         Number(row.self_up_down_voucher || 0);
+//       kamMap[kamName].periodData[periodKey].transferredAchieved +=
+//         Number(row.transferred_client_voucher_amount || 0);
+//       kamMap[kamName].periodData[periodKey].transferredUpDown +=
+//         Number(row.transfer_up_down_voucher || 0);
+//       kamMap[kamName].periodData[periodKey].targetAmount +=
+//         Number(row.target_amount || 0);
+//     });
+
+//     // Convert to array with ordered periods
+//     return Object.values(kamMap).map((kam: any) => {
 //       let rangeTargetSum = 0;
 //       let rangeAchievedSum = 0;
 
 //       const periodStats = tablePeriods.map((period) => {
-//         const target = 500000;
+//         const stat = kam.periodData[period.label] || {
+//           clientCount: 0,
+//           achieved: 0,
+//           selfAchieved: 0,
+//           selfUpDown: 0,
+//           transferredAchieved: 0,
+//           transferredUpDown: 0,
+//           targetAmount: 0,
+//         };
 
-//         const periodSales = sales.filter((s) => {
-//           const d = new Date(s.closingDate);
-//           return (
-//             s.kamId === kam.id &&
-//             (dateRangeType === 'monthly'
-//               ? d.getMonth() === period.month && d.getFullYear() === period.year
-//               : d.getFullYear() === period.year)
-//           );
-//         });
-
-//         const achieved =
-//           periodSales.length > 0
-//             ? periodSales.reduce((sum, s) => sum + Number(s.salesAmount || 0), 0)
-//             : Math.floor(Math.random() * 600000);
-
-//         const selfAchieved = Math.floor(achieved * 0.6);
-//         const transferredAchieved = Math.floor(achieved * 0.4);
-//         const upDown = achieved - target;
-
-//         const uniqueClientsInPeriod =
-//           periodSales.length > 0
-//             ? new Set(periodSales.map((s) => s.clientId)).size
-//             : Math.floor(Math.random() * 8);
+//         const target = stat.targetAmount;
+//         const upDown = stat.achieved - target;
 
 //         rangeTargetSum += target;
-//         rangeAchievedSum += achieved;
+//         rangeAchievedSum += stat.achieved;
 
 //         return {
 //           target,
-//           achieved,
-//           selfAchieved,
-//           transferredAchieved,
+//           achieved: stat.achieved,
+//           selfAchieved: stat.selfAchieved,
+//           selfUpDown: stat.selfUpDown,
+//           transferredAchieved: stat.transferredAchieved,
+//           transferredUpDown: stat.transferredUpDown,
+//           targetAmount: stat.targetAmount,
+//           clientCount: stat.clientCount,
 //           upDown,
-//           clientCount: uniqueClientsInPeriod,
 //         };
 //       });
 
@@ -152,7 +146,27 @@
 //         rangeAchievedSum,
 //       };
 //     });
-//   }, [filteredKams, sales, tablePeriods, dateRangeType]);
+//   }, [sales, tablePeriods, dateRangeType]);
+
+//   if (loading) {
+//     return (
+//       <Card className="shadow-sm border-muted/60">
+//         <CardContent className="p-6 text-center text-muted-foreground">
+//           Loading data...
+//         </CardContent>
+//       </Card>
+//     );
+//   }
+
+//   if (sales.length === 0) {
+//     return (
+//       <Card className="shadow-sm border-muted/60">
+//         <CardContent className="p-6 text-center text-muted-foreground">
+//           No data available for the selected period
+//         </CardContent>
+//       </Card>
+//     );
+//   }
 
 //   return (
 //     <Card className="shadow-sm border-muted/60 overflow-hidden">
@@ -172,13 +186,13 @@
 //                   rowSpan={2}
 //                   className="border-r border-b font-bold min-w-[180px] sticky left-0 top-0 bg-slate-100 z-[60]"
 //                 >
-//                   {divisionFilter === 'all' ? 'KAM Name' : 'Division'}
+//                   KAM Name
 //                 </TableHead>
 
 //                 {tablePeriods.map((p) => (
 //                   <TableHead
 //                     key={p.label}
-//                     colSpan={6}
+//                     colSpan={7}
 //                     className="text-center border-r border-b font-semibold min-w-[600px] sticky top-0 bg-slate-100 z-50"
 //                   >
 //                     {p.label}
@@ -209,10 +223,13 @@
 //                       Self Achieve
 //                     </TableHead>
 //                     <TableHead className="text-center border-r border-b text-[10px] uppercase sticky top-[48px] bg-slate-50">
+//                       Up / Down (Self)
+//                     </TableHead>
+//                     <TableHead className="text-center border-r border-b text-[10px] uppercase sticky top-[48px] bg-slate-50">
 //                       Transferred
 //                     </TableHead>
 //                     <TableHead className="text-center border-r border-b text-[10px] uppercase sticky top-[48px] bg-slate-50">
-//                       Up / Down
+//                       Up / Down (Transferred)
 //                     </TableHead>
 //                   </React.Fragment>
 //                 ))}
@@ -235,15 +252,17 @@
 
 //                   {kam.periodStats.map((stat, i) => (
 //                     <React.Fragment key={i}>
-//                       <TableCell className="text-center border-r border-b">
+//                       <TableCell className="text-center border-r border-b text-sm">
 //                         {stat.clientCount}
 //                       </TableCell>
-//                       <TableCell className="text-center border-r border-b">
-//                         {formatCurrency(stat.target)}
+//                       <TableCell className="text-center border-r border-b text-sm text-slate-600">
+//                         {formatCurrency(stat.targetAmount)}
 //                       </TableCell>
 //                       <TableCell
-//                         className={`text-center border-r border-b font-semibold ${
-//                           stat.achieved >= stat.target ? 'text-emerald-600' : 'text-orange-600'
+//                         className={`text-center border-r border-b font-semibold text-sm ${
+//                           stat.achieved >= stat.targetAmount
+//                             ? 'text-emerald-600'
+//                             : 'text-orange-600'
 //                         }`}
 //                       >
 //                         {formatCurrency(stat.achieved)}
@@ -251,24 +270,35 @@
 //                       <TableCell className="text-center border-r border-b text-sm text-slate-600">
 //                         {formatCurrency(stat.selfAchieved)}
 //                       </TableCell>
+//                       <TableCell
+//                         className={`text-center border-r border-b font-semibold text-sm ${
+//                           stat.selfUpDown >= 0
+//                             ? 'text-emerald-600'
+//                             : 'text-red-600'
+//                         }`}
+//                       >
+//                         {formatCurrency(stat.selfUpDown)}
+//                       </TableCell>
 //                       <TableCell className="text-center border-r border-b text-sm text-slate-600">
 //                         {formatCurrency(stat.transferredAchieved)}
 //                       </TableCell>
 //                       <TableCell
-//                         className={`text-center border-r border-b font-semibold ${
-//                           stat.upDown >= 0 ? 'text-emerald-600' : 'text-red-600'
+//                         className={`text-center border-r border-b font-semibold text-sm ${
+//                           stat.transferredUpDown >= 0
+//                             ? 'text-emerald-600'
+//                             : 'text-red-600'
 //                         }`}
 //                       >
-//                         {formatCurrency(stat.upDown)}
+//                         {formatCurrency(stat.transferredUpDown)}
 //                       </TableCell>
 //                     </React.Fragment>
 //                   ))}
 
-//                   <TableCell className="text-center border-r border-b font-bold bg-slate-50 sticky right-[100px]">
+//                   <TableCell className="text-center border-r border-b font-bold bg-slate-50 sticky right-[100px] text-sm">
 //                     {formatCurrency(kam.rangeTargetSum)}
 //                   </TableCell>
 //                   <TableCell
-//                     className={`text-center border-b font-bold bg-slate-50 sticky right-0 ${
+//                     className={`text-center border-b font-bold bg-slate-50 sticky right-0 text-sm ${
 //                       kam.rangeAchievedSum >= kam.rangeTargetSum
 //                         ? 'text-emerald-700'
 //                         : 'text-destructive'
@@ -354,8 +384,14 @@ export const KAMPerformanceTable: React.FC<Props> = ({
         };
       }
 
-      // Use voucher_label as period key (e.g., "Dec-25")
-      const periodKey = `${MONTHS_ARRAY[row.voucher_month_number - 1].substring(0, 3)}-${row.voucher_year.toString().slice(-2)}`;
+      // Create period key matching tablePeriods format (e.g., "December 2025")
+      let periodKey: string;
+
+      if (dateRangeType === 'monthly') {
+        periodKey = `${MONTHS_ARRAY[row.voucher_month_number - 1]} ${row.voucher_year}`;
+      } else {
+        periodKey = `${row.voucher_year}`;
+      }
 
       if (!kamMap[kamName].periodData[periodKey]) {
         kamMap[kamName].periodData[periodKey] = {
@@ -363,6 +399,7 @@ export const KAMPerformanceTable: React.FC<Props> = ({
           achieved: 0,
           selfAchieved: 0,
           transferredAchieved: 0,
+          selfUpDown: 0,
           transferredUpDown: 0,
           targetAmount: 0,
         };
@@ -374,6 +411,7 @@ export const KAMPerformanceTable: React.FC<Props> = ({
       kamMap[kamName].periodData[periodKey].selfAchieved += Number(
         row.self_client_voucher_amount || 0
       );
+      kamMap[kamName].periodData[periodKey].selfUpDown += Number(row.self_up_down_voucher || 0);
       kamMap[kamName].periodData[periodKey].transferredAchieved += Number(
         row.transferred_client_voucher_amount || 0
       );
@@ -393,12 +431,13 @@ export const KAMPerformanceTable: React.FC<Props> = ({
           clientCount: 0,
           achieved: 0,
           selfAchieved: 0,
+          selfUpDown: 0,
           transferredAchieved: 0,
           transferredUpDown: 0,
           targetAmount: 0,
         };
 
-        const target = stat.targetAmount; // Use dynamic target from backend
+        const target = stat.targetAmount;
         const upDown = stat.achieved - target;
 
         rangeTargetSum += target;
@@ -408,10 +447,12 @@ export const KAMPerformanceTable: React.FC<Props> = ({
           target,
           achieved: stat.achieved,
           selfAchieved: stat.selfAchieved,
+          selfUpDown: stat.selfUpDown,
           transferredAchieved: stat.transferredAchieved,
           transferredUpDown: stat.transferredUpDown,
           targetAmount: stat.targetAmount,
           clientCount: stat.clientCount,
+          upDown,
         };
       });
 
@@ -422,7 +463,7 @@ export const KAMPerformanceTable: React.FC<Props> = ({
         rangeAchievedSum,
       };
     });
-  }, [sales, tablePeriods]);
+  }, [sales, tablePeriods, dateRangeType]);
 
   if (loading) {
     return (
@@ -466,7 +507,7 @@ export const KAMPerformanceTable: React.FC<Props> = ({
                 {tablePeriods.map((p) => (
                   <TableHead
                     key={p.label}
-                    colSpan={6}
+                    colSpan={7}
                     className="text-center border-r border-b font-semibold min-w-[600px] sticky top-0 bg-slate-100 z-50"
                   >
                     {p.label}
@@ -497,10 +538,13 @@ export const KAMPerformanceTable: React.FC<Props> = ({
                       Self Achieve
                     </TableHead>
                     <TableHead className="text-center border-r border-b text-[10px] uppercase sticky top-[48px] bg-slate-50">
+                      Up / Down (Self)
+                    </TableHead>
+                    <TableHead className="text-center border-r border-b text-[10px] uppercase sticky top-[48px] bg-slate-50">
                       Transferred
                     </TableHead>
                     <TableHead className="text-center border-r border-b text-[10px] uppercase sticky top-[48px] bg-slate-50">
-                      Up / Down
+                      Up / Down (Transferred)
                     </TableHead>
                   </React.Fragment>
                 ))}
@@ -541,12 +585,19 @@ export const KAMPerformanceTable: React.FC<Props> = ({
                       <TableCell className="text-center border-r border-b text-sm text-slate-600">
                         {formatCurrency(stat.selfAchieved)}
                       </TableCell>
+                      <TableCell
+                        className={`text-center border-r border-b font-semibold text-sm ${
+                          stat.selfUpDown >= 0 ? 'text-emerald-600' : 'text-red-600'
+                        }`}
+                      >
+                        {formatCurrency(stat.selfUpDown)}
+                      </TableCell>
                       <TableCell className="text-center border-r border-b text-sm text-slate-600">
                         {formatCurrency(stat.transferredAchieved)}
                       </TableCell>
                       <TableCell
                         className={`text-center border-r border-b font-semibold text-sm ${
-                          stat.upDown >= 0 ? 'text-emerald-600' : 'text-red-600'
+                          stat.transferredUpDown >= 0 ? 'text-emerald-600' : 'text-red-600'
                         }`}
                       >
                         {formatCurrency(stat.transferredUpDown)}
