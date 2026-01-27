@@ -439,10 +439,10 @@ export default function AdminDashboard() {
           title="Achieved"
           icon={<TakaIcon className="h-5 w-5 text-emerald-600" />}
           iconBg="bg-gradient-to-br from-emerald-500/20 to-emerald-500/5"
-          value={kpiSummary?.avg_activities_per_kam || 0}
-          lastValue={'43'}
-          bottomLabel="Last month"
-          subLabel="This month"
+          value={`${kpiSummary?.this_month_achieved ?? 0} (${kpiSummary?.this_month_achieved_percentage ?? 0}%)`}
+          lastValue={`${kpiSummary?.last_month_achieved ?? 0} (${kpiSummary?.last_month_achieved_percentage ?? 0}%)`}
+          bottomLabel={kpiSummary?.last_month_label || '--'}
+          subLabel={kpiSummary?.this_month_label || '--'}
         />
       </div>
 
