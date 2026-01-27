@@ -1,5 +1,4 @@
-// ActivitiesPage.tsx
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ActivityModal } from '@/components/activities/ActivityModal';
@@ -23,7 +22,6 @@ import { AppPagination } from '@/components/common/AppPagination';
 import { ActivityTypeAPI, TaskAPI } from '@/api';
 import { PrismAPI } from '@/api';
 import { getUserInfo } from '@/utility/utility';
-import { set } from 'date-fns';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -301,10 +299,31 @@ export default function ActivitiesPage() {
     }
   };
 
-  console.log('dddddd', activities);
-  console.log('kamOptions', kamOptions);
-  console.log(getUserInfo()?.id);
-  console.log('userkam', user?.default_kam_id);
+  const handleUpdateActivityStatus = async (payload) => {
+    try {
+      const res = await TaskAPI.updateStatus(payload);
+
+      toast({
+        title: res.data?.message || 'Task status updated successfully',
+      });
+
+      fetchTasks(currentPage);
+    } catch (error) {
+      const errorMessage =
+        error?.response?.data?.message || error || 'Failed to update task status';
+
+      toast({
+        title: errorMessage,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // console.log('dddddd', activities);
+  // console.log('kamOptions', kamOptions);
+  // console.log(getUserInfo()?.id);
+  // console.log('userkam', user?.default_kam_id);
+  console.log('kamOptions in page', kamOptions);
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
@@ -450,9 +469,7 @@ export default function ActivitiesPage() {
           setEditingActivity(a);
           setIsModalOpen(true);
         }}
-        onComplete={(payload) => {
-          console.log('mark button', payload);
-        }}
+        onComplete={handleUpdateActivityStatus}
         onAddActivity={() => setIsModalOpen(true)}
         onViewActivity={(activity) => {
           setViewingActivity(activity);
@@ -479,16 +496,6 @@ export default function ActivitiesPage() {
           setEditingActivity(null);
         }}
         editingActivity={editingActivity}
-        // onSave={(data) => {
-        //   if (editingActivity) {
-        //     setActivities((prev) =>
-        //       prev.map((a) => (a.id === editingActivity.id ? { ...data, id: a.id } : a))
-        //     );
-        //   } else {
-        //     setActivities((prev) => [...prev, { ...data, id: `act-${Date.now()}` }]);
-        //   }
-        //   setIsModalOpen(false);
-        // }}
         onSave={async (payload) => {
           try {
             await TaskAPI.createTask(payload);

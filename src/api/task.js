@@ -20,4 +20,5 @@ export const TaskAPI = {
   getSummary: (kamId) => api.get(`/tasks/summary/${kamId}`),
 
   addNote: (payload) => api.post('/tasks/notes', payload),
+  updateStatus: (payload) => api.post('/tasks/update-status', payload),
 };

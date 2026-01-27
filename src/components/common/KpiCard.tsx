@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from '@/components/ui/card';
 
 interface KpiCardProps {
   title: string;
@@ -13,7 +13,7 @@ interface KpiCardProps {
 export const KpiCard = ({
   title,
   icon,
-  iconBg = "bg-gray-200",
+  iconBg = 'bg-gray-200',
   value,
   lastValue,
   bottomLabel,
@@ -28,7 +28,7 @@ export const KpiCard = ({
             <div className="flex items-baseline gap-2">
               <p className="text-sm text-muted-foreground">{title}</p>
               {subLabel && (
-                <span className="text-xs text-blue-400 font-semibold">{subLabel}</span>
+                <span className="text-xs text-blue-400 font-semibold">{`(${subLabel})`}</span>
               )}
             </div>
             <p className="text-2xl font-bold">{value}</p>
@@ -44,4 +44,3 @@ export const KpiCard = ({
     </Card>
   );
 };
-

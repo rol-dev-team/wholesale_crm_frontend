@@ -93,7 +93,7 @@ export function ActivityList({
   const [statusAction, setStatusAction] = useState<'completed' | 'cancelled' | null>(null);
 
   const now = new Date();
-  console.log('activitylist---', activities);
+
   if (activities.length === 0) {
     return (
       <Card>
@@ -321,7 +321,13 @@ export function ActivityList({
           setStatusAction(null);
         }}
         onSubmit={(id, status, message) => {
-          onComplete(id, status, message); // or pass status to backend
+          const payload = {
+            task_id: id,
+            status,
+            message,
+          };
+
+          onComplete(payload);
           setStatusModalOpen(false);
           setEditingActivity(null);
           setStatusAction(null);

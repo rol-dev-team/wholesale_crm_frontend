@@ -311,30 +311,34 @@ import type { Client } from '@/data/mockData';
 import { PrismAPI } from '@/api';
 
 /* -------------------- TYPES -------------------- */
-export interface KAM {
-  id: number;
-  name: string;
-}
+// export interface KAM {
+//   id: number;
+//   name: string;
+// }
 
 interface ActivityModalProps {
   open: boolean;
   onClose: () => void;
   onSave: (payload: any) => void;
-
+  editingActivity?: any;
   clients: Client[];
   activityTypes: {
     value: number; // activity_type_id
     label: string;
   }[];
-
+  kams: {
+    // ✅ ADD THIS
+    value: number;
+    label: string;
+  }[];
   // kams?: KAM[];
   userRole?: string;
   userId: number; // logged-in user id
 }
-export interface KAM {
-  value: number;
-  label: string;
-}
+// export interface KAM {
+//   value: number;
+//   label: string;
+// }
 type ClientOption = {
   value: number;
   label: string;
@@ -345,6 +349,7 @@ export function ActivityModal({
   open,
   onClose,
   onSave,
+  editingActivity,
   activityTypes = [],
   kams = [],
   userRole,
@@ -352,6 +357,7 @@ export function ActivityModal({
 }: ActivityModalProps) {
   const isSupervisor = ['supervisor', 'super_admin', 'boss'].includes(userRole || '');
 
+  console.log('passing kams to modal', kams);
   /* -------------------- FORM STATE (BACKEND KEYS) -------------------- */
   const [formData, setFormData] = useState<{
     kam_id: number | null;
@@ -396,6 +402,33 @@ export function ActivityModal({
       });
     }
   }, [open, userId]);
+
+  useEffect(() => {
+    if (!editingActivity) return;
+
+    // 🔹 prefill form
+    setFormData({
+      kam_id: Number(editingActivity.kam_id),
+      client_id: Number(editingActivity.client_id),
+      activity_type_id: Number(editingActivity.activity_type_id),
+      title: editingActivity.title ?? '',
+      description: editingActivity.description ?? '',
+      meeting_location: editingActivity.meeting_location ?? '',
+      activity_schedule: editingActivity.activity_schedule ?? '',
+    });
+
+    // 🔥 EDIT MODE → fetch clients for this KAM
+    if (editingActivity.kam_id) {
+      PrismAPI.getKamWiseClients(editingActivity.kam_id).then((res) => {
+        const options = (res.data || []).map((item: any) => ({
+          value: item.party_id,
+          label: item.client,
+        }));
+
+        setClientsByKam(options);
+      });
+    }
+  }, [editingActivity]);
 
   /* -------------------- SUBMIT -------------------- */
   const handleSubmit = (e: React.FormEvent) => {
