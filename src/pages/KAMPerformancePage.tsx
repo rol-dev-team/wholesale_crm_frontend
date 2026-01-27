@@ -1341,7 +1341,7 @@ const topPerformersbyPercentage = useMemo(() => {
     <CardTitle className="text-base font-medium flex items-center gap-2 justify-between">
       <div className="flex items-center gap-2">
         <BarChart3 className="h-4 w-4 text-primary" />
-        <span>Top Performers by Achieve Percentage</span>
+        <span>Top Achievers</span>
       </div>
       <span className="text-xs font-medium text-muted-foreground bg-muted/40 px-2 py-1 rounded-md">
         {topPerformerRangeLabel}
