@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -123,31 +123,49 @@ export default function AdminDashboard() {
   );
   const [divisionOptions, setDivisionOptions] = useState<{ value: number; label: string }[]>([]);
 
-  const fetchTasks = async (page = 1) => {
+  const lastPayloadRef = useRef<any>(null);
+
+  const fetchTasks = async (payload) => {
+    lastPayloadRef.current = payload;
     try {
-      const res = await TaskAPI.getTasks({
-        page,
-        per_page: ITEMS_PER_PAGE,
-        kam_id: getUserInfo()?.default_kam_id || undefined,
-        search: searchQuery || undefined,
-        status: statusFilter !== 'all' ? statusFilter : undefined,
-      });
+      const res = await TaskAPI.getTasks(payload);
 
       setActivities(res.data);
       setCurrentPage(res.meta.current_page);
       setTotalPages(res.meta.last_page);
     } catch (error) {
-      console.log(error);
+      console.log('error', error);
       toast({
-        title: 'Failed to load activities',
+        title: 'Failed to load activities---',
         variant: 'destructive',
       });
     }
   };
 
   useEffect(() => {
-    fetchTasks(1);
-  }, [searchQuery, statusFilter]);
+    fetchTasks({
+      page: 1,
+      per_page: ITEMS_PER_PAGE,
+      kam_id: getUserInfo()?.default_kam_id,
+      // search: searchQuery || undefined,
+      status: statusFilter !== 'all' ? statusFilter : undefined,
+    });
+  }, [statusFilter]);
+
+  const fetchFilteredTasks = async (payload) => {
+    try {
+      const res = await TaskAPI.getTasks(payload);
+
+      setActivities(res.data);
+      setCurrentPage(res.meta.current_page);
+      setTotalPages(res.meta.last_page);
+    } catch (error) {
+      toast({
+        title: 'Failed to load activities',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const fetchKams = async () => {
     try {
@@ -157,7 +175,7 @@ export default function AdminDashboard() {
         label: item.kam_name,
       }));
       setKamOptions(options);
-    } catch {
+    } catch (error) {
       toast({
         title: 'Failed to load activities',
         variant: 'destructive',
@@ -165,17 +183,6 @@ export default function AdminDashboard() {
     }
   };
 
-  const fetchClients = async (id) => {
-    try {
-      const res = await PrismAPI.getKamWiseClients(id);
-      setClientOptions(res.data ?? res.data);
-    } catch {
-      toast({
-        title: 'Failed to load activities',
-        variant: 'destructive',
-      });
-    }
-  };
   const fetchSummary = async (id) => {
     try {
       const res = await TaskAPI.getSummary(id);
@@ -310,7 +317,10 @@ export default function AdminDashboard() {
       toast({ title: 'Note added successfully' });
 
       setNoteActivity(null);
-      fetchTasks(currentPage);
+      fetchTasks({
+        ...lastPayloadRef.current,
+        page: currentPage,
+      });
     } catch (error) {
       toast({
         title: 'Failed to add note',
@@ -327,7 +337,10 @@ export default function AdminDashboard() {
         title: res.data?.message || 'Task status updated successfully',
       });
 
-      fetchTasks(currentPage);
+      fetchTasks({
+        ...lastPayloadRef.current,
+        page: currentPage,
+      });
     } catch (error) {
       const errorMessage =
         error?.response?.data?.message || error || 'Failed to update task status';
@@ -468,7 +481,7 @@ export default function AdminDashboard() {
         {/* Search + Filter + New Activity */}
         <div className="flex items-center gap-2 flex-1 lg:flex-none">
           {/* Search */}
-          <div className="relative flex-1 lg:flex-none">
+          {/* <div className="relative flex-1 lg:flex-none">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               className="pl-9"
@@ -476,7 +489,7 @@ export default function AdminDashboard() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-          </div>
+          </div> */}
 
           {/* Filter */}
           <Button
@@ -507,6 +520,45 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      <FilterDrawer
+        open={isFilterDrawerOpen}
+        onClose={() => setIsFilterDrawerOpen(false)}
+        title="Filter Activities"
+        filters={filters}
+        onReset={() => {
+          setDivisionFilter('all');
+          setSupervisorFilter('all');
+          setKamFilter('all');
+          setTypeFilters([]);
+          setClientFilter('all');
+          setDateRange({});
+        }}
+        // onApply={() => setIsFilterDrawerOpen(false)}
+        onApply={(modalFilter) => {
+          const payload = {
+            page: 1,
+            per_page: ITEMS_PER_PAGE,
+
+            // ✅ backend-supported params only
+            kam_id: modalFilter?.kamId ? Number(modalFilter.kamId) : undefined,
+
+            client_id: modalFilter?.clientId
+              ? Number(modalFilter.clientId) // ⚠️ must be ID, not name
+              : undefined,
+
+            activity_type_id: modalFilter?.activityType
+              ? Number(modalFilter.activityType)
+              : undefined,
+
+            from_date: modalFilter?.dateRange?.from || undefined,
+            to_date: modalFilter?.dateRange?.to || undefined,
+          };
+
+          fetchFilteredTasks(payload);
+          setIsFilterDrawerOpen(false);
+        }}
+      />
+
       {/* ACTIVITY LIST */}
       <ActivityList
         activities={activities}
@@ -530,27 +582,22 @@ export default function AdminDashboard() {
       <AppPagination
         currentPage={currentPage}
         totalPages={totalPages}
-        onPageChange={(page) => fetchTasks(page)}
+        onPageChange={(page) =>
+          fetchTasks({
+            ...lastPayloadRef.current,
+            page,
+          })
+        }
       />
 
       {/* MODAL */}
-      <ActivityModal
+      {/* <ActivityModal
         open={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
           setEditingActivity(null);
         }}
         editingActivity={editingActivity}
-        // onSave={(data) => {
-        //   if (editingActivity) {
-        //     setActivities((prev) =>
-        //       prev.map((a) => (a.id === editingActivity.id ? { ...data, id: a.id } : a))
-        //     );
-        //   } else {
-        //     setActivities((prev) => [...prev, { ...data, id: `act-${Date.now()}` }]);
-        //   }
-        //   setIsModalOpen(false);
-        // }}
         onSave={async (payload) => {
           try {
             await TaskAPI.createTask(payload);
@@ -568,6 +615,46 @@ export default function AdminDashboard() {
         kams={kamOptions}
         clients={clients}
         activityTypes={activityTypeOptions}
+        userId={getUserInfo()?.id}
+      /> */}
+
+      <ActivityModal
+        open={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingActivity(null);
+        }}
+        editingActivity={editingActivity}
+        onSave={async (payload) => {
+          try {
+            if (editingActivity) {
+              // Update existing task
+              await TaskAPI.updateTask(editingActivity.id, payload);
+              toast({ title: 'Task updated successfully' });
+            } else {
+              // Create new task
+              await TaskAPI.createTask(payload);
+              toast({ title: 'Task created successfully' });
+            }
+
+            setIsModalOpen(false);
+            setEditingActivity(null);
+            fetchTasks({
+              ...lastPayloadRef.current,
+              page: currentPage,
+            });
+          } catch (error: any) {
+            console.error('Save error:', error);
+            toast({
+              title: editingActivity ? 'Failed to update task' : 'Failed to create task',
+              description: error?.response?.data?.message || 'Please try again',
+              variant: 'destructive',
+            });
+          }
+        }}
+        kams={kamOptions}
+        activityTypes={activityTypeOptions}
+        userRole={currentUser?.role}
         userId={getUserInfo()?.id}
       />
 

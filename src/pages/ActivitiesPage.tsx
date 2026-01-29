@@ -21,7 +21,7 @@ import {
 import { AppPagination } from '@/components/common/AppPagination';
 import { ActivityTypeAPI, TaskAPI } from '@/api';
 import { PrismAPI } from '@/api';
-import { getUserInfo } from '@/utility/utility';
+import { isSuperAdmin, isManagement, isKAM, isSupervisor, getUserInfo } from '@/utility/utility';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -56,9 +56,10 @@ export default function ActivitiesPage() {
   // ---------------- ROLE CHECK ----------------
   const role = currentUser?.role;
 
-  const isKAM = role === 'kam';
-  const isSupervisor = role === 'supervisor';
-  const isManagement = role === 'boss' || role === 'super_admin';
+  const supervisorIds = user?.supervisor_ids || [];
+  const isAdmin = isSuperAdmin() || isManagement();
+  const isSup = isSupervisor();
+  const isKamUser = isKAM();
 
   // ---------------- OPTIONS ----------------
   const kams = [
@@ -164,17 +165,6 @@ export default function ActivitiesPage() {
     }
   };
 
-  const fetchClients = async (id) => {
-    try {
-      const res = await PrismAPI.getKamWiseClients(id);
-      setClientOptions(res.data ?? res.data);
-    } catch {
-      toast({
-        title: 'Failed to load activities',
-        variant: 'destructive',
-      });
-    }
-  };
   const fetchSummary = async (id) => {
     try {
       const res = await TaskAPI.getSummary(id);
@@ -366,14 +356,14 @@ export default function ActivitiesPage() {
           title="Upcoming Activities"
           icon={<ListTodo className="h-5 w-5 text-amber-600" />}
           iconBg="bg-gradient-to-br from-amber-500/20 to-amber-500/5"
-          value={activitySummary?.upcoming}
+          value={activitySummary?.upcoming || 0}
         />
 
         <KpiCard
           title="Overdue Activities"
           icon={<Clock className="h-5 w-5 text-rose-600" />}
           iconBg="bg-gradient-to-br from-rose-500/20 to-rose-500/5"
-          value={activitySummary?.overdue}
+          value={activitySummary?.overdue || 0}
         />
       </div>
 
@@ -397,7 +387,7 @@ export default function ActivitiesPage() {
         {/* Search + Filter + New Activity */}
         <div className="flex items-center gap-2 flex-1 lg:flex-none">
           {/* Search */}
-          <div className="relative flex-1 lg:flex-none">
+          {/* <div className="relative flex-1 lg:flex-none">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               className="pl-9"
@@ -405,7 +395,7 @@ export default function ActivitiesPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-          </div>
+          </div> */}
 
           {/* Filter */}
           <Button
@@ -510,7 +500,7 @@ export default function ActivitiesPage() {
       />
 
       {/* MODAL */}
-      <ActivityModal
+      {/* <ActivityModal
         open={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
@@ -534,6 +524,46 @@ export default function ActivitiesPage() {
         kams={kamOptions}
         clients={clients}
         activityTypes={activityTypeOptions}
+        userId={getUserInfo()?.id}
+      /> */}
+
+      <ActivityModal
+        open={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingActivity(null);
+        }}
+        editingActivity={editingActivity}
+        onSave={async (payload) => {
+          try {
+            if (editingActivity) {
+              // Update existing task
+              await TaskAPI.updateTask(editingActivity.id, payload);
+              toast({ title: 'Task updated successfully' });
+            } else {
+              // Create new task
+              await TaskAPI.createTask(payload);
+              toast({ title: 'Task created successfully' });
+            }
+
+            setIsModalOpen(false);
+            setEditingActivity(null);
+            fetchTasks({
+              ...lastPayloadRef.current,
+              page: currentPage,
+            });
+          } catch (error: any) {
+            console.error('Save error:', error);
+            toast({
+              title: editingActivity ? 'Failed to update task' : 'Failed to create task',
+              description: error?.response?.data?.message || 'Please try again',
+              variant: 'destructive',
+            });
+          }
+        }}
+        kams={kamOptions}
+        activityTypes={activityTypeOptions}
+        userRole={currentUser?.role}
         userId={getUserInfo()?.id}
       />
 
