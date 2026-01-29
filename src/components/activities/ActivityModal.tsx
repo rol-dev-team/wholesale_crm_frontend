@@ -958,6 +958,17 @@
 //   );
 // }
 
+<<<<<<< HEAD
+=======
+
+
+
+
+
+
+
+
+>>>>>>> d8002bc (activity edit)
 // import { useState, useEffect } from 'react';
 // import {
 //   Dialog,
@@ -1037,7 +1048,11 @@
 //   const [clientsByKam, setClientsByKam] = useState<ClientOption[]>([]);
 //   const [isLoadingClients, setIsLoadingClients] = useState(false);
 //   const [hasPrefilledData, setHasPrefilledData] = useState(false);
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> d8002bc (activity edit)
 //   // Track if options are empty
 //   const hasKams = kams.length > 0;
 //   const hasActivityTypes = activityTypes.length > 0;
@@ -1069,7 +1084,11 @@
 //     console.log('Prefilling edit form with:', editingActivity);
 //     console.log('Activity Type ID from editingActivity:', editingActivity.activity_type_id);
 //     console.log('Activity Type Name from editingActivity:', editingActivity.activity_type_name);
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> d8002bc (activity edit)
 //     // Prefill form with editing activity data
 //     const kamId = Number(editingActivity.kam_id);
 //     const clientId = Number(editingActivity.client_id);
@@ -1087,7 +1106,11 @@
 //       title: editingActivity.title || '',
 //       description: editingActivity.description || '',
 //       meeting_location: editingActivity.meeting_location || '',
+<<<<<<< HEAD
 //       activity_schedule: editingActivity.activity_schedule
+=======
+//       activity_schedule: editingActivity.activity_schedule 
+>>>>>>> d8002bc (activity edit)
 //         ? new Date(editingActivity.activity_schedule).toISOString().slice(0, 16)
 //         : '',
 //       status: editingActivity.status || 'upcoming',
@@ -1121,7 +1144,11 @@
 //   /* -------------------- HANDLE KAM CHANGE -------------------- */
 //   const handleKamChange = async (value: string) => {
 //     const kamId = value ? Number(value) : null;
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> d8002bc (activity edit)
 //     setFormData({
 //       ...formData,
 //       kam_id: kamId,
@@ -1152,9 +1179,15 @@
 //   /* -------------------- SUBMIT -------------------- */
 //   const handleSubmit = (e: React.FormEvent) => {
 //     e.preventDefault();
+<<<<<<< HEAD
 
 //     console.log('Submitting form data:', formData);
 
+=======
+    
+//     console.log('Submitting form data:', formData);
+    
+>>>>>>> d8002bc (activity edit)
 //     const payload = {
 //       ...formData,
 //       ...(editingActivity && { id: editingActivity.id }),
@@ -1198,7 +1231,11 @@
 //               Loading required data...
 //             </DialogDescription>
 //           </DialogHeader> */}
+<<<<<<< HEAD
 
+=======
+          
+>>>>>>> d8002bc (activity edit)
 //           <div className="space-y-4 py-4">
 //             {/* <Alert>
 //               <AlertDescription className="flex items-center gap-2">
@@ -1206,7 +1243,11 @@
 //                 Loading KAM and Activity Type options...
 //               </AlertDescription>
 //             </Alert> */}
+<<<<<<< HEAD
 
+=======
+            
+>>>>>>> d8002bc (activity edit)
 //             {/* Show current values if editing */}
 //             {editingActivity && (
 //               <div className="space-y-3">
@@ -1217,7 +1258,11 @@
 //                     Note: Activity Type ID from data: {editingActivity.activity_type_id}
 //                   </p> */}
 //                 </div>
+<<<<<<< HEAD
 
+=======
+                
+>>>>>>> d8002bc (activity edit)
 //                 <Button
 //                   type="button"
 //                   onClick={() => {
@@ -1233,7 +1278,11 @@
 //                 </Button>
 //               </div>
 //             )}
+<<<<<<< HEAD
 
+=======
+            
+>>>>>>> d8002bc (activity edit)
 //             <Button
 //               type="button"
 //               variant="outline"
@@ -1263,7 +1312,11 @@
 //             {editingActivity ? "Edit Task" : "Create New Task"}
 //           </DialogTitle>
 //           <DialogDescription>
+<<<<<<< HEAD
 //             {editingActivity
+=======
+//             {editingActivity 
+>>>>>>> d8002bc (activity edit)
 //               ? "Update the task details below."
 //               : "Fill in the task details below."}
 //           </DialogDescription>
@@ -1278,8 +1331,13 @@
 //             placeholder="Select KAM"
 //           >
 //             {kams.map((kam) => (
+<<<<<<< HEAD
 //               <SelectItem
 //                 key={kam.value}
+=======
+//               <SelectItem 
+//                 key={kam.value} 
+>>>>>>> d8002bc (activity edit)
 //                 value={kam.value.toString()}
 //               >
 //                 {kam.label}
@@ -1301,8 +1359,13 @@
 //             placeholder={isLoadingClients ? "Loading clients..." : "Select Client"}
 //           >
 //             {clientsByKam.map((client) => (
+<<<<<<< HEAD
 //               <SelectItem
 //                 key={client.value}
+=======
+//               <SelectItem 
+//                 key={client.value} 
+>>>>>>> d8002bc (activity edit)
 //                 value={client.value.toString()}
 //               >
 //                 {client.label}
@@ -1316,7 +1379,11 @@
 //             value={formData.activity_type_id?.toString() || ''}
 //             onValueChange={(value) => {
 //               const newId = value ? Number(value) : null;
+<<<<<<< HEAD
 //               console.log('Activity Type changed to:', newId,
+=======
+//               console.log('Activity Type changed to:', newId, 
+>>>>>>> d8002bc (activity edit)
 //                 'Label:', activityTypes.find(at => at.value === newId)?.label);
 //               setFormData({
 //                 ...formData,
@@ -1326,8 +1393,13 @@
 //             placeholder="Select Activity Type"
 //           >
 //             {activityTypes.map((type) => (
+<<<<<<< HEAD
 //               <SelectItem
 //                 key={type.value}
+=======
+//               <SelectItem 
+//                 key={type.value} 
+>>>>>>> d8002bc (activity edit)
 //                 value={type.value.toString()}
 //               >
 //                 {type.label}
@@ -1407,6 +1479,15 @@
 //   );
 // }
 
+<<<<<<< HEAD
+=======
+
+
+
+
+
+
+>>>>>>> d8002bc (activity edit)
 import { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -1491,11 +1572,19 @@ export function ActivityModal({
 
   const [clientsByKam, setClientsByKam] = useState<ClientOption[]>([]);
   const [isLoadingClients, setIsLoadingClients] = useState(false);
+<<<<<<< HEAD
 
   // Track if options are empty
   const hasKams = kams.length > 0;
   const hasActivityTypes = activityTypes.length > 0;
 
+=======
+  
+  // Track if options are empty
+  const hasKams = kams.length > 0;
+  const hasActivityTypes = activityTypes.length > 0;
+
+>>>>>>> d8002bc (activity edit)
   /* -------------------- RESET FORM FOR NEW TASK -------------------- */
   useEffect(() => {
     if (open && !editingActivity) {
@@ -1521,6 +1610,10 @@ export function ActivityModal({
     if (!open || !editingActivity) return;
 
     const kamId = Number(editingActivity.kam_id);
+<<<<<<< HEAD
+=======
+    console.log('Fetching clients for KAM ID:', kamId);
+>>>>>>> d8002bc (activity edit)
 
     if (kamId) {
       setIsLoadingClients(true);
@@ -1550,6 +1643,12 @@ export function ActivityModal({
   useEffect(() => {
     if (!open || !editingActivity || isLoadingClients) return;
 
+<<<<<<< HEAD
+=======
+    console.log('Prefilling form data now (after clients loaded)');
+    console.log('Available clients:', clientsByKam);
+    
+>>>>>>> d8002bc (activity edit)
     const kamId = Number(editingActivity.kam_id);
     const clientId = Number(editingActivity.client_id);
     const activityTypeId = Number(editingActivity.activity_type_id);
@@ -1563,7 +1662,11 @@ export function ActivityModal({
       title: editingActivity.title || '',
       description: editingActivity.description || '',
       meeting_location: editingActivity.meeting_location || '',
+<<<<<<< HEAD
       activity_schedule: editingActivity.activity_schedule
+=======
+      activity_schedule: editingActivity.activity_schedule 
+>>>>>>> d8002bc (activity edit)
         ? new Date(editingActivity.activity_schedule).toISOString().slice(0, 16)
         : '',
       status: editingActivity.status || 'upcoming',
@@ -1573,7 +1676,11 @@ export function ActivityModal({
   /* -------------------- HANDLE KAM CHANGE -------------------- */
   const handleKamChange = async (value: string) => {
     const kamId = value ? Number(value) : null;
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> d8002bc (activity edit)
     setFormData((prev) => ({
       ...prev,
       kam_id: kamId,
@@ -1588,8 +1695,15 @@ export function ActivityModal({
           value: item.party_id,
           label: item.client,
         }));
+<<<<<<< HEAD
         setClientsByKam(options);
       } catch (err) {
+=======
+        console.log('Clients fetched when KAM changed:', options);
+        setClientsByKam(options);
+      } catch (err) {
+        console.error('Failed to fetch clients', err);
+>>>>>>> d8002bc (activity edit)
         setClientsByKam([]);
       } finally {
         setIsLoadingClients(false);
@@ -1599,6 +1713,7 @@ export function ActivityModal({
       setIsLoadingClients(false);
     }
   };
+<<<<<<< HEAD
 
   useEffect(() => {
     if (user?.role === 'kam' && user?.default_kam_id && open) {
@@ -1627,11 +1742,19 @@ export function ActivityModal({
       })();
     }
   }, [user?.role, user?.default_kam_id, open]);
+=======
+>>>>>>> d8002bc (activity edit)
 
   /* -------------------- SUBMIT -------------------- */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+<<<<<<< HEAD
 
+=======
+    
+    console.log('Submitting form data:', formData);
+    
+>>>>>>> d8002bc (activity edit)
     const payload = {
       ...formData,
       ...(editingActivity && { id: editingActivity.id }),
@@ -1650,6 +1773,7 @@ export function ActivityModal({
             {editingActivity && (
               <div className="space-y-3">
                 <div className="p-3 bg-muted/50 rounded-lg">
+<<<<<<< HEAD
                   <p className="text-sm font-medium">
                     Current KAM: {editingActivity.kam_name || `ID: ${editingActivity.kam_id}`}
                   </p>
@@ -1660,6 +1784,12 @@ export function ActivityModal({
                   </p>
                 </div>
 
+=======
+                  <p className="text-sm font-medium">Current KAM: {editingActivity.kam_name || `ID: ${editingActivity.kam_id}`}</p>
+                  <p className="text-sm font-medium mt-2">Current Activity Type: {editingActivity.activity_type_name || `ID: ${editingActivity.activity_type_id}`}</p>
+                </div>
+                
+>>>>>>> d8002bc (activity edit)
                 <Button
                   type="button"
                   onClick={() => {
@@ -1675,8 +1805,18 @@ export function ActivityModal({
                 </Button>
               </div>
             )}
+<<<<<<< HEAD
 
             <Button type="button" variant="outline" onClick={onClose} className="w-full">
+=======
+            
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="w-full"
+            >
+>>>>>>> d8002bc (activity edit)
               Cancel
             </Button>
           </div>
@@ -1687,6 +1827,7 @@ export function ActivityModal({
 
   /* -------------------- UI -------------------- */
   return (
+<<<<<<< HEAD
     <Dialog
       open={open}
       onOpenChange={(v) => {
@@ -1700,11 +1841,28 @@ export function ActivityModal({
           <DialogTitle>{editingActivity ? 'Edit Task' : 'Create New Task'}</DialogTitle>
           <DialogDescription>
             {editingActivity ? 'Update the task details below.' : 'Fill in the task details below.'}
+=======
+    <Dialog open={open} onOpenChange={(v) => {
+      if (!v) {
+        onClose();
+      }
+    }}>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {editingActivity ? "Edit Task" : "Create New Task"}
+          </DialogTitle>
+          <DialogDescription>
+            {editingActivity 
+              ? "Update the task details below."
+              : "Fill in the task details below."}
+>>>>>>> d8002bc (activity edit)
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* -------------------- KAM SELECTION -------------------- */}
+<<<<<<< HEAD
 
           <FloatingSelect
             label="KAM *"
@@ -1715,9 +1873,19 @@ export function ActivityModal({
               if (user?.role === 'kam') return; // ⛔ HARD BLOCK
               handleKamChange(value);
             }}
+=======
+          <FloatingSelect
+            label="KAM *"
+            value={formData.kam_id?.toString() || ''}
+            onValueChange={handleKamChange}
+            placeholder="Select KAM"
+>>>>>>> d8002bc (activity edit)
           >
             {kams.map((kam) => (
-              <SelectItem key={kam.value} value={kam.value.toString()}>
+              <SelectItem 
+                key={kam.value} 
+                value={kam.value.toString()}
+              >
                 {kam.label}
               </SelectItem>
             ))}
@@ -1734,11 +1902,22 @@ export function ActivityModal({
               }))
             }
             disabled={!formData.kam_id || isLoadingClients}
+<<<<<<< HEAD
             placeholder={isLoadingClients ? 'Loading clients...' : 'Select Client'}
           >
             {clientsByKam.length > 0 ? (
               clientsByKam.map((client) => (
                 <SelectItem key={client.value} value={client.value.toString()}>
+=======
+            placeholder={isLoadingClients ? "Loading clients..." : "Select Client"}
+          >
+            {clientsByKam.length > 0 ? (
+              clientsByKam.map((client) => (
+                <SelectItem 
+                  key={client.value} 
+                  value={client.value.toString()}
+                >
+>>>>>>> d8002bc (activity edit)
                   {client.label}
                 </SelectItem>
               ))
@@ -1762,7 +1941,10 @@ export function ActivityModal({
             placeholder="Select Activity Type"
           >
             {activityTypes.map((type) => (
-              <SelectItem key={type.value} value={type.value.toString()}>
+              <SelectItem 
+                key={type.value} 
+                value={type.value.toString()}
+              >
                 {type.label}
               </SelectItem>
             ))}
@@ -1818,7 +2000,11 @@ export function ActivityModal({
                 !formData.title.trim()
               }
             >
+<<<<<<< HEAD
               {editingActivity ? 'Update Task' : 'Create Task'}
+=======
+              {editingActivity ? "Update Task" : "Create Task"}
+>>>>>>> d8002bc (activity edit)
             </Button>
           </DialogFooter>
         </form>
