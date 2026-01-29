@@ -6,7 +6,7 @@ import { UserAPI } from '@/api/user';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, Group, Settings2, Edit2, Trash } from 'lucide-react';
+import { Users, Group, Settings2, Edit2, Trash, CheckCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 import FloatingTeamForm, { TeamPayload, SelectOption } from '@/components/teams/createTeamForm';
@@ -14,6 +14,7 @@ import { CreateGroupFormValues, CreateGroupForm } from '@/components/groups/Crea
 import { UserAccessForm, UserAccessFormValues } from '@/components/user/UserAccessControl';
 import { CreateSystemUserForm, SystemUser } from '@/components/user/CreateSystemUserForm';
 import { SystemUserList } from '@/components/user/SystemUserList';
+import { ApprovalConfiguration } from '@/components/approval/ApprovalConfiguration';
 import {
   UserAccessForm as UserMappingForm,
   UserAccessFormValues as UserMappingValues,
@@ -303,12 +304,22 @@ export default function SettingsPage() {
           <TabsTrigger value="groups" className="gap-2">
             <Group className="h-4 w-4" /> Groups
           </TabsTrigger> */}
+
+          {/* Create System User */}
           <TabsTrigger value="createSystemUser" className="gap-2">
             <Users className="h-4 w-4" /> Create System User
           </TabsTrigger>
+
+          {/* System User List */}
           <TabsTrigger value="systemUserList" className="gap-2">
             <Users className="h-4 w-4" /> User List
           </TabsTrigger>
+
+          {/* Approval Configuration */}
+          <TabsTrigger value="approvalConfiguration" className="gap-2">
+            <CheckCircle className="h-4 w-4" /> Approval Configuration
+          </TabsTrigger>
+
           {/* <TabsTrigger value="userMapping" className="gap-2">
             <Settings2 className="h-4 w-4" /> User Mapping
           </TabsTrigger>
@@ -318,7 +329,7 @@ export default function SettingsPage() {
         </TabsList>
 
         {/* TEAMS TAB */}
-        <TabsContent value="teams">
+        {/* <TabsContent value="teams">
           <Card>
             <CardHeader className="flex justify-between items-center">
               <div>
@@ -346,7 +357,6 @@ export default function SettingsPage() {
                   index={editingTeamIndex ?? undefined}
                 />
               )}
-              {/* Teams Table */}
               <table className="w-full border border-border text-sm mt-4">
                 <thead className="bg-muted">
                   <tr>
@@ -403,10 +413,10 @@ export default function SettingsPage() {
               </table>
             </CardContent>
           </Card>
-        </TabsContent>
+        </TabsContent> */}
 
         {/* GROUPS TAB */}
-        <TabsContent value="groups">
+        {/* <TabsContent value="groups">
           <Card>
             <CardHeader className="flex justify-between items-center">
               <div>
@@ -477,10 +487,10 @@ export default function SettingsPage() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
+        </TabsContent> */}
 
         {/* USER ACCESS TAB */}
-        <TabsContent value="userConfig">
+        {/* <TabsContent value="userConfig">
           <Card>
             <CardHeader>
               <CardTitle>User Access</CardTitle>
@@ -495,7 +505,6 @@ export default function SettingsPage() {
                   editingUserAccessIndex !== null ? userAccesses[editingUserAccessIndex] : undefined
                 }
               />
-              {/* Table */}
               <table className="w-full border border-border text-sm mt-4">
                 <thead className="bg-muted">
                   <tr>
@@ -550,7 +559,7 @@ export default function SettingsPage() {
               </table>
             </CardContent>
           </Card>
-        </TabsContent>
+        </TabsContent> */}
 
         {/* CREATE SYSTEM USER TAB */}
         <TabsContent value="createSystemUser">
@@ -586,8 +595,25 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
+
+        {/* APPROVAL CONFIGURATION TAB */}
+        <TabsContent
+          value="approvalConfiguration"
+          className="overflow-visible data-[state=active]:animate-none data-[state=inactive]:hidden"
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle>Approval Configuration</CardTitle>
+            </CardHeader>
+
+            <CardContent className="overflow-visible">
+              <ApprovalConfiguration users={systemUserList} onEdit={handleEditSystemUser} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* USER MAPPING TAB */}
-        <TabsContent value="userMapping">
+        {/* <TabsContent value="userMapping">
           <Card>
             <CardHeader>
               <CardTitle>User Mapping</CardTitle>
@@ -606,10 +632,10 @@ export default function SettingsPage() {
               />
             </CardContent>
           </Card>
-        </TabsContent>
+        </TabsContent> */}
 
         {/* MAPPED LIST TAB */}
-        <TabsContent value="mappedList">
+        {/* <TabsContent value="mappedList">
           <Card>
             <CardHeader>
               <CardTitle>Mapped Users</CardTitle>
@@ -632,7 +658,7 @@ export default function SettingsPage() {
               />
             </CardContent>
           </Card>
-        </TabsContent>
+        </TabsContent> */}
       </Tabs>
     </div>
   );

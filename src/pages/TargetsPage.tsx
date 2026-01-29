@@ -1,5 +1,3 @@
-
-
 // src/pages/TargetsPage.tsx
 import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -78,6 +76,7 @@ export default function TargetsPage() {
   const [targetAmount, setTargetAmount] = useState('');
   const [targetMonthName, setTargetMonthName] = useState(MONTHS_ARRAY[new Date().getMonth()]);
   const [targetYear, setTargetYear] = useState(new Date().getFullYear().toString());
+  const [targetQuarter, setTargetQuarter] = useState<number | null>(null);
 
   const isManagement = ['boss', 'super_admin'].includes(currentUser?.role);
 
@@ -417,6 +416,8 @@ export default function TargetsPage() {
         setTargetAmount={setTargetAmount}
         targetMonthName={targetMonthName}
         setTargetMonthName={setTargetMonthName}
+        targetQuarter={targetQuarter}           // <--- add this
+        setTargetQuarter={setTargetQuarter}     // <--- add this
         targetYear={targetYear}
         setTargetYear={setTargetYear}
         isManagement={isManagement}
