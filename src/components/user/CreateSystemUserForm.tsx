@@ -52,8 +52,8 @@ const UserValidationSchema = (isEditing: boolean) =>
     role: Yup.string().required('Role is required'),
     kamId: Yup.string().required('KAM is required'),
     password: isEditing
-      ? Yup.string().min(6, 'Minimum 6 characters').notRequired()
-      : Yup.string().min(6, 'Minimum 6 characters').required('Password is required'),
+      ? Yup.string().min(4, 'Minimum 4 characters').notRequired()
+      : Yup.string().min(4, 'Minimum 4 characters').required('Password is required'),
 
     confirmPassword: isEditing
       ? Yup.string().when('password', {

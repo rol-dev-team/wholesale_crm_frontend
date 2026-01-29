@@ -450,7 +450,7 @@ export function ActivityModal({
     // onClose();
   };
 
-  console.log(clientsByKam);
+  console.log('kamcheck', kams);
   /* -------------------- UI -------------------- */
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>

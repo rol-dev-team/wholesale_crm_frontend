@@ -82,18 +82,20 @@ export default App;
 function DashboardRouter() {
   const { currentUser } = useAuth();
 
-  switch (currentUser?.role?.toLowerCase()) {
-    case 'kam':
-      return <KAMDashboard />;
-    case 'supervisor':
-      return <SupervisorDashboard />;
-    case 'management':
-    case 'boss': // backend may send boss
-    case 'super_admin':
-      return <AdminDashboard />;
-    default:
-      return <KAMDashboard />;
-  }
+  return <AdminDashboard />;
+
+  // switch (currentUser?.role?.toLowerCase()) {
+  //   case 'kam':
+  //     return <KAMDashboard />;
+  //   case 'supervisor':
+  //     return <SupervisorDashboard />;
+  //   case 'management':
+  //   case 'boss': // backend may send boss
+  //   case 'super_admin':
+  //     return <AdminDashboard />;
+  //   default:
+  //     return <KAMDashboard />;
+  // }
 }
 
 // --- Placeholder page for incomplete routes ---

@@ -103,15 +103,12 @@ export default function ActivitiesPage() {
   );
   const [divisionOptions, setDivisionOptions] = useState<{ value: number; label: string }[]>([]);
 
-  const fetchTasks = async (page = 1) => {
+  const lastPayloadRef = useRef<any>(null);
+
+  const fetchTasks = async (payload) => {
+    lastPayloadRef.current = payload;
     try {
-      const res = await TaskAPI.getTasks({
-        page,
-        per_page: ITEMS_PER_PAGE,
-        kam_id: getUserInfo()?.default_kam_id || undefined,
-        search: searchQuery || undefined,
-        status: statusFilter !== 'all' ? statusFilter : undefined,
-      });
+      const res = await TaskAPI.getTasks(payload);
 
       setActivities(res.data);
       setCurrentPage(res.meta.current_page);
@@ -126,8 +123,30 @@ export default function ActivitiesPage() {
   };
 
   useEffect(() => {
-    fetchTasks(1);
-  }, [searchQuery, statusFilter]);
+    fetchTasks({
+      page: 1,
+      per_page: ITEMS_PER_PAGE,
+      kam_id: getUserInfo()?.default_kam_id,
+      // search: searchQuery || undefined,
+      status: statusFilter !== 'all' ? statusFilter : undefined,
+    });
+  }, [statusFilter]);
+
+  const fetchFilteredTasks = async (payload) => {
+    try {
+      const res = await TaskAPI.getTasks(payload);
+
+      setActivities(res.data);
+      setCurrentPage(res.meta.current_page);
+      setTotalPages(res.meta.last_page);
+    } catch (error) {
+      console.log(error);
+      toast({
+        title: 'Failed to load activities',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const fetchKams = async () => {
     try {
@@ -167,6 +186,7 @@ export default function ActivitiesPage() {
       });
     }
   };
+
   useEffect(() => {
     fetchKams();
     fetchSummary(user?.default_kam_id);
@@ -290,7 +310,10 @@ export default function ActivitiesPage() {
       toast({ title: 'Note added successfully' });
 
       setNoteActivity(null);
-      fetchTasks(currentPage);
+      fetchTasks({
+        ...lastPayloadRef.current,
+        page: currentPage,
+      });
     } catch (error) {
       toast({
         title: 'Failed to add note',
@@ -307,7 +330,10 @@ export default function ActivitiesPage() {
         title: res.data?.message || 'Task status updated successfully',
       });
 
-      fetchTasks(currentPage);
+      fetchTasks({
+        ...lastPayloadRef.current,
+        page: currentPage,
+      });
     } catch (error) {
       const errorMessage =
         error?.response?.data?.message || error || 'Failed to update task status';
@@ -323,7 +349,7 @@ export default function ActivitiesPage() {
   // console.log('kamOptions', kamOptions);
   // console.log(getUserInfo()?.id);
   // console.log('userkam', user?.default_kam_id);
-  console.log('kamOptions in page', kamOptions);
+  // console.log('kamOptions in page', kamOptions);
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
@@ -410,43 +436,8 @@ export default function ActivitiesPage() {
         </div>
       )}
 
-      {/* Filter Drawer */}
-      {/* <FilterDrawer<string>
-        open={isFilterDrawerOpen}
-        onClose={() => setIsFilterDrawerOpen(false)}
-        title="Filter Activities"
-        filters={[
-          {
-            type: 'multi-select',
-            label: 'Activity Type',
-            value: typeFilters,
-            onChange: (v) => setTypeFilters(v as ActivityType[]),
-            options: activityTypeOptions,
-          },
-          {
-            type: 'search-select',
-            label: 'Client',
-            value: clientFilter,
-            onChange: setClientFilter,
-            options: [{ label: 'All Clients', value: 'all' }, ...clientOptions],
-          },
-          {
-            type: 'date-range',
-            label: 'Date Range',
-            value: dateRange,
-            onChange: setDateRange,
-          },
-        ]}
-        onReset={() => {
-          setTypeFilters([]);
-          setClientFilter('all');
-          setDateRange({});
-        }}
-        onApply={() => setIsFilterDrawerOpen(false)}
-      /> */}
-
       {/* FILTER DRAWER */}
-      {/* <FilterDrawer
+      <FilterDrawer
         open={isFilterDrawerOpen}
         onClose={() => setIsFilterDrawerOpen(false)}
         title="Filter Activities"
@@ -459,8 +450,31 @@ export default function ActivitiesPage() {
           setClientFilter('all');
           setDateRange({});
         }}
-        onApply={() => setIsFilterDrawerOpen(false)}
-      /> */}
+        // onApply={() => setIsFilterDrawerOpen(false)}
+        onApply={(modalFilter) => {
+          const payload = {
+            page: 1,
+            per_page: ITEMS_PER_PAGE,
+
+            // ✅ backend-supported params only
+            kam_id: modalFilter?.kamId ? Number(modalFilter.kamId) : undefined,
+
+            client_id: modalFilter?.clientId
+              ? Number(modalFilter.clientId) // ⚠️ must be ID, not name
+              : undefined,
+
+            activity_type_id: modalFilter?.activityType
+              ? Number(modalFilter.activityType)
+              : undefined,
+
+            from_date: modalFilter?.dateRange?.from || undefined,
+            to_date: modalFilter?.dateRange?.to || undefined,
+          };
+
+          fetchFilteredTasks(payload);
+          setIsFilterDrawerOpen(false);
+        }}
+      />
 
       {/* ACTIVITY LIST */}
       <ActivityList
@@ -485,7 +499,14 @@ export default function ActivitiesPage() {
       <AppPagination
         currentPage={currentPage}
         totalPages={totalPages}
-        onPageChange={(page) => fetchTasks(page)}
+        // onPageChange={(page) => fetchTasks(page)}
+
+        onPageChange={(page) =>
+          fetchTasks({
+            ...lastPayloadRef.current,
+            page,
+          })
+        }
       />
 
       {/* MODAL */}

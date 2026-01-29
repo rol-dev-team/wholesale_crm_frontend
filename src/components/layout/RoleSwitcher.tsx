@@ -1,4 +1,3 @@
-// roleSwitcher.tsx
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,13 +22,7 @@ import { User, LogOut, Mail, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import AuthAPI from '@/api/authAPI';
-
-const roleLabels: Record<UserRole, string> = {
-  kam: 'KAM',
-  supervisor: 'Supervisor',
-  management: 'Management',
-  super_admin: 'Super Admin',
-};
+import { ROLE_LABELS } from '@/constant/constants';
 
 const roleColors: Record<UserRole, string> = {
   kam: 'bg-primary/10 text-primary',
@@ -53,29 +46,26 @@ export function RoleSwitcher() {
   return (
     <div className="flex items-center gap-3">
       {/* Role Switcher only for Super Admin */}
-      {currentUser.role === 'super_admin' && (
-        <div className="flex items-center gap-2">
-          <User className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Switch Role:</span>
 
-          <Select value={currentUser?.role} onValueChange={handleRoleChange}>
-            <SelectTrigger className="w-[200px] h-9">
-              <SelectValue placeholder="Select role" />
-            </SelectTrigger>
-            <SelectContent>
-              {uniqueRoles.map((role) => (
-                <SelectItem key={role} value={role}>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className={roleColors[role]}>
-                      {roleLabels[role]}
-                    </Badge>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+      <div className="flex items-center gap-2">
+        <User className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">Role:</span>
+
+        <Select value={currentUser?.role} onValueChange={handleRoleChange}>
+          <SelectTrigger className="w-[200px] h-9">
+            <SelectValue placeholder="Select role" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem key={currentUser?.id} value={currentUser.role}>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className={roleColors[currentUser.role]}>
+                  {ROLE_LABELS[currentUser.role]}
+                </Badge>
+              </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* User Profile & Logout (all users) */}
       <DropdownMenu>

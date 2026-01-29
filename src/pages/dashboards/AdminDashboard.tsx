@@ -40,6 +40,8 @@ import { ActivityTypeAPI, TaskAPI } from '@/api';
 import { PrismAPI } from '@/api';
 import { getUserInfo } from '@/utility/utility';
 import { DashboardAPI } from '@/api';
+import { hasRole } from '@/utility/hasRole';
+import { get } from 'http';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -391,28 +393,30 @@ export default function AdminDashboard() {
       </div>
 
       {/* KPI CARDS - Row 1 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <KpiCard
-          title="Total Divisions"
-          icon={<UsersRound className="h-5 w-5 text-indigo-600" />}
-          iconBg="bg-gradient-to-br from-indigo-500/20 to-indigo-500/5"
-          value={summary?.total_branches || 0}
-        />
+      {getUserInfo()?.role !== 'kam' && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <KpiCard
+            title="Total Divisions"
+            icon={<UsersRound className="h-5 w-5 text-indigo-600" />}
+            iconBg="bg-gradient-to-br from-indigo-500/20 to-indigo-500/5"
+            value={summary?.total_branches || 0}
+          />
 
-        <KpiCard
-          title="Total KAM"
-          icon={<Users className="h-5 w-5 text-emerald-600" />}
-          iconBg="bg-gradient-to-br from-emerald-500/20 to-emerald-500/5"
-          value={summary?.total_kams || 0}
-        />
+          <KpiCard
+            title="Total KAM"
+            icon={<Users className="h-5 w-5 text-emerald-600" />}
+            iconBg="bg-gradient-to-br from-emerald-500/20 to-emerald-500/5"
+            value={summary?.total_kams || 0}
+          />
 
-        <KpiCard
-          title="Total Clients"
-          icon={<Users className="h-5 w-5 text-blue-600" />}
-          iconBg="bg-gradient-to-br from-blue-500/20 to-blue-500/5"
-          value={summary?.total_clients || 0}
-        />
-      </div>
+          <KpiCard
+            title="Total Clients"
+            icon={<Users className="h-5 w-5 text-blue-600" />}
+            iconBg="bg-gradient-to-br from-blue-500/20 to-blue-500/5"
+            value={summary?.total_clients || 0}
+          />
+        </div>
+      )}
 
       {/* KPI CARDS - Row 2 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
