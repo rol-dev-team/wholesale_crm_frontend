@@ -1,7 +1,9 @@
-// // KAMFilterDrawer.tsx
-// "use client";
 
-// import React, { useState, useEffect } from 'react';
+
+// // KAMFilterDrawer.tsx
+// 'use client';
+
+// import React, { useState, useEffect, useRef } from 'react';
 // import { Filter, X, Calendar as CalendarIcon, RotateCcw } from 'lucide-react';
 // import { Button } from '@/components/ui/button';
 // import { Label } from '@/components/ui/label';
@@ -12,11 +14,11 @@
 //   DrawerTitle,
 //   DrawerTrigger,
 //   DrawerFooter,
-//   DrawerClose
-// } from "@/components/ui/drawer";
+//   DrawerClose,
+// } from '@/components/ui/drawer';
 // import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-// import DatePicker from "react-datepicker";
-// import "react-datepicker/dist/react-datepicker.css";
+// import DatePicker from 'react-datepicker';
+// import 'react-datepicker/dist/react-datepicker.css';
 // import { divisions } from '@/data/mockData';
 // import { FloatingSelect } from '@/components/ui/FloatingSelect';
 // import { SelectItem } from '@/components/ui/select';
@@ -36,6 +38,8 @@
 //   kams: KAM[];
 //   dateRange: 'monthly' | 'yearly';
 //   setDateRange: (val: 'monthly' | 'yearly') => void;
+//   viewMode: 'monthly' | 'yearly';
+//   setViewMode: (val: 'monthly' | 'yearly') => void;
 //   startMonth: string;
 //   setStartMonth: (val: string) => void;
 //   endMonth: string;
@@ -57,6 +61,8 @@
 //   kams,
 //   dateRange,
 //   setDateRange,
+//   viewMode,
+//   setViewMode,
 //   startMonth,
 //   setStartMonth,
 //   endMonth,
@@ -65,12 +71,21 @@
 //   setStartYear,
 //   endYear,
 //   setEndYear,
-//   onFilterChange
+//   onFilterChange,
 // }: KAMFilterDrawerProps) {
-
 //   const MONTHS_LIST = [
-//     "January","February","March","April","May","June",
-//     "July","August","September","October","November","December"
+//     'January',
+//     'February',
+//     'March',
+//     'April',
+//     'May',
+//     'June',
+//     'July',
+//     'August',
+//     'September',
+//     'October',
+//     'November',
+//     'December',
 //   ];
 
 //   // Get current month as default
@@ -89,19 +104,23 @@
 //   // Buffer states
 //   const [tempDivision, setTempDivision] = useState(division);
 //   const [tempKam, setTempKam] = useState(kam);
-//   const [tempClientType, setTempClientType] = useState<string>(clientType || "All Client");
-//   const [tempDateRange, setTempDateRange] = useState<'monthly'|'yearly'>(dateRange);
+//   const [tempClientType, setTempClientType] = useState<string>(clientType || 'All Client');
+//   const [tempDateRange, setTempDateRange] = useState<'monthly' | 'yearly'>(dateRange);
+//   const [tempViewMode, setTempViewMode] = useState<'monthly' | 'yearly'>(viewMode);
 //   const [tempStartMonth, setTempStartMonth] = useState(startMonth || defaultMonth);
 //   const [tempEndMonth, setTempEndMonth] = useState(endMonth || defaultMonth);
 //   const [tempStartYear, setTempStartYear] = useState(startYear || defaultYear);
 //   const [tempEndYear, setTempEndYear] = useState(endYear || defaultYear);
 //   const [filterType, setFilterType] = useState<'kam' | 'division'>('kam');
+//   const [isOpen, setIsOpen] = useState(false);
+//   const drawerCloseRef = useRef<HTMLButtonElement>(null);
 
 //   // Update buffer states when props change
 //   useEffect(() => setTempDivision(division), [division]);
 //   useEffect(() => setTempKam(kam), [kam]);
 //   useEffect(() => setTempClientType(clientType), [clientType]);
 //   useEffect(() => setTempDateRange(dateRange), [dateRange]);
+//   useEffect(() => setTempViewMode(viewMode), [viewMode]);
 //   useEffect(() => setTempStartMonth(startMonth), [startMonth]);
 //   useEffect(() => setTempEndMonth(endMonth), [endMonth]);
 //   useEffect(() => setTempStartYear(startYear), [startYear]);
@@ -113,7 +132,7 @@
 //     return new Date(parseInt(yName), monthIndex >= 0 ? monthIndex : 0);
 //   };
 
-//   const handleDateChange = (date: Date | null, type: 'start'|'end') => {
+//   const handleDateChange = (date: Date | null, type: 'start' | 'end') => {
 //     if (!date) return;
 //     const mName = MONTHS_LIST[date.getMonth()];
 //     const yName = date.getFullYear().toString();
@@ -127,32 +146,49 @@
 //   };
 
 //   const handleApplyFilters = () => {
+//     // Apply all filter changes
 //     setDivision(tempDivision);
 //     setKam(tempKam);
 //     setClientType(tempClientType);
 //     setDateRange(tempDateRange);
+//     setViewMode(tempViewMode);
 //     setStartMonth(tempStartMonth);
 //     setEndMonth(tempEndMonth);
 //     setStartYear(tempStartYear);
 //     setEndYear(tempEndYear);
+
+//     // Call callback
 //     onFilterChange();
+
+//     // Close drawer after a brief delay to ensure state updates
+//     setTimeout(() => {
+//       if (drawerCloseRef.current) {
+//         drawerCloseRef.current.click();
+//       }
+//       setIsOpen(false);
+//     }, 100);
 //   };
 
 //   const handleClearFilters = () => {
 //     setTempDivision('all');
 //     setTempKam('all');
-//     setTempClientType("All Client");
+//     setTempClientType('All Client');
 //     setTempDateRange('monthly');
+//     setTempViewMode('monthly');
 //     setFilterType('kam');
+//     setTempStartMonth(defaultMonth);
+//     setTempEndMonth(defaultMonth);
+//     setTempStartYear(defaultYear);
+//     setTempEndYear(defaultYear);
 //   };
 
-//   const displayValue = (val: string) => val === 'all' ? '' : val;
+//   const displayValue = (val: string) => (val === 'all' ? '' : val);
 
 //   // Logic to show clear button
-//   const hasChanges = tempDivision !== 'all' || tempKam !== 'all' || tempClientType !== "All Client";
+//   const hasChanges = tempDivision !== 'all' || tempKam !== 'all' || tempClientType !== 'All Client';
 
 //   return (
-//     <Drawer direction="right">
+//     <Drawer direction="right" open={isOpen} onOpenChange={setIsOpen}>
 //       <DrawerTrigger asChild>
 //         <Button variant="outline" className="gap-2 shadow-sm">
 //           <Filter className="h-4 w-4" /> Filters
@@ -190,13 +226,13 @@
 //                   onValueChange={setTempKam}
 //                 >
 //                   <SelectItem value="all">All KAMs</SelectItem>
-//                   {kams && kams.length > 0 ? (
-//                     kams.map(k => (
-//                       <SelectItem key={k.kam_id} value={String(k.kam_id)}>
-//                         {k.kam_name}
-//                       </SelectItem>
-//                     ))
-//                   ) : null}
+//                   {kams && kams.length > 0
+//                     ? kams.map((k) => (
+//                         <SelectItem key={k.kam_id} value={String(k.kam_id)}>
+//                           {k.kam_name}
+//                         </SelectItem>
+//                       ))
+//                     : null}
 //                 </FloatingSelect>
 
 //                 {/* Client Category Dropdown - Only for KAM Type */}
@@ -217,9 +253,12 @@
 //                 onValueChange={setTempDivision}
 //               >
 //                 <SelectItem value="all">All Divisions</SelectItem>
-//                 {divisions && divisions.map(d => (
-//                   <SelectItem key={d} value={d}>{d}</SelectItem>
-//                 ))}
+//                 {divisions &&
+//                   divisions.map((d) => (
+//                     <SelectItem key={d} value={d}>
+//                       {d}
+//                     </SelectItem>
+//                   ))}
 //               </FloatingSelect>
 //             )}
 
@@ -229,30 +268,38 @@
 //                 View Mode
 //               </Label>
 //               <Tabs
-//                 value={tempDateRange}
-//                 onValueChange={v => setTempDateRange(v as 'monthly'|'yearly')}
+//                 value={tempViewMode}
+//                 onValueChange={(v) => setTempViewMode(v as 'monthly' | 'yearly')}
 //                 className="w-full"
 //               >
 //                 <TabsList className="grid w-full grid-cols-2 p-1 bg-muted/60">
-//                   <TabsTrigger value="monthly" className="text-xs">Monthly</TabsTrigger>
-//                   <TabsTrigger value="yearly" className="text-xs">Yearly</TabsTrigger>
+//                   <TabsTrigger value="monthly" className="text-xs">
+//                     Monthly
+//                   </TabsTrigger>
+//                   <TabsTrigger value="yearly" className="text-xs">
+//                     Yearly
+//                   </TabsTrigger>
 //                 </TabsList>
 //               </Tabs>
 //             </div>
 
 //             {/* MONTH/YEAR PICKER */}
-//             {tempDateRange === 'monthly' ? (
+//             {tempViewMode === 'monthly' ? (
 //               <div className="grid grid-cols-2 gap-3">
 //                 <div className="space-y-1">
 //                   <Label className="text-[10px] text-muted-foreground">From Month</Label>
 //                   <DatePicker
 //                     selected={getPickerDate(tempStartMonth, tempStartYear)}
-//                     onChange={date => handleDateChange(date, 'start')}
+//                     onChange={(date) => handleDateChange(date, 'start')}
 //                     showMonthYearPicker
 //                     dateFormat="MMMM yyyy"
 //                     customInput={
-//                       <Button variant="outline" className="w-full justify-start font-normal bg-muted/30 px-2 text-xs">
-//                         <CalendarIcon className="mr-1 h-3 w-3 opacity-50"/> {tempStartMonth} {tempStartYear}
+//                       <Button
+//                         variant="outline"
+//                         className="w-full justify-start font-normal bg-muted/30 px-2 text-xs"
+//                       >
+//                         <CalendarIcon className="mr-1 h-3 w-3 opacity-50" /> {tempStartMonth}{' '}
+//                         {tempStartYear}
 //                       </Button>
 //                     }
 //                   />
@@ -261,13 +308,17 @@
 //                   <Label className="text-[10px] text-muted-foreground">To Month</Label>
 //                   <DatePicker
 //                     selected={getPickerDate(tempEndMonth, tempEndYear)}
-//                     onChange={date => handleDateChange(date, 'end')}
+//                     onChange={(date) => handleDateChange(date, 'end')}
 //                     showMonthYearPicker
 //                     dateFormat="MMMM yyyy"
 //                     minDate={getPickerDate(tempStartMonth, tempStartYear)}
 //                     customInput={
-//                       <Button variant="outline" className="w-full justify-start font-normal bg-muted/30 px-2 text-xs">
-//                         <CalendarIcon className="mr-1 h-3 w-3 opacity-50"/> {tempEndMonth} {tempEndYear}
+//                       <Button
+//                         variant="outline"
+//                         className="w-full justify-start font-normal bg-muted/30 px-2 text-xs"
+//                       >
+//                         <CalendarIcon className="mr-1 h-3 w-3 opacity-50" /> {tempEndMonth}{' '}
+//                         {tempEndYear}
 //                       </Button>
 //                     }
 //                   />
@@ -280,14 +331,18 @@
 //                   value={tempStartYear}
 //                   onValueChange={setTempStartYear}
 //                 >
-//                   {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+//                   {years.map((y) => (
+//                     <SelectItem key={y} value={y}>
+//                       {y}
+//                     </SelectItem>
+//                   ))}
 //                 </FloatingSelect>
-//                 <FloatingSelect
-//                   label="To Year"
-//                   value={tempEndYear}
-//                   onValueChange={setTempEndYear}
-//                 >
-//                   {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+//                 <FloatingSelect label="To Year" value={tempEndYear} onValueChange={setTempEndYear}>
+//                   {years.map((y) => (
+//                     <SelectItem key={y} value={y}>
+//                       {y}
+//                     </SelectItem>
+//                   ))}
 //                 </FloatingSelect>
 //               </div>
 //             )}
@@ -304,13 +359,16 @@
 //             )}
 //           </div>
 
-//           <DrawerFooter className="border-t p-6">
+//           <DrawerFooter className="border-t p-6 space-y-3">
+//             <Button
+//               onClick={handleApplyFilters}
+//               className="w-full py-6 text-lg font-semibold shadow-lg shadow-primary/20"
+//             >
+//               Apply Filters
+//             </Button>
 //             <DrawerClose asChild>
-//               <Button
-//                 onClick={handleApplyFilters}
-//                 className="w-full py-6 text-lg font-semibold shadow-lg shadow-primary/20"
-//               >
-//                 Apply Filters
+//               <Button ref={drawerCloseRef} variant="outline" className="w-full py-6">
+//                 Cancel
 //               </Button>
 //             </DrawerClose>
 //           </DrawerFooter>
@@ -320,7 +378,11 @@
 //   );
 // }
 
-// KAMFilterDrawer.tsx
+
+
+
+
+// components/filters/KAMFilterDrawer.tsx
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -342,6 +404,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { divisions } from '@/data/mockData';
 import { FloatingSelect } from '@/components/ui/FloatingSelect';
 import { SelectItem } from '@/components/ui/select';
+import { KamPerformanceApi } from '@/api/kamPerformanceApi';
 
 interface KAM {
   kam_id: string | number;
@@ -356,6 +419,7 @@ interface KAMFilterDrawerProps {
   clientType: string;
   setClientType: (val: string) => void;
   kams: KAM[];
+  setKams: (val: KAM[]) => void;
   dateRange: 'monthly' | 'yearly';
   setDateRange: (val: 'monthly' | 'yearly') => void;
   viewMode: 'monthly' | 'yearly';
@@ -369,6 +433,7 @@ interface KAMFilterDrawerProps {
   endYear: string;
   setEndYear: (val: string) => void;
   onFilterChange: () => void;
+  userRole?: string; // New prop for user role
 }
 
 export function KAMFilterDrawer({
@@ -379,6 +444,7 @@ export function KAMFilterDrawer({
   clientType,
   setClientType,
   kams,
+  setKams,
   dateRange,
   setDateRange,
   viewMode,
@@ -392,6 +458,7 @@ export function KAMFilterDrawer({
   endYear,
   setEndYear,
   onFilterChange,
+  userRole = 'super_admin',
 }: KAMFilterDrawerProps) {
   const MONTHS_LIST = [
     'January',
@@ -433,7 +500,36 @@ export function KAMFilterDrawer({
   const [tempEndYear, setTempEndYear] = useState(endYear || defaultYear);
   const [filterType, setFilterType] = useState<'kam' | 'division'>('kam');
   const [isOpen, setIsOpen] = useState(false);
+  const [kamsLoading, setKamsLoading] = useState(false);
   const drawerCloseRef = useRef<HTMLButtonElement>(null);
+
+  // Load KAMs when drawer opens (for supervisor, only load their KAMs)
+  useEffect(() => {
+    if (isOpen && kams.length === 0) {
+      loadKams();
+    }
+  }, [isOpen]);
+
+  // Load KAMs from backend
+  const loadKams = async () => {
+    setKamsLoading(true);
+    try {
+      // For supervisor role, the backend will automatically filter KAMs
+      const response = await KamPerformanceApi.getFilterKamList();
+      
+      if (response.success && response.data) {
+        setKams(response.data);
+        
+        // If supervisor and no KAM is selected, auto-select the first one
+        if (userRole === 'supervisor' && !kam && response.data.length > 0) {
+          setTempKam(String(response.data[0].kam_id));
+        }
+      }
+    } catch (err) {
+      console.error('Error loading KAMs:', err);
+    }
+    setKamsLoading(false);
+  };
 
   // Update buffer states when props change
   useEffect(() => setTempDivision(division), [division]);
@@ -507,6 +603,12 @@ export function KAMFilterDrawer({
   // Logic to show clear button
   const hasChanges = tempDivision !== 'all' || tempKam !== 'all' || tempClientType !== 'All Client';
 
+  // For KAM role, disable most filter options
+  const isKamRole = userRole === 'kam';
+
+  // Show KAM selector only for non-KAM roles
+  const showKamSelector = !isKamRole;
+
   return (
     <Drawer direction="right" open={isOpen} onOpenChange={setIsOpen}>
       <DrawerTrigger asChild>
@@ -527,62 +629,105 @@ export function KAMFilterDrawer({
           </DrawerHeader>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            {/* TYPE DROPDOWN */}
-            <FloatingSelect
-              label="Type"
-              value={filterType}
-              onValueChange={(val) => setFilterType(val as 'kam' | 'division')}
-            >
-              <SelectItem value="kam">KAM</SelectItem>
-              <SelectItem value="division">Division</SelectItem>
-            </FloatingSelect>
-
-            {/* CONDITIONAL DROPDOWNS */}
-            {filterType === 'kam' ? (
+            {/* For KAM role, show limited filters */}
+            {isKamRole ? (
               <>
-                <FloatingSelect
-                  label="All KAM"
-                  value={displayValue(tempKam)}
-                  onValueChange={setTempKam}
-                >
-                  <SelectItem value="all">All KAMs</SelectItem>
-                  {kams && kams.length > 0
-                    ? kams.map((k) => (
-                        <SelectItem key={k.kam_id} value={String(k.kam_id)}>
-                          {k.kam_name}
-                        </SelectItem>
-                      ))
-                    : null}
-                </FloatingSelect>
-
-                {/* Client Category Dropdown - Only for KAM Type */}
-                <FloatingSelect
-                  label="Client Category"
-                  value={tempClientType}
-                  onValueChange={setTempClientType}
-                >
-                  <SelectItem value="All Client">All Client</SelectItem>
-                  <SelectItem value="Self Client">Self Client</SelectItem>
-                  <SelectItem value="Transferred Client">Transferred Client</SelectItem>
-                </FloatingSelect>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-xs font-medium text-amber-800">
+                    As a KAM, you can only view your own data. Limited filters available.
+                  </p>
+                </div>
               </>
             ) : (
-              <FloatingSelect
-                label="Division"
-                value={displayValue(tempDivision)}
-                onValueChange={setTempDivision}
-              >
-                <SelectItem value="all">All Divisions</SelectItem>
-                {divisions &&
-                  divisions.map((d) => (
-                    <SelectItem key={d} value={d}>
-                      {d}
-                    </SelectItem>
-                  ))}
-              </FloatingSelect>
+              <>
+                {/* TYPE DROPDOWN - Only for non-KAM roles */}
+                {userRole !== 'kam' && (
+                  <FloatingSelect
+                    label="Type"
+                    value={filterType}
+                    onValueChange={(val) => setFilterType(val as 'kam' | 'division')}
+                  >
+                    <SelectItem value="kam">KAM</SelectItem>
+                    <SelectItem value="division">Division</SelectItem>
+                  </FloatingSelect>
+                )}
+
+                {/* CONDITIONAL DROPDOWNS */}
+                {filterType === 'kam' ? (
+                  <>
+                    {/* KAM Dropdown */}
+                    {/* <FloatingSelect
+                      label="All KAM"
+                      value={displayValue(tempKam)}
+                      onValueChange={setTempKam}
+                    >
+                      <SelectItem value="all">
+                        {kamsLoading ? 'Loading KAMs...' : 'All KAMs'}
+                      </SelectItem>
+                      {kams && kams.length > 0
+                        ? kams.map((k) => (
+                            <SelectItem key={k.kam_id} value={String(k.kam_id)}>
+                              {k.kam_name}
+                            </SelectItem>
+                          ))
+                        : null}
+                    </FloatingSelect> */}
+
+                    <FloatingSelect
+                      label="All KAM"
+                      value={tempKam ?? "all"}
+                      onValueChange={setTempKam}
+                    >
+                      <SelectItem value="all">All</SelectItem>
+
+                      {kamsLoading ? (
+                        <SelectItem value="loading" disabled>
+                          Loading KAMs...
+                        </SelectItem>
+                      ) : (
+                        kams?.map((k) => (
+                          <SelectItem key={k.kam_id} value={String(k.kam_id)}>
+                            {k.kam_name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </FloatingSelect>
+
+
+                    {/* Client Category Dropdown - Only for KAM Type and supervisor role */}
+                    {userRole !== 'kam' && (
+                      <FloatingSelect
+                        label="Client Category"
+                        value={tempClientType}
+                        onValueChange={setTempClientType}
+                      >
+                        <SelectItem value="All Client">All Client</SelectItem>
+                        <SelectItem value="Self Client">Self Client</SelectItem>
+                        <SelectItem value="Transferred Client">
+                          Transferred Client
+                        </SelectItem>
+                      </FloatingSelect>
+                    )}
+                  </>
+                ) : (
+                  <FloatingSelect
+                    label="Division"
+                    value={displayValue(tempDivision)}
+                    onValueChange={setTempDivision}
+                  >
+                    <SelectItem value="all">All Divisions</SelectItem>
+                    {divisions &&
+                      divisions.map((d) => (
+                        <SelectItem key={d} value={d}>
+                          {d}
+                        </SelectItem>
+                      ))}
+                  </FloatingSelect>
+                )}
+              </>
             )}
 
-            {/* VIEW MODE */}
+            {/* VIEW MODE - Show for all roles */}
             <div className="space-y-2">
               <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 View Mode
@@ -668,7 +813,7 @@ export function KAMFilterDrawer({
             )}
 
             {/* Clear Button */}
-            {hasChanges && (
+            {hasChanges && !isKamRole && (
               <Button
                 variant="ghost"
                 className="w-full text-destructive hover:text-destructive flex gap-2 py-4"
