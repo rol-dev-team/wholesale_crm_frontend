@@ -1782,7 +1782,7 @@ export default function SetTargetModal(props: Props) {
 
           {/* ✅ Division - AUTO-POPULATED from KAM selection */}
           <FloatingSelect
-            label="Division"
+            label="Branch"
             value={selectedDivisionId || ''}
             onValueChange={(v) => {
               const branch = branches.find((b) => b.id.toString() === v);
