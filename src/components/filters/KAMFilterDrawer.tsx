@@ -648,7 +648,7 @@ export function KAMFilterDrawer({
                     onValueChange={(val) => setFilterType(val as 'kam' | 'division')}
                   >
                     <SelectItem value="kam">KAM</SelectItem>
-                    <SelectItem value="division">Division</SelectItem>
+                    {/* <SelectItem value="division">Division</SelectItem> */}
                   </FloatingSelect>
                 )}
 
