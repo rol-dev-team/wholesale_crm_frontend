@@ -8,6 +8,10 @@ export const PrismAPI = {
   // 2️⃣ Branch Wise Supervisor List
   getBranchWiseSupervisorList: (branchId) =>
     api.get(`/prism/branch-wise-supervisor-list/${branchId}`),
+
+  getKamWiseSupervisorList: (kamId) =>
+    api.get(`/prism/kam-wise-supervisor-list/${kamId}`),
+
   getSupervisorWiseKAMList: (supervisorId) =>
     api.get(`/prism/supervisor-wise-kam-list/${supervisorId}`),
 
