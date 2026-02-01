@@ -169,7 +169,7 @@ export default function SetTargetModal(props: Props) {
         <DialogHeader>
           <DialogTitle>Set Revenue Target</DialogTitle>
           <DialogDescription>
-            Select month, division, supervisor, KAM and set revenue target.
+            Select month, branch, supervisor, KAM and set revenue target.
           </DialogDescription>
         </DialogHeader>
 
@@ -189,7 +189,7 @@ export default function SetTargetModal(props: Props) {
 
           {/* Division Select */}
           <FloatingSelect
-            label="Division"
+            label="Branch"
             value={selectedDivisionId || ''}
             onValueChange={(v) => {
               const branch = branches.find((b) => b.id.toString() === v);
@@ -208,23 +208,22 @@ export default function SetTargetModal(props: Props) {
           </FloatingSelect>
 
           {/* Supervisor Select (only for management) */}
-          {isManagement && (
-            <FloatingSelect
-              label="Supervisor"
-              value={selectedSupervisor || ''}
-              onValueChange={(v) => {
-                setSelectedSupervisor(v);
-                setSelectedKam('');
-              }}
-              disabled={!selectedDivisionId}
-            >
-              {(supervisors || []).map((s) => (
-                <SelectItem key={s.supervisor_id} value={s.supervisor_id.toString()}>
-                  {s.supervisor}
-                </SelectItem>
-              ))}
-            </FloatingSelect>
-          )}
+
+          <FloatingSelect
+            label="Supervisor"
+            value={selectedSupervisor || ''}
+            onValueChange={(v) => {
+              setSelectedSupervisor(v);
+              setSelectedKam('');
+            }}
+            disabled={!selectedDivisionId}
+          >
+            {(supervisors || []).map((s) => (
+              <SelectItem key={s.supervisor_id} value={s.supervisor_id.toString()}>
+                {s.supervisor}
+              </SelectItem>
+            ))}
+          </FloatingSelect>
 
           {/* KAM Select */}
           <FloatingSelect

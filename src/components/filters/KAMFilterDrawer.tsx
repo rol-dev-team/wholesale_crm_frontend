@@ -1,5 +1,3 @@
-
-
 // // KAMFilterDrawer.tsx
 // 'use client';
 
@@ -378,10 +376,6 @@
 //   );
 // }
 
-
-
-
-
 // components/filters/KAMFilterDrawer.tsx
 'use client';
 
@@ -516,10 +510,10 @@ export function KAMFilterDrawer({
     try {
       // For supervisor role, the backend will automatically filter KAMs
       const response = await KamPerformanceApi.getFilterKamList();
-      
+
       if (response.success && response.data) {
         setKams(response.data);
-        
+
         // If supervisor and no KAM is selected, auto-select the first one
         if (userRole === 'supervisor' && !kam && response.data.length > 0) {
           setTempKam(String(response.data[0].kam_id));
@@ -648,7 +642,7 @@ export function KAMFilterDrawer({
                     onValueChange={(val) => setFilterType(val as 'kam' | 'division')}
                   >
                     <SelectItem value="kam">KAM</SelectItem>
-                    <SelectItem value="division">Division</SelectItem>
+                    {/* <SelectItem value="division">Division</SelectItem> */}
                   </FloatingSelect>
                 )}
 
@@ -675,7 +669,7 @@ export function KAMFilterDrawer({
 
                     <FloatingSelect
                       label="All KAM"
-                      value={tempKam ?? "all"}
+                      value={tempKam ?? 'all'}
                       onValueChange={setTempKam}
                     >
                       <SelectItem value="all">All</SelectItem>
@@ -693,7 +687,6 @@ export function KAMFilterDrawer({
                       )}
                     </FloatingSelect>
 
-
                     {/* Client Category Dropdown - Only for KAM Type and supervisor role */}
                     {userRole !== 'kam' && (
                       <FloatingSelect
@@ -703,9 +696,7 @@ export function KAMFilterDrawer({
                       >
                         <SelectItem value="All Client">All Client</SelectItem>
                         <SelectItem value="Self Client">Self Client</SelectItem>
-                        <SelectItem value="Transferred Client">
-                          Transferred Client
-                        </SelectItem>
+                        <SelectItem value="Transferred Client">Transferred Client</SelectItem>
                       </FloatingSelect>
                     )}
                   </>

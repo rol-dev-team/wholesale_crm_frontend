@@ -183,7 +183,6 @@ export function CreateSystemUserForm({
           toast({ title: 'User saved successfully!' });
           onSave(payload);
         } catch (err) {
-          console.error(err);
           toast({ title: 'ailed to save user. Please try again.' });
         } finally {
           setSubmitting(false);

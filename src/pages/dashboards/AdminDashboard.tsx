@@ -391,25 +391,25 @@ export default function AdminDashboard() {
     fetchAdminKpiSummary();
   }, []);
 
-  console.log('dddddd', activities);
-  console.log('kamOptions', kamOptions);
-  console.log(getUserInfo()?.id);
-  console.log('userkam', user?.default_kam_id);
+  // console.log('dddddd', activities);
+  // console.log('kamOptions', kamOptions);
+  // console.log(getUserInfo()?.id);
+  // console.log('userkam', user?.default_kam_id);
 
-  console.log('summary', summary);
+  // console.log('summary', summary);
 
   return (
     <div className="page-container space-y-8">
       <div>
         <h1 className="text-2xl font-bold">Welcome, {currentUser?.name}</h1>
-        <p className="text-muted-foreground">Admin dashboard overview</p>
+        <p className="text-muted-foreground">Dashboard overview</p>
       </div>
 
       {/* KPI CARDS - Row 1 */}
       {getUserInfo()?.role !== 'kam' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <KpiCard
-            title="Total Divisions"
+            title="Total Branch"
             icon={<UsersRound className="h-5 w-5 text-indigo-600" />}
             iconBg="bg-gradient-to-br from-indigo-500/20 to-indigo-500/5"
             value={summary?.total_branches || 0}
