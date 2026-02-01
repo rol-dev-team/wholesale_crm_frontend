@@ -21,6 +21,9 @@ import NotFound from './pages/NotFound';
 import TargetsPage from './pages/TargetsPage';
 import KAMPerformancePage from './pages/KAMPerformancePage';
 import Login from './pages/Login';
+import OrderProposal from './pages/OrderProposal';
+import ReviseOrderProposalPage from './pages/ReviseOrderProposalPage';
+import OrderProposalListPage from './pages/OrderProposalListPage';
 import 'react-datepicker/dist/react-datepicker.css';
 
 const queryClient = new QueryClient();
@@ -65,6 +68,9 @@ const App = () => (
               <Route path="/targets" element={<TargetsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/help" element={<PlaceholderPage title="Help" />} />
+              <Route path="/order-proposals" element={<OrderProposal />} />
+              <Route path="/order-proposal/revise" element={<ReviseOrderProposalPage />} />
+              <Route path="/order-proposal-list" element={<OrderProposalListPage />} />
             </Route>
 
             {/* 404 */}

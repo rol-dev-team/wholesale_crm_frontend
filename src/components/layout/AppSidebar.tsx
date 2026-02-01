@@ -8,6 +8,8 @@ import {
   ClipboardList,
   Crosshair,
   Trophy,
+  ListOrdered,
+  ListCheck,
 } from 'lucide-react';
 import { hasRole } from '@/utility/hasRole';
 import { NavLink } from '@/components/NavLink';
@@ -56,6 +58,19 @@ const allNavItems = [
     url: '/clients',
     icon: Building2,
     roles: ['kam', 'supervisor', 'management', 'super_admin'],
+  },
+
+  {
+    title: 'Price Proposal',
+    url: '/order-proposals',
+    icon: ListOrdered,
+    roles: ['kam', 'super_admin'],
+  },
+  {
+    title: 'Approval Requests',
+    url: '/order-proposal-list',
+    icon: ListCheck,
+    roles: ['kam', 'super_admin', 'supervisor', 'management'],
   },
 ];
 

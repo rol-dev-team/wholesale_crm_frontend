@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Button } from '@/components/ui/button';
 import { Users, Group, Settings2, Edit2, Trash } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { ApprovalConfiguration } from '@/components/approval/ApprovalConfiguration';
 
 import FloatingTeamForm, { TeamPayload, SelectOption } from '@/components/teams/createTeamForm';
 import { CreateGroupFormValues, CreateGroupForm } from '@/components/groups/CreateGroupForm';
@@ -19,6 +20,7 @@ import {
   UserAccessFormValues as UserMappingValues,
 } from '@/components/user/UserMapping';
 import { MappedList } from '@/components/user/MappedList';
+import { CheckCircle } from 'lucide-react';
 
 /* ================= PAGE ================= */
 export default function SettingsPage() {
@@ -308,6 +310,10 @@ export default function SettingsPage() {
           </TabsTrigger>
           <TabsTrigger value="systemUserList" className="gap-2">
             <Users className="h-4 w-4" /> User List
+          </TabsTrigger>
+          {/* Approval Configuration */}
+          <TabsTrigger value="approvalConfiguration" className="gap-2">
+            <CheckCircle className="h-4 w-4" /> Approval Configuration
           </TabsTrigger>
           {/* <TabsTrigger value="userMapping" className="gap-2">
             <Settings2 className="h-4 w-4" /> User Mapping
@@ -630,6 +636,21 @@ export default function SettingsPage() {
                 }}
                 onDelete={(index) => handleDeleteUserMapping(index)}
               />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        {/* APPROVAL CONFIGURATION TAB */}
+        <TabsContent
+          value="approvalConfiguration"
+          className="overflow-visible data-[state=active]:animate-none data-[state=inactive]:hidden"
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle>Approval Configuration</CardTitle>
+            </CardHeader>
+
+            <CardContent className="overflow-visible">
+              <ApprovalConfiguration users={systemUserList} onEdit={handleEditSystemUser} />
             </CardContent>
           </Card>
         </TabsContent>
