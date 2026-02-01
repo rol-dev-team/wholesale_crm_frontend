@@ -1516,16 +1516,16 @@ export const KAMPerformanceTable: React.FC<Props> = ({
                       Target
                     </TableHead>
                     <TableHead className="text-center border-r border-b text-[10px] uppercase sticky top-[48px] bg-slate-50">
-                      Achieve
+                      Total Invoice
                     </TableHead>
                     <TableHead className="text-center border-r border-b text-[10px] uppercase sticky top-[48px] bg-slate-50">
-                      Self Achieve
+                      Self (Invocie)
                     </TableHead>
                     <TableHead className="text-center border-r border-b text-[10px] uppercase sticky top-[48px] bg-slate-50">
                       Up / Down (Self)
                     </TableHead>
                     <TableHead className="text-center border-r border-b text-[10px] uppercase sticky top-[48px] bg-slate-50">
-                      Transferred
+                      Transferred (Invocie)
                     </TableHead>
                     <TableHead className="text-center border-r border-b text-[10px] uppercase sticky top-[48px] bg-slate-50">
                       Up / Down (Transferred)
