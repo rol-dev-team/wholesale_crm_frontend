@@ -1,12 +1,4 @@
-<<<<<<< HEAD
-// // KAMFilterDrawer.tsx
-=======
-
-
-
-
 // // components/filters/KAMFilterDrawer.tsx
->>>>>>> origin/SamirMod
 // 'use client';
 
 // import React, { useState, useEffect, useMemo } from 'react';
@@ -402,11 +394,6 @@
 //   );
 // }
 
-
-
-
-
-
 // // components/filters/KAMFilterDrawer.tsx
 // 'use client';
 
@@ -707,11 +694,11 @@
 //             {filterConfigs.map((filter, idx) => {
 //               if (filter.type === 'search-select') {
 //                 return (
-//                   <FloatingSearchSelect 
-//                     key={idx} 
-//                     label={filter.label} 
-//                     value={filter.value} 
-//                     searchable 
+//                   <FloatingSearchSelect
+//                     key={idx}
+//                     label={filter.label}
+//                     value={filter.value}
+//                     searchable
 //                     onValueChange={filter.setter}
 //                   >
 //                     {filter.options.map((o: any) => (
@@ -725,10 +712,10 @@
 
 //               if (filter.type === 'select') {
 //                 return (
-//                   <FloatingSelect 
-//                     key={idx} 
-//                     label={filter.label} 
-//                     value={filter.value} 
+//                   <FloatingSelect
+//                     key={idx}
+//                     label={filter.label}
+//                     value={filter.value}
 //                     onValueChange={filter.setter}
 //                   >
 //                     {filter.options.map((o: any) => (
@@ -788,18 +775,18 @@
 //             {/* ✅ YEARLY PICKER */}
 //             {tempViewMode === 'yearly' && (
 //               <div className="grid grid-cols-2 gap-3">
-//                 <FloatingSelect 
-//                   label="From Year" 
-//                   value={tempStartYear} 
+//                 <FloatingSelect
+//                   label="From Year"
+//                   value={tempStartYear}
 //                   onValueChange={setTempStartYear}
 //                 >
 //                   {years.map((y) => (
 //                     <SelectItem key={y} value={y}>{y}</SelectItem>
 //                   ))}
 //                 </FloatingSelect>
-//                 <FloatingSelect 
-//                   label="To Year" 
-//                   value={tempEndYear} 
+//                 <FloatingSelect
+//                   label="To Year"
+//                   value={tempEndYear}
 //                   onValueChange={setTempEndYear}
 //                 >
 //                   {years.map((y) => (
@@ -826,9 +813,9 @@
 //             )}
 
 //             {/* Reset */}
-//             <Button 
-//               variant="ghost" 
-//               className="w-full text-destructive flex gap-2 py-4" 
+//             <Button
+//               variant="ghost"
+//               className="w-full text-destructive flex gap-2 py-4"
 //               onClick={handleReset}
 //             >
 //               <RotateCcw className="h-4 w-4" /> Clear All Filters
@@ -845,8 +832,6 @@
 //     </Drawer>
 //   );
 // }
-
-
 
 // // components/filters/KAMFilterDrawer.tsx
 // 'use client';
@@ -1159,11 +1144,11 @@
 //             {filterConfigs.map((filter, idx) => {
 //               if (filter.type === 'search-select') {
 //                 return (
-//                   <FloatingSearchSelect 
-//                     key={idx} 
-//                     label={filter.label} 
-//                     value={filter.value} 
-//                     searchable 
+//                   <FloatingSearchSelect
+//                     key={idx}
+//                     label={filter.label}
+//                     value={filter.value}
+//                     searchable
 //                     onValueChange={filter.setter}
 //                   >
 //                     {filter.options.map((o: any) => (
@@ -1177,10 +1162,10 @@
 
 //               if (filter.type === 'select') {
 //                 return (
-//                   <FloatingSelect 
-//                     key={idx} 
-//                     label={filter.label} 
-//                     value={filter.value} 
+//                   <FloatingSelect
+//                     key={idx}
+//                     label={filter.label}
+//                     value={filter.value}
 //                     onValueChange={filter.setter}
 //                   >
 //                     {filter.options.map((o: any) => (
@@ -1240,18 +1225,18 @@
 //             {/* ✅ YEARLY PICKER */}
 //             {tempViewMode === 'yearly' && (
 //               <div className="grid grid-cols-2 gap-3">
-//                 <FloatingSelect 
-//                   label="From Year" 
-//                   value={tempStartYear} 
+//                 <FloatingSelect
+//                   label="From Year"
+//                   value={tempStartYear}
 //                   onValueChange={setTempStartYear}
 //                 >
 //                   {years.map((y) => (
 //                     <SelectItem key={y} value={y}>{y}</SelectItem>
 //                   ))}
 //                 </FloatingSelect>
-//                 <FloatingSelect 
-//                   label="To Year" 
-//                   value={tempEndYear} 
+//                 <FloatingSelect
+//                   label="To Year"
+//                   value={tempEndYear}
 //                   onValueChange={setTempEndYear}
 //                 >
 //                   {years.map((y) => (
@@ -1265,9 +1250,9 @@
 //             {tempViewMode === 'quarterly' && (
 //               <div className="space-y-4">
 //                 {/* Year Picker */}
-//                 <FloatingSelect 
-//                   label="Year" 
-//                   value={tempQuarterYear} 
+//                 <FloatingSelect
+//                   label="Year"
+//                   value={tempQuarterYear}
 //                   onValueChange={setTempQuarterYear}
 //                 >
 //                   {years.map((y) => (
@@ -1307,9 +1292,9 @@
 //             )}
 
 //             {/* Reset */}
-//             <Button 
-//               variant="ghost" 
-//               className="w-full text-destructive flex gap-2 py-4" 
+//             <Button
+//               variant="ghost"
+//               className="w-full text-destructive flex gap-2 py-4"
 //               onClick={handleReset}
 //             >
 //               <RotateCcw className="h-4 w-4" /> Clear All Filters
@@ -1326,11 +1311,6 @@
 //     </Drawer>
 //   );
 // }
-
-
-
-
-
 
 // // components/filters/KAMFilterDrawer.tsx
 // 'use client';
@@ -1360,8 +1340,6 @@
 // import { divisions } from '@/data/mockData';
 // import { KamPerformanceApi } from '@/api/kamPerformanceApi';
 // import { PrismAPI } from '@/api/prismAPI';
-
-
 
 // /* ------------------------------------------------------------------ */
 // /* TYPES */
@@ -1468,7 +1446,7 @@
 //   const [isOpen, setIsOpen] = useState(false);
 //   const [filterType, setFilterType] = useState<'kam' | 'division'>('kam');
 //   const [kamsLoading, setKamsLoading] = useState(false);
-  
+
 //   // ✅ Branch states
 //   const [branches, setBranches] = useState<Branch[]>([]);
 //   const [branchesLoading, setBranchesLoading] = useState(false);
@@ -1636,9 +1614,9 @@
 //         setter: setTempDivision,
 //         options: [
 //           { label: 'All Divisions', value: 'all' },
-//           ...branches.map((b) => ({ 
-//             label: b.branch_name, 
-//             value: String(b.id) 
+//           ...branches.map((b) => ({
+//             label: b.branch_name,
+//             value: String(b.id)
 //           })),
 //         ],
 //         loading: branchesLoading, // ✅ Pass loading state
@@ -1675,11 +1653,11 @@
 //             {filterConfigs.map((filter, idx) => {
 //               if (filter.type === 'search-select') {
 //                 return (
-//                   <FloatingSearchSelect 
-//                     key={idx} 
-//                     label={filter.label} 
-//                     value={filter.value} 
-//                     searchable 
+//                   <FloatingSearchSelect
+//                     key={idx}
+//                     label={filter.label}
+//                     value={filter.value}
+//                     searchable
 //                     onValueChange={filter.setter}
 //                     disabled={filter.loading} // ✅ Disable while loading
 //                   >
@@ -1700,10 +1678,10 @@
 
 //               if (filter.type === 'select') {
 //                 return (
-//                   <FloatingSelect 
-//                     key={idx} 
-//                     label={filter.label} 
-//                     value={filter.value} 
+//                   <FloatingSelect
+//                     key={idx}
+//                     label={filter.label}
+//                     value={filter.value}
 //                     onValueChange={filter.setter}
 //                   >
 //                     {filter.options.map((o: any) => (
@@ -1763,18 +1741,18 @@
 //             {/* ✅ YEARLY PICKER */}
 //             {tempViewMode === 'yearly' && (
 //               <div className="grid grid-cols-2 gap-3">
-//                 <FloatingSelect 
-//                   label="From Year" 
-//                   value={tempStartYear} 
+//                 <FloatingSelect
+//                   label="From Year"
+//                   value={tempStartYear}
 //                   onValueChange={setTempStartYear}
 //                 >
 //                   {years.map((y) => (
 //                     <SelectItem key={y} value={y}>{y}</SelectItem>
 //                   ))}
 //                 </FloatingSelect>
-//                 <FloatingSelect 
-//                   label="To Year" 
-//                   value={tempEndYear} 
+//                 <FloatingSelect
+//                   label="To Year"
+//                   value={tempEndYear}
 //                   onValueChange={setTempEndYear}
 //                 >
 //                   {years.map((y) => (
@@ -1788,9 +1766,9 @@
 //             {tempViewMode === 'quarterly' && (
 //               <div className="space-y-4">
 //                 {/* Year Picker */}
-//                 <FloatingSelect 
-//                   label="Year" 
-//                   value={tempQuarterYear} 
+//                 <FloatingSelect
+//                   label="Year"
+//                   value={tempQuarterYear}
 //                   onValueChange={setTempQuarterYear}
 //                 >
 //                   {years.map((y) => (
@@ -1830,9 +1808,9 @@
 //             )}
 
 //             {/* Reset */}
-//             <Button 
-//               variant="ghost" 
-//               className="w-full text-destructive flex gap-2 py-4" 
+//             <Button
+//               variant="ghost"
+//               className="w-full text-destructive flex gap-2 py-4"
 //               onClick={handleReset}
 //             >
 //               <RotateCcw className="h-4 w-4" /> Clear All Filters
@@ -1849,8 +1827,6 @@
 //     </Drawer>
 //   );
 // }
-
-
 
 // // components/filters/KAMFilterDrawer.tsx
 // 'use client';
@@ -1986,7 +1962,7 @@
 //   const [isOpen, setIsOpen] = useState(false);
 //   const [filterType, setFilterType] = useState<'kam' | 'division'>('kam');
 //   const [kamsLoading, setKamsLoading] = useState(false);
-  
+
 //   // ✅ Branch states
 //   const [branches, setBranches] = useState<Branch[]>([]);
 //   const [branchesLoading, setBranchesLoading] = useState(false);
@@ -2035,7 +2011,7 @@
 //     try {
 //       const res = await PrismAPI.getBranchList();
 //       console.log('Branch API Response:', res); // Debug log
-      
+
 //       // Handle nested data structure: res.data.data
 //       if (res?.data?.status && res?.data?.data) {
 //         console.log('Branches loaded:', res.data.data); // Debug log
@@ -2153,23 +2129,20 @@
 //       });
 //     }
 
-
-
-
 //     // ✅ Updated: Use branches from API instead of mock data
 //     if (filterType === 'branch') {
 //       console.log('Building division filter, branches:', branches); // Debug log
-      
+
 //       const branchOptions = [
 //         { label: 'All Branches', value: 'all' },
-//         ...branches.map((b) => ({ 
-//           label: b.branch_name, 
-//           value: String(b.id) 
+//         ...branches.map((b) => ({
+//           label: b.branch_name,
+//           value: String(b.id)
 //         })),
 //       ];
-      
+
 //       console.log('Branch options:', branchOptions); // Debug log
-      
+
 //       filters.push({
 //         type: 'search-select',
 //         label: 'Branch',
@@ -2179,7 +2152,6 @@
 //         loading: branchesLoading, // ✅ Pass loading state
 //       });
 //     }
-
 
 //         // ✅ CLIENT CATEGORY (NEW 🔥)
 // if (userRole !== 'kam') {
@@ -2226,11 +2198,11 @@
 //             {filterConfigs.map((filter, idx) => {
 //               if (filter.type === 'search-select') {
 //                 return (
-//                   <FloatingSearchSelect 
-//                     key={idx} 
-//                     label={filter.label} 
-//                     value={filter.value} 
-//                     searchable 
+//                   <FloatingSearchSelect
+//                     key={idx}
+//                     label={filter.label}
+//                     value={filter.value}
+//                     searchable
 //                     onValueChange={filter.setter}
 //                     disabled={filter.loading} // ✅ Disable while loading
 //                   >
@@ -2251,10 +2223,10 @@
 
 //               if (filter.type === 'select') {
 //                 return (
-//                   <FloatingSelect 
-//                     key={idx} 
-//                     label={filter.label} 
-//                     value={filter.value} 
+//                   <FloatingSelect
+//                     key={idx}
+//                     label={filter.label}
+//                     value={filter.value}
 //                     onValueChange={filter.setter}
 //                   >
 //                     {filter.options.map((o: any) => (
@@ -2314,18 +2286,18 @@
 //             {/* ✅ YEARLY PICKER */}
 //             {tempViewMode === 'yearly' && (
 //               <div className="grid grid-cols-2 gap-3">
-//                 <FloatingSelect 
-//                   label="From Year" 
-//                   value={tempStartYear} 
+//                 <FloatingSelect
+//                   label="From Year"
+//                   value={tempStartYear}
 //                   onValueChange={setTempStartYear}
 //                 >
 //                   {years.map((y) => (
 //                     <SelectItem key={y} value={y}>{y}</SelectItem>
 //                   ))}
 //                 </FloatingSelect>
-//                 <FloatingSelect 
-//                   label="To Year" 
-//                   value={tempEndYear} 
+//                 <FloatingSelect
+//                   label="To Year"
+//                   value={tempEndYear}
 //                   onValueChange={setTempEndYear}
 //                 >
 //                   {years.map((y) => (
@@ -2339,9 +2311,9 @@
 //             {tempViewMode === 'quarterly' && (
 //               <div className="space-y-4">
 //                 {/* Year Picker */}
-//                 <FloatingSelect 
-//                   label="Year" 
-//                   value={tempQuarterYear} 
+//                 <FloatingSelect
+//                   label="Year"
+//                   value={tempQuarterYear}
 //                   onValueChange={setTempQuarterYear}
 //                 >
 //                   {years.map((y) => (
@@ -2381,9 +2353,9 @@
 //             )}
 
 //             {/* Reset */}
-//             <Button 
-//               variant="ghost" 
-//               className="w-full text-destructive flex gap-2 py-4" 
+//             <Button
+//               variant="ghost"
+//               className="w-full text-destructive flex gap-2 py-4"
 //               onClick={handleReset}
 //             >
 //               <RotateCcw className="h-4 w-4" /> Clear All Filters
@@ -2400,8 +2372,6 @@
 //     </Drawer>
 //   );
 // }
-
-
 
 // // components/filters/KAMFilterDrawer.tsx
 // 'use client';
@@ -2541,14 +2511,14 @@
 //   /* ------------------------------------------------------------------ */
 
 //   const [isOpen, setIsOpen] = useState(false);
-  
+
 //   // ✅ UPDATED: Use external filterType if provided, otherwise internal
 //   const [internalFilterType, setInternalFilterType] = useState<'kam' | 'branch'>('kam');
 //   const currentFilterType = externalFilterType ?? internalFilterType;
 //   const setCurrentFilterType = setExternalFilterType ?? setInternalFilterType;
 
 //   const [kamsLoading, setKamsLoading] = useState(false);
-  
+
 //   // ✅ Branch states
 //   const [branches, setBranches] = useState<Branch[]>([]);
 //   const [branchesLoading, setBranchesLoading] = useState(false);
@@ -2615,7 +2585,7 @@
 //     try {
 //       const res = await PrismAPI.getBranchList();
 //       console.log('Branch API Response:', res);
-      
+
 //       if (res?.data?.status && res?.data?.data) {
 //         console.log('Branches loaded:', res.data.data);
 //         setBranches(res.data.data);
@@ -2656,7 +2626,7 @@
 //   const handleApply = () => {
 //     // ✅ Apply filterType
 //     setCurrentFilterType(tempFilterType);
-    
+
 //     setDivision(tempDivision);
 //     setKam(tempKam);
 //     setClientType(tempClientType);
@@ -2733,17 +2703,17 @@
 
 //     if (tempFilterType === 'branch') {
 //       console.log('Building division filter, branches:', branches);
-      
+
 //       const branchOptions = [
 //         { label: 'All Branches', value: 'all' },
-//         ...branches.map((b) => ({ 
-//           label: b.branch_name, 
-//           value: String(b.id) 
+//         ...branches.map((b) => ({
+//           label: b.branch_name,
+//           value: String(b.id)
 //         })),
 //       ];
-      
+
 //       console.log('Branch options:', branchOptions);
-      
+
 //       filters.push({
 //         type: 'search-select',
 //         label: 'Branch',
@@ -2799,11 +2769,11 @@
 //             {filterConfigs.map((filter, idx) => {
 //               if (filter.type === 'search-select') {
 //                 return (
-//                   <FloatingSearchSelect 
-//                     key={idx} 
-//                     label={filter.label} 
-//                     value={filter.value} 
-//                     searchable 
+//                   <FloatingSearchSelect
+//                     key={idx}
+//                     label={filter.label}
+//                     value={filter.value}
+//                     searchable
 //                     onValueChange={filter.setter}
 //                     disabled={filter.loading}
 //                   >
@@ -2824,10 +2794,10 @@
 
 //               if (filter.type === 'select') {
 //                 return (
-//                   <FloatingSelect 
-//                     key={idx} 
-//                     label={filter.label} 
-//                     value={filter.value} 
+//                   <FloatingSelect
+//                     key={idx}
+//                     label={filter.label}
+//                     value={filter.value}
 //                     onValueChange={filter.setter}
 //                   >
 //                     {filter.options.map((o: any) => (
@@ -2887,18 +2857,18 @@
 //             {/* ✅ YEARLY PICKER */}
 //             {tempViewMode === 'yearly' && (
 //               <div className="grid grid-cols-2 gap-3">
-//                 <FloatingSelect 
-//                   label="From Year" 
-//                   value={tempStartYear} 
+//                 <FloatingSelect
+//                   label="From Year"
+//                   value={tempStartYear}
 //                   onValueChange={setTempStartYear}
 //                 >
 //                   {years.map((y) => (
 //                     <SelectItem key={y} value={y}>{y}</SelectItem>
 //                   ))}
 //                 </FloatingSelect>
-//                 <FloatingSelect 
-//                   label="To Year" 
-//                   value={tempEndYear} 
+//                 <FloatingSelect
+//                   label="To Year"
+//                   value={tempEndYear}
 //                   onValueChange={setTempEndYear}
 //                 >
 //                   {years.map((y) => (
@@ -2912,9 +2882,9 @@
 //             {tempViewMode === 'quarterly' && (
 //               <div className="space-y-4">
 //                 {/* Year Picker */}
-//                 <FloatingSelect 
-//                   label="Year" 
-//                   value={tempQuarterYear} 
+//                 <FloatingSelect
+//                   label="Year"
+//                   value={tempQuarterYear}
 //                   onValueChange={setTempQuarterYear}
 //                 >
 //                   {years.map((y) => (
@@ -2954,9 +2924,9 @@
 //             )}
 
 //             {/* Reset */}
-//             <Button 
-//               variant="ghost" 
-//               className="w-full text-destructive flex gap-2 py-4" 
+//             <Button
+//               variant="ghost"
+//               className="w-full text-destructive flex gap-2 py-4"
 //               onClick={handleReset}
 //             >
 //               <RotateCcw className="h-4 w-4" /> Clear All Filters
@@ -2973,9 +2943,6 @@
 //     </Drawer>
 //   );
 // }
-
-
-
 
 // components/filters/KAMFilterDrawer.tsx
 'use client';
@@ -3082,10 +3049,19 @@ export function KAMFilterDrawer({
   onFilterChange,
   userRole = 'super_admin',
 }: KAMFilterDrawerProps) {
-
   const MONTHS_LIST = [
-    'January','February','March','April','May','June',
-    'July','August','September','October','November','December',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
 
   const getCurrentMonthDefaults = () => {
@@ -3115,14 +3091,14 @@ export function KAMFilterDrawer({
   /* ------------------------------------------------------------------ */
 
   const [isOpen, setIsOpen] = useState(false);
-  
+
   // ✅ UPDATED: Use external filterType if provided, otherwise internal
   const [internalFilterType, setInternalFilterType] = useState<'kam' | 'branch'>('kam');
   const currentFilterType = externalFilterType ?? internalFilterType;
   const setCurrentFilterType = setExternalFilterType ?? setInternalFilterType;
 
   const [kamsLoading, setKamsLoading] = useState(false);
-  
+
   // ✅ Branch states
   const [branches, setBranches] = useState<Branch[]>([]);
   const [branchesLoading, setBranchesLoading] = useState(false);
@@ -3170,7 +3146,20 @@ export function KAMFilterDrawer({
       setTempQuarters(quarters);
       setTempQuarterYear(quarterYear || defaultQuarterYear);
     }
-  }, [isOpen, currentFilterType, division, kam, clientType, viewMode, startMonth, endMonth, startYear, endYear, quarters, quarterYear]);
+  }, [
+    isOpen,
+    currentFilterType,
+    division,
+    kam,
+    clientType,
+    viewMode,
+    startMonth,
+    endMonth,
+    startYear,
+    endYear,
+    quarters,
+    quarterYear,
+  ]);
 
   const loadKams = async () => {
     setKamsLoading(true);
@@ -3189,7 +3178,7 @@ export function KAMFilterDrawer({
     try {
       const res = await PrismAPI.getBranchList();
       console.log('Branch API Response:', res);
-      
+
       if (res?.data?.status && res?.data?.data) {
         console.log('Branches loaded:', res.data.data);
         setBranches(res.data.data);
@@ -3230,7 +3219,7 @@ export function KAMFilterDrawer({
   const handleApply = () => {
     // ✅ Apply filterType
     setCurrentFilterType(tempFilterType);
-    
+
     setDivision(tempDivision);
     setKam(tempKam);
     setClientType(tempClientType);
@@ -3307,17 +3296,17 @@ export function KAMFilterDrawer({
 
     if (tempFilterType === 'branch') {
       console.log('Building division filter, branches:', branches);
-      
+
       const branchOptions = [
         { label: 'All Branches', value: 'all' },
-        ...branches.map((b) => ({ 
-          label: b.branch_name, 
-          value: String(b.id) 
+        ...branches.map((b) => ({
+          label: b.branch_name,
+          value: String(b.id),
         })),
       ];
-      
+
       console.log('Branch options:', branchOptions);
-      
+
       filters.push({
         type: 'search-select',
         label: 'Branch',
@@ -3344,7 +3333,19 @@ export function KAMFilterDrawer({
     }
 
     return filters;
-  }, [tempFilterType, tempKam, tempDivision, tempClientType, kams, branches, branchesLoading, kamsLoading, isKamRole, showKamSelector, userRole]);
+  }, [
+    tempFilterType,
+    tempKam,
+    tempDivision,
+    tempClientType,
+    kams,
+    branches,
+    branchesLoading,
+    kamsLoading,
+    isKamRole,
+    showKamSelector,
+    userRole,
+  ]);
 
   /* ------------------------------------------------------------------ */
   /* RENDER */
@@ -3368,16 +3369,15 @@ export function KAMFilterDrawer({
 
         <ScrollArea className="flex-1 px-4">
           <div className="space-y-5 py-2">
-
             {/* Dynamic Filters */}
             {filterConfigs.map((filter, idx) => {
               if (filter.type === 'search-select') {
                 return (
-                  <FloatingSearchSelect 
-                    key={idx} 
-                    label={filter.label} 
-                    value={filter.value} 
-                    searchable 
+                  <FloatingSearchSelect
+                    key={idx}
+                    label={filter.label}
+                    value={filter.value}
+                    searchable
                     onValueChange={filter.setter}
                     disabled={filter.loading}
                   >
@@ -3398,10 +3398,10 @@ export function KAMFilterDrawer({
 
               if (filter.type === 'select') {
                 return (
-                  <FloatingSelect 
-                    key={idx} 
-                    label={filter.label} 
-                    value={filter.value} 
+                  <FloatingSelect
+                    key={idx}
+                    label={filter.label}
+                    value={filter.value}
                     onValueChange={filter.setter}
                   >
                     {filter.options.map((o: any) => (
@@ -3418,9 +3418,7 @@ export function KAMFilterDrawer({
 
             {/* ✅ View Mode (Monthly / Yearly / Quarterly) */}
             <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase text-muted-foreground">
-                View Mode
-              </Label>
+              <Label className="text-xs font-bold uppercase text-muted-foreground">View Mode</Label>
               <Tabs value={tempViewMode} onValueChange={(v) => setTempViewMode(v as any)}>
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="monthly">Monthly</TabsTrigger>
@@ -3461,22 +3459,22 @@ export function KAMFilterDrawer({
             {/* ✅ YEARLY PICKER */}
             {tempViewMode === 'yearly' && (
               <div className="grid grid-cols-2 gap-3">
-                <FloatingSelect 
-                  label="From Year" 
-                  value={tempStartYear} 
+                <FloatingSelect
+                  label="From Year"
+                  value={tempStartYear}
                   onValueChange={setTempStartYear}
                 >
                   {years.map((y) => (
-                    <SelectItem key={y} value={y}>{y}</SelectItem>
+                    <SelectItem key={y} value={y}>
+                      {y}
+                    </SelectItem>
                   ))}
                 </FloatingSelect>
-                <FloatingSelect 
-                  label="To Year" 
-                  value={tempEndYear} 
-                  onValueChange={setTempEndYear}
-                >
+                <FloatingSelect label="To Year" value={tempEndYear} onValueChange={setTempEndYear}>
                   {years.map((y) => (
-                    <SelectItem key={y} value={y}>{y}</SelectItem>
+                    <SelectItem key={y} value={y}>
+                      {y}
+                    </SelectItem>
                   ))}
                 </FloatingSelect>
               </div>
@@ -3486,13 +3484,15 @@ export function KAMFilterDrawer({
             {tempViewMode === 'quarterly' && (
               <div className="space-y-4">
                 {/* Year Picker */}
-                <FloatingSelect 
-                  label="Year" 
-                  value={tempQuarterYear} 
+                <FloatingSelect
+                  label="Year"
+                  value={tempQuarterYear}
                   onValueChange={setTempQuarterYear}
                 >
                   {years.map((y) => (
-                    <SelectItem key={y} value={y}>{y}</SelectItem>
+                    <SelectItem key={y} value={y}>
+                      {y}
+                    </SelectItem>
                   ))}
                 </FloatingSelect>
 
@@ -3514,23 +3514,23 @@ export function KAMFilterDrawer({
                         }`}
                       >
                         <div className="flex items-center justify-center gap-1">
-                          {tempQuarters.includes(q) && <Check className="h-4 w-4" />}
-                          Q{q}
+                          {tempQuarters.includes(q) && <Check className="h-4 w-4" />}Q{q}
                         </div>
                       </Button>
                     ))}
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
-                    Selected: {tempQuarters.length > 0 ? tempQuarters.map(q => `Q${q}`).join(', ') : 'None'}
+                    Selected:{' '}
+                    {tempQuarters.length > 0 ? tempQuarters.map((q) => `Q${q}`).join(', ') : 'None'}
                   </p>
                 </div>
               </div>
             )}
 
             {/* Reset */}
-            <Button 
-              variant="ghost" 
-              className="w-full text-destructive flex gap-2 py-4" 
+            <Button
+              variant="ghost"
+              className="w-full text-destructive flex gap-2 py-4"
               onClick={handleReset}
             >
               <RotateCcw className="h-4 w-4" /> Clear All Filters
