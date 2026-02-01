@@ -1710,7 +1710,7 @@ export function ActivityModal({
             label="KAM *"
             value={formData.kam_id?.toString() || ''}
             // onValueChange={handleKamChange}
-            placeholder="Select KAM"
+            placeholder=""
             onValueChange={(value) => {
               if (user?.role === 'kam') return; // ⛔ HARD BLOCK
               handleKamChange(value);
@@ -1734,7 +1734,7 @@ export function ActivityModal({
               }))
             }
             disabled={!formData.kam_id || isLoadingClients}
-            placeholder={isLoadingClients ? 'Loading clients...' : 'Select Client'}
+            placeholder={isLoadingClients ? 'Loading clients...' : ''}
           >
             {clientsByKam.length > 0 ? (
               clientsByKam.map((client) => (
@@ -1759,7 +1759,7 @@ export function ActivityModal({
                 activity_type_id: value ? Number(value) : null,
               }));
             }}
-            placeholder="Select Activity Type"
+            placeholder=""
           >
             {activityTypes.map((type) => (
               <SelectItem key={type.value} value={type.value.toString()}>
