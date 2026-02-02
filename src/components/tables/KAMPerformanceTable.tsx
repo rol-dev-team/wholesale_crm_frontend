@@ -1377,6 +1377,7 @@ export const KAMPerformanceTable: React.FC<Props> = ({
         kamMap[entityName].periodData[periodKey] = {
           clientCount: 0,
           achieved: 0,
+          successAchieved: 0,
           selfAchieved: 0,
           transferredAchieved: 0,
           selfUpDown: 0,
@@ -1399,12 +1400,14 @@ export const KAMPerformanceTable: React.FC<Props> = ({
         row.transfer_up_down_voucher || 0
       );
       kamMap[entityName].periodData[periodKey].targetAmount += Number(row.target_amount || 0);
+      kamMap[entityName].periodData[periodKey].successAchieved += Number(row.pending_amount || 0);
     });
 
     // Convert to array with ordered periods
     return Object.values(kamMap).map((kam: any) => {
       let rangeTargetSum = 0;
       let rangeAchievedSum = 0;
+      let rangeSuccessAchievedSum = 0;
 
       const periodStats = tablePeriods.map((period) => {
         const stat = kam.periodData[period.label] || {
@@ -1415,6 +1418,7 @@ export const KAMPerformanceTable: React.FC<Props> = ({
           transferredAchieved: 0,
           transferredUpDown: 0,
           targetAmount: 0,
+          successAchieved: 0,
         };
 
         const target = stat.targetAmount;
@@ -1422,6 +1426,7 @@ export const KAMPerformanceTable: React.FC<Props> = ({
 
         rangeTargetSum += target;
         rangeAchievedSum += stat.achieved;
+        rangeSuccessAchievedSum += stat.successAchieved;
 
         return {
           target,
@@ -1433,6 +1438,7 @@ export const KAMPerformanceTable: React.FC<Props> = ({
           targetAmount: stat.targetAmount,
           clientCount: stat.clientCount,
           upDown,
+          successAchieved: stat.successAchieved,
         };
       });
 
@@ -1441,6 +1447,7 @@ export const KAMPerformanceTable: React.FC<Props> = ({
         periodStats,
         rangeTargetSum,
         rangeAchievedSum,
+        rangeSuccessAchievedSum,
       };
     });
   }, [sales, tablePeriods, dateRangeType, filterType]); // ✅ Added filterType dependency
@@ -1491,7 +1498,7 @@ export const KAMPerformanceTable: React.FC<Props> = ({
                 {tablePeriods.map((p) => (
                   <TableHead
                     key={p.label}
-                    colSpan={7}
+                    colSpan={9}
                     className="text-center border-r border-b font-semibold min-w-[600px] sticky top-0 bg-slate-100 z-50"
                   >
                     {p.label}
@@ -1499,7 +1506,7 @@ export const KAMPerformanceTable: React.FC<Props> = ({
                 ))}
 
                 <TableHead
-                  colSpan={2}
+                  colSpan={3}
                   className="text-center bg-slate-200 border-b font-bold sticky right-0 top-0 z-[60]"
                 >
                   TOTAL
@@ -1516,16 +1523,22 @@ export const KAMPerformanceTable: React.FC<Props> = ({
                       Target
                     </TableHead>
                     <TableHead className="text-center border-r border-b text-[10px] uppercase sticky top-[48px] bg-slate-50">
-                      Achieve
+                      Achieved
                     </TableHead>
                     <TableHead className="text-center border-r border-b text-[10px] uppercase sticky top-[48px] bg-slate-50">
-                      Self Achieve
+                      Achieved (%)
+                    </TableHead>
+                    <TableHead className="text-center border-r border-b text-[10px] uppercase sticky top-[48px] bg-slate-50">
+                      Total Invoice
+                    </TableHead>
+                    <TableHead className="text-center border-r border-b text-[10px] uppercase sticky top-[48px] bg-slate-50">
+                      Self (Invocie)
                     </TableHead>
                     <TableHead className="text-center border-r border-b text-[10px] uppercase sticky top-[48px] bg-slate-50">
                       Up / Down (Self)
                     </TableHead>
                     <TableHead className="text-center border-r border-b text-[10px] uppercase sticky top-[48px] bg-slate-50">
-                      Transferred
+                      Transferred (Invocie)
                     </TableHead>
                     <TableHead className="text-center border-r border-b text-[10px] uppercase sticky top-[48px] bg-slate-50">
                       Up / Down (Transferred)
@@ -1533,11 +1546,15 @@ export const KAMPerformanceTable: React.FC<Props> = ({
                   </React.Fragment>
                 ))}
 
+                
+                 <TableHead className="text-center border-r border-b text-[10px] uppercase bg-slate-200 sticky right-[200px] top-[48px] z-10">
+                  Total Invoice
+                </TableHead>
                 <TableHead className="text-center border-r border-b text-[10px] uppercase bg-slate-200 sticky right-[100px] top-[48px]">
-                  Target
+                  Total Target
                 </TableHead>
                 <TableHead className="text-center border-b text-[10px] uppercase bg-slate-200 sticky right-0 top-[48px]">
-                  Achieve
+                   Total Achievement
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -1559,6 +1576,19 @@ export const KAMPerformanceTable: React.FC<Props> = ({
                       </TableCell>
                       <TableCell
                         className={`text-center border-r border-b font-semibold text-sm ${
+                          stat.successAchieved >= 0 ? 'text-emerald-600' : 'text-red-600'
+                        }`}
+                      >
+                        {formatCurrency(stat.successAchieved)}
+                      </TableCell>
+                      <TableCell className="text-center border-r border-b text-sm text-slate-600">
+                        {stat.targetAmount > 0 
+                            ? `${((stat.successAchieved / stat.targetAmount) * 100).toFixed(2)}%`
+                            : '0%'
+                        }
+                      </TableCell>
+                      <TableCell
+                        className={`text-center border-r border-b font-semibold text-sm ${
                           stat.achieved >= stat.targetAmount
                             ? 'text-emerald-600'
                             : 'text-orange-600'
@@ -1566,6 +1596,7 @@ export const KAMPerformanceTable: React.FC<Props> = ({
                       >
                         {formatCurrency(stat.achieved)}
                       </TableCell>
+                      
                       <TableCell className="text-center border-r border-b text-sm text-slate-600">
                         {formatCurrency(stat.selfAchieved)}
                       </TableCell>
@@ -1589,17 +1620,27 @@ export const KAMPerformanceTable: React.FC<Props> = ({
                     </React.Fragment>
                   ))}
 
-                  <TableCell className="text-center border-r border-b font-bold bg-slate-50 sticky right-[100px] text-sm">
-                    {formatCurrency(kam.rangeTargetSum)}
-                  </TableCell>
+                  
                   <TableCell
-                    className={`text-center border-b font-bold bg-slate-50 sticky right-0 text-sm ${
+                    className={`text-center border-b font-bold bg-slate-50 sticky right-[200px] text-sm ${
                       kam.rangeAchievedSum >= kam.rangeTargetSum
                         ? 'text-emerald-700'
                         : 'text-destructive'
                     }`}
                   >
                     {formatCurrency(kam.rangeAchievedSum)}
+                  </TableCell>
+                  <TableCell className="text-center border-r border-b font-bold bg-slate-50 sticky right-[100px] text-sm">
+                    {formatCurrency(kam.rangeTargetSum)}
+                  </TableCell>
+                  <TableCell
+                    className={`text-center border-b font-bold bg-slate-50 sticky right-0 text-sm ${
+                      kam.rangeSuccessAchievedSum >= kam.rangeTargetSum
+                        ? 'text-emerald-700'
+                        : 'text-destructive'
+                    }`}
+                  >
+                    {formatCurrency(kam.rangeSuccessAchievedSum)}
                   </TableCell>
                 </TableRow>
               ))}
