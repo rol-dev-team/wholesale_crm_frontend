@@ -13,6 +13,7 @@ interface FloatingSelectProps {
   className?: string;
   error?: string;
   onTouched?: () => void;
+  disabled?: boolean;
 }
 
 export function FloatingSelect({
@@ -23,6 +24,7 @@ export function FloatingSelect({
   children,
   className,
   error,
+  disabled=false,
   onTouched,
 }: FloatingSelectProps) {
   const hasValue = Boolean(value);

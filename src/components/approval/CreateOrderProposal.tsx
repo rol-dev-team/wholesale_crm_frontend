@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SelectItem } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
+import { ClientAPI } from "@/api/ClientAPI";
 import {
   Table,
   TableBody,

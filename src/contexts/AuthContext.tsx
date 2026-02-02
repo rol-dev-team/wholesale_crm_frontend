@@ -1,7 +1,6 @@
 // AuthContext.tsx
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-// import { SystemUser, UserRole, systemUsers } from '@/data/mockData';
-import { SystemUser, UserRole } from '@/data/mockData';
+import { SystemUser, UserRole, systemUsers } from '@/data/mockData';
 
 export type Permission =
   | 'view_own_leads'
@@ -35,7 +34,6 @@ export type Permission =
 
 interface AuthContextType {
   currentUser: SystemUser | null;
-  // login: (userId: string) => void;
   login: (user: SystemUser) => void;
   logout: () => void;
   switchRole: (role: UserRole) => void;
@@ -105,21 +103,56 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<SystemUser | null>(null);
 
+  // -------------------------------
+  // Session timeout logic
+  // -------------------------------
+  const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+  let inactivityTimer: NodeJS.Timeout;
+
+  const resetInactivityTimer = () => {
+    if (inactivityTimer) clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(() => {
+      logout();
+    }, SESSION_TIMEOUT);
+  };
+
+  const startInactivityTimer = () => {
+    resetInactivityTimer();
+    window.addEventListener('mousemove', resetInactivityTimer);
+    window.addEventListener('keydown', resetInactivityTimer);
+    window.addEventListener('scroll', resetInactivityTimer);
+    window.addEventListener('click', resetInactivityTimer);
+  };
+
+  const stopInactivityTimer = () => {
+    if (inactivityTimer) clearTimeout(inactivityTimer);
+    window.removeEventListener('mousemove', resetInactivityTimer);
+    window.removeEventListener('keydown', resetInactivityTimer);
+    window.removeEventListener('scroll', resetInactivityTimer);
+    window.removeEventListener('click', resetInactivityTimer);
+  };
+
   // Load user from localStorage on mount
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    if (storedUser) setCurrentUser(JSON.parse(storedUser));
+    if (storedUser) {
+      setCurrentUser(JSON.parse(storedUser));
+      startInactivityTimer();
+    }
+    return stopInactivityTimer;
   }, []);
 
   const login = (user: SystemUser) => {
     setCurrentUser(user);
     localStorage.setItem('user', JSON.stringify(user));
+    startInactivityTimer();
   };
 
   const logout = () => {
     setCurrentUser(null);
     localStorage.removeItem('user');
     localStorage.removeItem('access_token');
+    stopInactivityTimer();
   };
 
   const switchRole = (role: UserRole) => {
@@ -127,6 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) {
       setCurrentUser(user);
       localStorage.setItem('user', JSON.stringify(user));
+      startInactivityTimer();
     }
   };
 

@@ -74,6 +74,14 @@ const Login = () => {
           className="px-8 py-14 bg-white shadow-xl rounded-2xl w-full max-w-md relative space-y-6"
           noValidate
         >
+           {/* Header image */}
+  <div className="flex justify-center">
+    <img
+      src="/earth2.png"
+      alt="Earth"
+      className="w-24 h-24 object-contain"
+    />
+  </div>
           <h2 className="text-3xl font-bold text-center">Login</h2>
 
           {/* Username */}

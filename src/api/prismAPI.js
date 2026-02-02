@@ -26,3 +26,6 @@ export const PrismAPI = {
   getMultiSupervisorWiseKAMList: (supervisorIds) =>
     api.post('/prism/multi-supervisor-wise-kam-list', { supervisor_ids: supervisorIds }),
 };
+
+
+

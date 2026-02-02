@@ -4,6 +4,9 @@ import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
+import { FloatingInput } from '@/components/ui/FloatingInput';
+import { SelectItem } from '@/components/ui/select';
+import { FloatingSelect } from '../ui/FloatingSelect';  
 
 import {
   Table,
@@ -83,30 +86,67 @@ export default function OrderProposalList() {
   const [filter, setFilter] = useState<'Pending' | 'Approved' | 'Rejected'>('Pending');
   const [rejecting, setRejecting] = useState<Proposal | null>(null);
   const [rejectMsg, setRejectMsg] = useState('');
+  const [rejectingRow, setRejectingRow] = useState<{
+  proposal: Proposal;
+  item: ProposalItem;
+} | null>(null);
 
+  const [rejectData, setRejectData] = useState({
+  price: '',
+  unit: '',
+  volume: '',
+  reason: '',
+  message: '',
+});
+
+const handleRejectClick = (proposal: Proposal, item: ProposalItem) => {
+  setRejectingRow({ proposal, item });
+  setRejectData({
+    price: item.price,
+    unit: item.unit,
+    volume: item.volume,
+    reason: '',
+    message: '',
+  });
+};
   if (!currentUser) return null;
 
   const proposals = useMemo(() => MOCK_PROPOSALS.filter((p) => p.status === filter), [filter]);
 
-  const canSeeActions =
-    hasPermission('revise_order_proposal') || hasPermission('approve_order_proposal');
+  // const canSeeActions =
+  //   hasPermission('revise_order_proposal') || hasPermission('approve_order_proposal');
 
   return (
     <div className="space-y-4">
-      {/* status toggle */}
-      <div className="flex gap-2">
-        {['Pending', 'Approved', 'Rejected'].map((s) => (
-          <Button
-            key={s}
-            variant={filter === s ? 'default' : 'outline'}
-            onClick={() => setFilter(s as any)}
-          >
-            {s}
-          </Button>
-        ))}
-      </div>
+  <div className="flex items-center justify-between">
+    {/* STATUS TOGGLE */}
+    <div className="flex gap-2">
+      {['Pending', 'Approved', 'Rejected'].map((s) => (
+        <Button
+          key={s}
+          variant={filter === s ? 'default' : 'outline'}
+          onClick={() => setFilter(s as any)}
+        >
+          {s}
+        </Button>
+      ))}
+    </div>
+
+    {/* STATIC PIPELINE */}
+    <div className="flex items-center space-x-2 text-sm font-medium text-gray-600">
+      <span>Level 1</span>
+      <span className="text-gray-400">→</span>
+      <span>Level 2</span>
+      <span className="text-gray-400">→</span>
+      <span>Level 3</span>
+    </div>
+  </div>
+
+
+      
 
       <div className="border rounded-xl">
+        
         <Table>
           <TableHeader>
             <TableRow>
@@ -172,9 +212,14 @@ export default function OrderProposalList() {
                       {/* Approve / Reject (Supervisor & Super Admin) */}
                       <>
                         <Button size="sm">Approve</Button>
-                        <Button size="sm" variant="destructive" onClick={() => setRejecting(p)}>
-                          Reject
-                        </Button>
+                       <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleRejectClick(p, item)}
+                      >
+                        Reject
+                      </Button>
+
                       </>
                     </div>
                   </TableCell>
@@ -186,30 +231,65 @@ export default function OrderProposalList() {
       </div>
 
       {/* Reject dialog */}
-      <Dialog open={!!rejecting} onOpenChange={() => setRejecting(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reject Proposal</DialogTitle>
-          </DialogHeader>
+    <Dialog open={!!rejectingRow} onOpenChange={() => setRejectingRow(null)}>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>Reject Proposal</DialogTitle>
+    </DialogHeader>
 
-          <Input
-            placeholder="Rejection reason"
-            value={rejectMsg}
-            onChange={(e) => setRejectMsg(e.target.value)}
-          />
+    <div className="space-y-4">
+      <FloatingInput
+        label="Price"
+        value={rejectData.price}
+        onChange={(e) =>
+          setRejectData((prev) => ({ ...prev, price: e.target.value }))
+        }
+      />
+     
+      <FloatingInput
+        label="Volume"
+        value={rejectData.volume}
+        onChange={(e) =>
+          setRejectData((prev) => ({ ...prev, volume: e.target.value }))
+        }
+      />
+      <FloatingInput
+        label="Rejection Reason"
+        value={rejectData.reason}
+        onChange={(e) =>
+          setRejectData((prev) => ({ ...prev, reason: e.target.value }))
+        }
+      />
+      <FloatingInput
+        label="Message to user"
+        value={rejectData.message}
+        onChange={(e) =>
+          setRejectData((prev) => ({ ...prev, message: e.target.value }))
+        }
+      />
+    </div>
 
-          <Button
-            variant="destructive"
-            onClick={() => {
-              console.log('Rejected:', rejecting?.id, rejectMsg);
-              setRejecting(null);
-              setRejectMsg('');
-            }}
-          >
-            Confirm Reject
-          </Button>
-        </DialogContent>
-      </Dialog>
+    <Button
+      variant="destructive"
+      className="mt-4"
+      onClick={() => {
+        console.log('Rejected Row:', {
+          proposalId: rejectingRow?.proposal.id,
+          item: rejectingRow?.item,
+          ...rejectData,
+        });
+        // TODO: send this to backend to update the proposal and notify creator
+
+        setRejectingRow(null);
+        setRejectData({ price: '', unit: '', volume: '', reason: '', message: '' });
+      }}
+    >
+      Confirm Reject
+    </Button>
+  </DialogContent>
+</Dialog>
+
+
     </div>
   );
 }

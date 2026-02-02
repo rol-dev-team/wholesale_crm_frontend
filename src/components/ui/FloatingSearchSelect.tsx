@@ -16,6 +16,7 @@ interface FloatingSearchSelectProps {
   className?: string;
   error?: string;
   onTouched?: () => void;
+  disabled?: boolean;
   searchable?: boolean;
 }
 
@@ -28,6 +29,7 @@ export function FloatingSearchSelect({
   className,
   error,
   onTouched,
+  disabled = false,
   searchable = false,
 }: FloatingSearchSelectProps) {
   const hasValue = value !== undefined && value !== '';
@@ -60,7 +62,8 @@ export function FloatingSearchSelect({
         onOpenChange={(isOpen) => {
           if (isOpen) {
             setSearchTerm('');
-            selectedWhileOpenRef.current = false;
+            // selectedWhileOpenRef.current = false;
+            setOpen(isOpen);
           }
 
           if (open && !isOpen && !selectedWhileOpenRef.current && !value) {
