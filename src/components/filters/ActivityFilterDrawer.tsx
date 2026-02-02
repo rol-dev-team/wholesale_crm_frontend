@@ -268,12 +268,7 @@ interface ActivityFilterDrawerProps {
 
 export const FilterDrawer: React.FC<ActivityFilterDrawerProps> = ({ open, onClose, onApply }) => {
   /* ===================== STATE ===================== */
-  console.log('component', {
-    isKAM: isKAM(),
-    isManagement: isManagement(),
-    isSuperAdmin: isSuperAdmin(),
-    isSupervisor: isSupervisor(),
-  });
+
   const [branchId, setBranchId] = useState('');
   const [supervisorId, setSupervisorId] = useState('');
   const [kamId, setKamId] = useState('');

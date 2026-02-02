@@ -189,8 +189,6 @@
 //   );
 // }
 
-
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -260,7 +258,7 @@ export default function ClientsPage() {
       }));
 
       setClients(mappedClients);
-      
+
       // Set counts from backend response
       if (res.counts) {
         setCounts(res.counts);
@@ -315,7 +313,7 @@ export default function ClientsPage() {
 
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">Total Divisions</p>
+            <p className="text-sm text-muted-foreground">Total Branch</p>
             <p className="text-2xl font-bold">{counts.divisions}</p>
           </CardContent>
         </Card>
@@ -364,7 +362,7 @@ export default function ClientsPage() {
               <TableRow>
                 <TableHead>Client</TableHead>
                 <TableHead>Contact</TableHead>
-                <TableHead>Division</TableHead>
+                <TableHead>Branch</TableHead>
                 <TableHead>Zone</TableHead>
                 <TableHead>Assigned KAM</TableHead>
               </TableRow>

@@ -1,11 +1,6 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-import {
-  Select,
-  SelectContent,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface FloatingSearchSelectProps {
   label: string;
@@ -42,10 +37,7 @@ export function FloatingSearchSelect({
     const lowerSearch = searchTerm.toLowerCase();
     return React.Children.toArray(children).filter((child: any) => {
       if (!child?.props?.children) return false;
-      return child.props.children
-        .toString()
-        .toLowerCase()
-        .includes(lowerSearch);
+      return child.props.children.toString().toLowerCase().includes(lowerSearch);
     });
   }, [children, searchTerm, searchable]);
 
@@ -102,9 +94,7 @@ export function FloatingSearchSelect({
         className={cn(
           'pointer-events-none absolute left-3 px-1 transition-all',
           'bg-background text-muted-foreground',
-          hasValue
-            ? '-top-2 text-xs font-semibold text-primary'
-            : 'top-2.5 text-sm',
+          hasValue ? '-top-2 text-xs font-semibold text-primary' : 'top-2.5 text-sm',
           'peer-focus:-top-2 peer-focus:text-xs peer-focus:font-semibold peer-focus:text-primary'
         )}
       >

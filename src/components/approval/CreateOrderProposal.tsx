@@ -1,8 +1,8 @@
-import { useMemo, useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { SelectItem } from "@/components/ui/select";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { SelectItem } from '@/components/ui/select';
+import { useNavigate } from 'react-router-dom';
 import {
   Table,
   TableBody,
@@ -10,37 +10,23 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { FloatingSearchSelect } from "@/components/ui/FloatingSearchSelect";
-import { FloatingMultiSelect } from "@/components/ui/FloatingMultiSelect";
-import { Trash2 } from "lucide-react";
-import { products } from "@/data/mockData";
+} from '@/components/ui/table';
+import { FloatingSearchSelect } from '@/components/ui/FloatingSearchSelect';
+import { FloatingMultiSelect } from '@/components/ui/FloatingMultiSelect';
+import { Trash2 } from 'lucide-react';
+import { PrismAPI } from '@/api';
 
-const CLIENTS = [
-  { label: "Grameenphone", value: "gp" },
-  { label: "Robi Axiata", value: "robi" },
-  { label: "Banglalink", value: "bl" },
-];
+const UNITS = ['MB', 'GB', 'Quantity'] as const;
 
-const PRODUCTS = [
-  { label: "SMS Bundle", value: "sms" },
-  { label: "Data Pack", value: "data" },
-  { label: "Voice Minutes", value: "voice" },
-  { label: "Cloud Storage", value: "cloud" },
-  { label: "API Access", value: "api" },
-  { label: "Support Package", value: "support" },
-];
-
-const UNITS = ["MB", "GB", "Quantity"] as const;
+/* ================= TYPES ================= */
 
 interface ProposalItem {
   product: string;
   price: string;
   unit: string;
   volume: string;
-  status?: "Approved" | "Rejected"; // to know which product is editable
+  status?: 'Approved' | 'Rejected';
 }
-
 
 interface Proposal {
   id: string;
@@ -52,64 +38,95 @@ interface Props {
   proposal?: Proposal;
 }
 
+interface RowItem {
+  product: string;
+  price: string;
+  unit: string;
+  volume: string;
+  status?: 'Approved' | 'Rejected';
+}
+
+interface Option {
+  label: string;
+  value: string;
+}
+
+/* ================= COMPONENT ================= */
+
 export default function CreateOrderProposal({ proposal }: Props) {
   const navigate = useNavigate();
-  interface RowItem {
-    product: string;
-    price: string;
-    unit: string;
-    volume: string;
-    status?: "Approved" | "Rejected";
-  }
-
   const isRevision = !!proposal;
+
+  /* ================= STATE ================= */
 
   const [client, setClient] = useState<string | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [rows, setRows] = useState<RowItem[]>([]);
+  const [clients, setClients] = useState<Option[]>([]);
+  const [products, setProducts] = useState<Option[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // sync rows with selected products
+  /* ================= LOAD DROPDOWNS ================= */
+
+  useEffect(() => {
+    const loadDropdownData = async () => {
+      try {
+        setLoading(true);
+
+        const [clientRes, productRes] = await Promise.all([
+          PrismAPI.getClientList(),
+          PrismAPI.getProductList(),
+        ]);
+
+        setClients(
+          clientRes.data.map((c: any) => ({
+            label: c.client,
+            value: String(c.id),
+          }))
+        );
+
+        setProducts(
+          productRes.data.map((p: any) => ({
+            label: p.product_name,
+            value: String(p.product_id),
+          }))
+        );
+      } catch (err) {
+        console.error('Dropdown load failed', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDropdownData();
+  }, []);
+
+  /* ================= SYNC PRODUCTS → ROWS ================= */
+
   useEffect(() => {
     setRows((prev) => {
       const existing = prev.map((r) => r.product);
+
       const added = selectedProducts.filter((p) => !existing.includes(p));
-      const remaining = prev.filter((r) =>
-        selectedProducts.includes(r.product)
-      );
+
+      const remaining = prev.filter((r) => selectedProducts.includes(r.product));
 
       return [
         ...remaining,
         ...added.map((p) => ({
           product: p,
-          price: "",
-          unit: "Quantity",
-          volume: "",
+          price: '',
+          unit: 'MB',
+          volume: '',
         })),
       ];
     });
   }, [selectedProducts]);
 
-  // load proposal if editing
-  useEffect(() => {
-    if (!proposal) return;
-
-    setClient(proposal.client);
-    setSelectedProducts(proposal.items.map((i) => i.product));
-    setRows(
-      proposal.items.map((i) => ({
-        product: i.product,
-        price: i.price,
-        unit: i.unit,
-        volume: i.volume,
-        status: i.status, // to know which row is editable
-      }))
-    );
-  }, [proposal]);
+  /* ================= HELPERS ================= */
 
   const updateRow = (product: string, data: Partial<RowItem>) => {
-    setRows((prev) =>
-      prev.map((r) => (r.product === product ? { ...r, ...data } : r))
-    );
+    setRows((prev) => prev.map((r) => (r.product === product ? { ...r, ...data } : r)));
   };
 
   const deleteRow = (product: string) => {
@@ -117,18 +134,18 @@ export default function CreateOrderProposal({ proposal }: Props) {
     setSelectedProducts((prev) => prev.filter((p) => p !== product));
   };
 
+  /* ================= SUBMIT ================= */
+
   const submitProposal = () => {
     const payload = {
       client,
-      products: selectedProducts,
-      price: String,
-      unit: String,
-      volume: String,
+      items: rows,
     };
 
-    console.log("Submit for approval", payload);
-    alert("Order proposal submitted for approval");
+    console.log('Submit proposal', payload);
   };
+
+  /* ================= UI ================= */
 
   return (
     <div className="space-y-6">
@@ -137,11 +154,11 @@ export default function CreateOrderProposal({ proposal }: Props) {
           label="Client"
           value={client ?? undefined}
           onValueChange={isRevision ? undefined : setClient}
-          disabled={isRevision}
+          disabled={isRevision || loading}
           searchable
         >
-          {CLIENTS.map((c) => (
-            <SelectItem key={c.value} value={c.value}>
+          {clients.map((c) => (
+            <SelectItem key={`client-${c.value}`} value={c.value}>
               {c.label}
             </SelectItem>
           ))}
@@ -150,9 +167,9 @@ export default function CreateOrderProposal({ proposal }: Props) {
         <FloatingMultiSelect
           label="Products"
           value={selectedProducts}
-          options={PRODUCTS}
+          options={products}
           onChange={isRevision ? undefined : setSelectedProducts}
-          disabled={isRevision}
+          disabled={isRevision || loading}
         />
       </div>
 
@@ -164,89 +181,80 @@ export default function CreateOrderProposal({ proposal }: Props) {
               <TableHead className="w-[280px]">Price / Unit</TableHead>
               <TableHead>Volume</TableHead>
               <TableHead>Total Amount</TableHead>
-              <TableHead></TableHead>
+              <TableHead />
             </TableRow>
           </TableHeader>
+
           <TableBody>
             {rows.map((row) => {
-  // Editable if:
-  // - New proposal (not a revision) → everything editable
-  // - Revision and row was rejected → editable
-  const isEditable = !isRevision || row.status === "Rejected";
+              const isEditable = !isRevision || row.status === 'Rejected';
 
-  return (
-    <TableRow key={row.product}>
-      <TableCell className="font-medium">
-        {PRODUCTS.find((p) => p.value === row.product)?.label}
-      </TableCell>
+              return (
+                <TableRow key={`product-row-${row.product}`}>
+                  <TableCell className="font-medium">
+                    {products.find((p) => p.value === row.product)?.label}
+                  </TableCell>
 
-      <TableCell>
-        <div className="flex items-center gap-2">
-          {/* Price input */}
-          <Input
-            type="number"
-            value={row.price}
-            onChange={(e) =>
-              isEditable && updateRow(row.product, { price: e.target.value })
-            }
-            disabled={!isEditable}
-          />
-          <span>/</span>
-          {/* Unit select */}
-          <select
-            className="border rounded-md px-2 py-1"
-            value={row.unit}
-            onChange={(e) =>
-              isEditable && updateRow(row.product, { unit: e.target.value })
-            }
-            disabled={!isEditable}
-          >
-            {UNITS.map((u) => (
-              <option key={u} value={u}>
-                {u}
-              </option>
-            ))}
-          </select>
-        </div>
-      </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={row.price}
+                        onChange={(e) =>
+                          isEditable && updateRow(row.product, { price: e.target.value })
+                        }
+                        disabled={!isEditable}
+                      />
+                      <span>/</span>
+                      <select
+                        className="border rounded-md px-2 py-1"
+                        value={row.unit}
+                        onChange={(e) =>
+                          isEditable && updateRow(row.product, { unit: e.target.value })
+                        }
+                        disabled={!isEditable}
+                      >
+                        {UNITS.map((u) => (
+                          <option key={u} value={u}>
+                            {u}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </TableCell>
 
-      {/* Volume input */}
-      <TableCell>
-        <Input
-          type="number"
-          value={row.volume}
-          onChange={(e) =>
-            isEditable && updateRow(row.product, { volume: e.target.value })
-          }
-          disabled={!isEditable}
-        />
-      </TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      value={row.volume}
+                      onChange={(e) =>
+                        isEditable && updateRow(row.product, { volume: e.target.value })
+                      }
+                      disabled={!isEditable}
+                    />
+                  </TableCell>
 
-      {/* Total amount */}
-      <TableCell className="font-semibold">
-        {(Number(row.price) || 0) * (Number(row.volume) || 0)}
-      </TableCell>
+                  <TableCell className="font-semibold">
+                    {(Number(row.price) || 0) * (Number(row.volume) || 0)}
+                  </TableCell>
 
-      <TableCell>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => isEditable && deleteRow(row.product)}
-          disabled={!isEditable}
-        >
-          <Trash2 className="w-4 h-4" />
-        </Button>
-      </TableCell>
-    </TableRow>
-  );
-})}
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => isEditable && deleteRow(row.product)}
+                      disabled={!isEditable}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
 
             {rows.length === 0 && (
               <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="text-center text-muted-foreground"
-                >
+                <TableCell colSpan={5} className="text-center text-muted-foreground">
                   No products selected
                 </TableCell>
               </TableRow>
@@ -256,29 +264,24 @@ export default function CreateOrderProposal({ proposal }: Props) {
       </div>
 
       <div className="flex justify-end">
-       <Button
-        onClick={() => {
-          if (isRevision) {
-            const revisedItems = rows.filter(r => r.status === "Rejected");
-            // TODO: call your backend API with revisedItems and proposal.id
-            console.log("Submitting revised proposal", {
-              proposalId: proposal!.id,
-              revisedItems,
-            });
-            alert("Revised proposal submitted");
-            navigate("/order-proposals"); // go back to list
-          } else {
-            const payload = { client, items: rows };
-            // TODO: call your backend API for new proposal
-            console.log("Submitting new proposal", payload);
-            alert("Order proposal submitted for approval");
-            navigate("/order-proposal-list"); // go back to list
-          }
-        }}
-        disabled={!client || rows.length === 0}
-      >
-        {isRevision ? "Submit Revision" : "Submit for Approval"}
-      </Button>
+        <Button
+          onClick={() => {
+            if (isRevision) {
+              const revisedItems = rows.filter((r) => r.status === 'Rejected');
+              console.log('Submitting revised proposal', {
+                proposalId: proposal!.id,
+                revisedItems,
+              });
+              navigate('/order-proposals');
+            } else {
+              submitProposal();
+              navigate('/order-proposal-list');
+            }
+          }}
+          disabled={!client || rows.length === 0}
+        >
+          {isRevision ? 'Submit Revision' : 'Submit for Approval'}
+        </Button>
       </div>
     </div>
   );

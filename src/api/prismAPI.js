@@ -9,8 +9,7 @@ export const PrismAPI = {
   getBranchWiseSupervisorList: (branchId) =>
     api.get(`/prism/branch-wise-supervisor-list/${branchId}`),
 
-  getKamWiseSupervisorList: (kamId) =>
-    api.get(`/prism/kam-wise-supervisor-list/${kamId}`),
+  getKamWiseSupervisorList: (kamId) => api.get(`/prism/kam-wise-supervisor-list/${kamId}`),
 
   getSupervisorWiseKAMList: (supervisorId) =>
     api.get(`/prism/supervisor-wise-kam-list/${supervisorId}`),
@@ -25,4 +24,6 @@ export const PrismAPI = {
   getSupervisors: () => api.get('/prism/supervisor-list'),
   getMultiSupervisorWiseKAMList: (supervisorIds) =>
     api.post('/prism/multi-supervisor-wise-kam-list', { supervisor_ids: supervisorIds }),
+  getProductList: () => api.post('/prism/product-list'),
+  getClientList: () => api.get('/prism/client-list'),
 };
