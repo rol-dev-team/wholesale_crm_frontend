@@ -3604,11 +3604,13 @@ export default function KAMPerformancePage() {
         kamMap[kamName] = {
           name: kamName,
           totalAchieved: 0,
+          totalSuccessAchieved: 0,
           totalTarget: 0,
         };
       }
 
       kamMap[kamName].totalAchieved += Number(row.total_voucher_amount || 0);
+      kamMap[kamName].totalSuccessAchieved += Number(row.pending_amount || 0);
       kamMap[kamName].totalTarget += Number(row.target_amount || 0);
     });
 
@@ -3616,8 +3618,9 @@ export default function KAMPerformancePage() {
       .map((kam: any) => ({
         name: kam.name,
         rangeAchievedSum: kam.totalAchieved,
+        rangeSuccessAchievedSum: kam.totalSuccessAchieved,
         rangeTargetSum: kam.totalTarget,
-        percentage: kam.totalTarget > 0 ? (kam.totalAchieved / kam.totalTarget) * 100 : 0,
+        percentage: kam.totalTarget > 0 ? (kam.totalSuccessAchieved / kam.totalTarget) * 100 : 0,
       }))
       .sort((a, b) => b.percentage - a.percentage);
   }, [kamPerformance, filterType]);
@@ -3749,7 +3752,7 @@ export default function KAMPerformancePage() {
             <CardTitle className="text-base font-medium flex items-center gap-2 justify-between">
               <div className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-primary" />
-                <span>Top Performers</span>
+                <span>Top Invoice (KAM Wise)</span>
               </div>
               <span className="text-xs font-medium text-muted-foreground bg-muted/40 px-2 py-1 rounded-md">
                 {topPerformerRangeLabel}
@@ -3822,7 +3825,7 @@ export default function KAMPerformancePage() {
                 {topPerformersbyPercentage.map((kam, idx) => {
                   const achievePercentage =
                     kam.rangeTargetSum > 0
-                      ? ((kam.rangeAchievedSum / kam.rangeTargetSum) * 100).toFixed(1)
+                      ? ((kam.rangeSuccessAchievedSum / kam.rangeTargetSum) * 100).toFixed(1)
                       : '0.0';
 
                   return (
@@ -3863,12 +3866,12 @@ export default function KAMPerformancePage() {
                           <p className="text-[10px] text-muted-foreground uppercase">Achieve</p>
                           <p
                             className={`text-xs font-bold ${
-                              kam.rangeAchievedSum >= kam.rangeTargetSum
+                              kam.rangeSuccessAchievedSum >= kam.rangeTargetSum
                                 ? 'text-emerald-700'
                                 : 'text-destructive'
                             }`}
                           >
-                            {formatCurrency(kam.rangeAchievedSum)}
+                            {formatCurrency(kam.rangeSuccessAchievedSum)}
                           </p>
                         </div>
 
