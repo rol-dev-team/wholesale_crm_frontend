@@ -2,19 +2,19 @@ import api from './axiosInstance';
 
 export const LabelApi = {
   
-  getLabels: (params = {}) => api.get('/labels', { params }),
+  getLabels: (params = {}) => api.get('/levels', { params }),
 
   
-  getLabel: (id) => api.get(`/labels/${id}`),
+  getLabel: (id) => api.get(`/levels/${id}`),
 
   
-  createLabel: (data) => api.post('/labels', data),
+  createLabel: (data) => api.post('/levels', data),
 
  
-  updateLabel: (id, data) => api.put(`/labels/${id}`, data),
+  updateLabel: (id, data) => api.put(`/levels/${id}`, data),
 
 
-  deleteLabel: (id) => api.delete(`/labels/${id}`),
+  deleteLabel: (id) => api.delete(`/levels/${id}`),
 
 
   getSystemUsers: (params = {}) => api.get(`/system-users`, { params }),
