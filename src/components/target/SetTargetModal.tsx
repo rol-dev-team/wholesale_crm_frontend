@@ -2296,6 +2296,13 @@ import { FloatingDatePickerInput } from '@/components/ui/FloatingDatePickerInput
 import { SelectItem } from '@/components/ui/select';
 import { PrismAPI } from '@/api/prismAPI';
 import { cn } from '@/lib/utils';
+import { isSuperAdmin, isManagement, isKAM, isSupervisor, getUserInfo } from '@/utility/utility';
+
+const user = getUserInfo();
+const supervisorIds = user?.supervisor_ids || [];
+const isAdmin = isSuperAdmin() || isManagement();
+const isSup = isSupervisor();
+const isKamUser = isKAM();
 
 const MONTHS = [
   'January',
@@ -2440,24 +2447,54 @@ export default function SetTargetModal(props: Props) {
   }, [open, props.editingTarget]);
 
   // ✅ Load ALL KAMs by default when modal opens
+  // useEffect(() => {
+  //   if (open) {
+
+  //     PrismAPI.getKams()
+  //       .then((res) => {
+  //         console.log('✅ All KAMs loaded - Full Response:', res);
+  //         console.log('✅ res.data:', res.data);
+
+  //         // Handle nested data structure
+  //         const kamsData = res.data?.data || res.data || [];
+  //         console.log('✅ KAMs array:', kamsData);
+
+  //         setKams(kamsData);
+  //       })
+  //       .catch((err) => {
+  //         console.error('❌ Error loading KAMs:', err);
+  //         setKams([]);
+  //       });
+  //   }
+  // }, [open]);
+
   useEffect(() => {
-    if (open) {
-      PrismAPI.getKams()
-        .then((res) => {
-          console.log('✅ All KAMs loaded - Full Response:', res);
-          console.log('✅ res.data:', res.data);
+    if (!open) return;
 
-          // Handle nested data structure
-          const kamsData = res.data?.data || res.data || [];
-          console.log('✅ KAMs array:', kamsData);
+    let apiCall;
 
-          setKams(kamsData);
-        })
-        .catch((err) => {
-          console.error('❌ Error loading KAMs:', err);
-          setKams([]);
-        });
+    if (isKamUser) {
+      apiCall = PrismAPI.getSupervisorWiseKAMList(user?.default_kam_id);
+    } else if (isAdmin || isManagement) {
+      apiCall = PrismAPI.getKams();
+    } else if (isSup) {
+      apiCall = PrismAPI.getSupervisorWiseKAMList(supervisorIds);
+    } else {
+      setKams([]);
+      return;
     }
+
+    apiCall
+      .then((res) => {
+        console.log('✅ KAMs loaded:', res);
+
+        const kamsData = res.data?.data || res.data || [];
+        setKams(kamsData);
+      })
+      .catch((err) => {
+        console.error('❌ Error loading KAMs:', err);
+        setKams([]);
+      });
   }, [open]);
 
   // ✅ Load branches (kept for backward compatibility)
