@@ -438,8 +438,8 @@ export default function AdminDashboard() {
           icon={<TrendingUp className="h-5 w-5 text-orange-600" />}
           iconBg="bg-gradient-to-br from-orange-500/20 to-orange-500/5"
           value={kpiSummary?.avg_activities_this_month || 0}
-          lastValue={kpiSummary?.avg_activities_last_month || 0}
-          bottomLabel={kpiSummary?.last_month_label || '--'}
+          // lastValue={kpiSummary?.avg_activities_last_month || 0}
+          // bottomLabel={kpiSummary?.last_month_label || '--'}
           subLabel={kpiSummary?.this_month_label || '--'}
         />
         <KpiCard
@@ -447,8 +447,8 @@ export default function AdminDashboard() {
           icon={<Target className="h-5 w-5 text-amber-600" />}
           iconBg="bg-gradient-to-br from-amber-500/20 to-amber-500/5"
           value={kpiSummary?.target_this_month || 0}
-          lastValue={kpiSummary?.target_last_month || 0}
-          bottomLabel={kpiSummary?.last_month_label || '--'}
+          // lastValue={kpiSummary?.target_last_month || 0}
+          // bottomLabel={kpiSummary?.last_month_label || '--'}
           subLabel={kpiSummary?.this_month_label || '--'}
         />
 
@@ -457,8 +457,8 @@ export default function AdminDashboard() {
           icon={<TakaIcon className="h-5 w-5 text-emerald-600" />}
           iconBg="bg-gradient-to-br from-emerald-500/20 to-emerald-500/5"
           value={`${kpiSummary?.this_month_achieved ?? 0} (${kpiSummary?.this_month_achieved_percentage ?? 0}%)`}
-          lastValue={`${kpiSummary?.last_month_achieved ?? 0} (${kpiSummary?.last_month_achieved_percentage ?? 0}%)`}
-          bottomLabel={kpiSummary?.last_month_label || '--'}
+          // lastValue={`${kpiSummary?.last_month_achieved ?? 0} (${kpiSummary?.last_month_achieved_percentage ?? 0}%)`}
+          // bottomLabel={kpiSummary?.last_month_label || '--'}
           subLabel={kpiSummary?.this_month_label || '--'}
         />
       </div>

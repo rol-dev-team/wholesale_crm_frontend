@@ -17,6 +17,7 @@ import type { KAM } from '@/types/kam';
 import type { Supervisor } from '@/types/supervisor';
 import { useAuth } from '@/contexts/AuthContext';
 import { KamPerformanceApi } from '@/api/kamPerformanceApi';
+import { TargetFilterDrawer } from '@/components/filters/TargetFilterDrawer';
 
 const MONTHS_ARRAY = [
   'January',
@@ -37,6 +38,7 @@ export default function TargetsPage() {
   const { currentUser } = useAuth();
 
   const [targets, setTargets] = useState<any[]>([]);
+  const [targetSummary, setTargetSummary] = useState<any[]>([]);
   const [isTargetModalOpen, setIsTargetModalOpen] = useState(false);
   const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
   const [kams, setKams] = useState<KAM[]>([]);
@@ -54,6 +56,17 @@ export default function TargetsPage() {
   const [divisionFilter, setDivisionFilter] = useState('all');
   const [filterKam, setFilterKam] = useState('all');
   const [viewMode, setViewMode] = useState<'monthly' | 'yearly' | 'quarterly'>('monthly');
+  const [filterSupervisor, setFilterSupervisor] = useState('all');
+  const [filterPayload, setFilterPayload] = useState({
+    filter_type: '',
+    kam_id: '',
+    supervisor_id: '',
+    division: '',
+    from_month: '',
+    to_month: '',
+    quaterly_year: '',
+    quater: '',
+  });
 
   // ✅ Monthly filters
   const [startMonth, setStartMonth] = useState(MONTHS_ARRAY[new Date().getMonth()]);
@@ -102,11 +115,13 @@ export default function TargetsPage() {
     try {
       const res = await SalesTargetAPI.getAll(payload);
       setTargets(res.data || []);
+      setTargetSummary(res.summary || []);
       setCurrentPage(res.meta.current_page);
       setTotalPages(res.meta.last_page);
     } catch (err) {
       console.error(err);
       setTargets([]);
+      setTargetSummary([]);
       toast.error('Failed to load targets');
     } finally {
       setLoading(false);
@@ -198,6 +213,63 @@ export default function TargetsPage() {
     }
   };
 
+  // Apply filters
+  // const handleApplyFilters = () => {
+  //   const payload: any = {
+  //     page: 1,
+  //     per_page: ITEMS_PER_PAGE,
+  //     target_type: viewMode,
+  //   };
+
+  //   // ✅ Common filters
+  //   if (divisionFilter !== 'all') {
+  //     payload.division = divisionFilter;
+  //   }
+
+  //   if (filterKam !== 'all') {
+  //     payload.kam_id = filterKam;
+  //   }
+
+  //   if (filterSupervisor !== 'all') {
+  //     payload.supervisor_id = filterSupervisor;
+  //   }
+
+  //   // ✅ Monthly filters
+  //   if (viewMode === 'monthly') {
+  //     payload.start_month = startMonth;
+  //     payload.end_month = endMonth;
+  //     payload.start_year = startYear;
+  //     payload.end_year = endYear;
+  //   }
+
+  //   // ✅ Quarterly filters
+  //   if (viewMode === 'quarterly') {
+  //     payload.quarters = quarters;
+  //     payload.quarter_year = quarterYear;
+  //   }
+
+  //   // ✅ Yearly filters
+  //   if (viewMode === 'yearly') {
+  //     payload.year = startYear;
+  //   }
+
+  //   console.log('✅ FINAL FILTER PAYLOAD:', payload);
+
+  //   // fetchTargets(payload);
+  // };
+
+  const handleApplyFilters = (payload: any) => {
+    console.log('✅ APPLY FILTERS PAYLOAD:', payload);
+    setFilterPayload(payload); // optional (for debug / state)
+    fetchTargets({
+      page: 1,
+      per_page: ITEMS_PER_PAGE,
+      ...payload,
+    });
+  };
+
+  // console.log('✅ filter types:', filterPayload);
+  console.log('✅ targets data:', targets);
   return (
     <div className="page-container space-y-6">
       <Toaster position="top-right" reverseOrder={false} />
@@ -224,16 +296,16 @@ export default function TargetsPage() {
                 <Crosshair className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Total Target</p>
-                <p className="text-2xl font-bold mt-1">
-                  {/* {formatCurrency(summaryStats.totalTarget)} */}
-                  000
+                <p className="text-sm text-muted-foreground">
+                  Total Target
+                  <span className="text-xs text-blue-400 font-semibold">{` (${targetSummary?.this_month_label})`}</span>
                 </p>
+                <p className="text-2xl font-bold mt-1">{targetSummary?.target_this_month}</p>
               </div>
             </div>
-            <div className="bg-muted/30 border-t px-4 py-2 text-xs text-muted-foreground">
-              {/* Overall Progress: {summaryStats.progress}% */}000
-            </div>
+            {/* <div className="bg-muted/30 border-t px-4 py-2 text-xs text-muted-foreground">
+              000
+            </div> */}
           </CardContent>
         </Card>
 
@@ -244,15 +316,18 @@ export default function TargetsPage() {
                 <Crosshair className="h-5 w-5 text-emerald-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Total Achieved</p>
+                <p className="text-sm text-muted-foreground">
+                  Total Achieved
+                  <span className="text-xs text-blue-400 font-semibold">{` (${targetSummary?.this_month_label})`}</span>
+                </p>
                 <p className="text-2xl font-bold mt-1 text-emerald-600">
-                  {/* {formatCurrency(summaryStats.totalAchieved)} */}000
+                  {targetSummary?.this_month_achieved}
                 </p>
               </div>
             </div>
-            <div className="bg-muted/30 border-t px-4 py-2 text-xs text-muted-foreground">
-              {/* Success Rate: {summaryStats.progress}% */}000
-            </div>
+            {/* <div className="bg-muted/30 border-t px-4 py-2 text-xs text-muted-foreground">
+             000
+            </div> */}
           </CardContent>
         </Card>
       </div>
@@ -291,7 +366,37 @@ export default function TargetsPage() {
 
       {/* TARGETS TABLE */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Target Details</h2>
+        <div className="flex justify-between">
+          <h2 className="text-lg font-semibold">Target Details</h2>
+          {/* FILTER DRAWER */}
+          <TargetFilterDrawer
+            division={divisionFilter}
+            setDivision={setDivisionFilter}
+            kam={filterKam}
+            setKam={setFilterKam}
+            supervisor={filterSupervisor}
+            setSupervisor={setFilterSupervisor}
+            kams={kams}
+            setKams={setKams}
+            supervisors={supervisors}
+            setSupervisors={setSupervisors}
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+            startMonth={startMonth}
+            setStartMonth={setStartMonth}
+            endMonth={endMonth}
+            setEndMonth={setEndMonth}
+            startYear={startYear}
+            setStartYear={setStartYear}
+            endYear={endYear}
+            setEndYear={setEndYear}
+            quarters={quarters}
+            setQuarters={setQuarters}
+            quarterYear={quarterYear}
+            setQuarterYear={setQuarterYear}
+            onFilterChange={handleApplyFilters}
+          />
+        </div>
 
         <TargetsTable
           targets={targets}

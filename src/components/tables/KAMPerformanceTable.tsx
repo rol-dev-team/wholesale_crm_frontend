@@ -1280,6 +1280,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -1460,6 +1461,20 @@ export const KAMPerformanceTable: React.FC<Props> = ({
   // ✅ NEW: Dynamic header label
   const entityLabel = filterType === 'branch' ? 'Branch Name' : 'KAM Name';
 
+  const footerTotals = kamPerformanceData.reduce(
+    (acc, kam) => {
+      acc.totalInvoice += kam.rangeAchievedSum || 0;
+      acc.totalTarget += kam.rangeTargetSum || 0;
+      acc.totalAchievement += kam.rangeSuccessAchievedSum || 0;
+      return acc;
+    },
+    {
+      totalInvoice: 0,
+      totalTarget: 0,
+      totalAchievement: 0,
+    }
+  );
+
   return (
     <Card className="shadow-sm border-muted/60 overflow-hidden">
       <CardHeader className="py-4">
@@ -1469,7 +1484,7 @@ export const KAMPerformanceTable: React.FC<Props> = ({
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="p-0">
+      {/* <CardContent className="p-0">
         <div className="relative overflow-auto w-full border-t h-[450px]">
           <Table className="w-full table-auto border-separate border-spacing-0">
             <TableHeader className="bg-slate-100 z-40">
@@ -1478,10 +1493,10 @@ export const KAMPerformanceTable: React.FC<Props> = ({
                   rowSpan={2}
                   className="border-r border-b font-bold min-w-[180px] sticky left-0 top-0 bg-slate-100 z-[60]"
                 >
-                  {entityLabel} {/* ✅ UPDATED: Dynamic header */}
+                  {entityLabel} 
                 </TableHead>
 
-                {/* ✅ UPDATED: Display period headers (handles multiple quarters) */}
+              
                 {tablePeriods.map((p) => (
                   <TableHead
                     key={p.label}
@@ -1631,6 +1646,188 @@ export const KAMPerformanceTable: React.FC<Props> = ({
             </TableBody>
           </Table>
         </div>
+      </CardContent> */}
+
+      <CardContent className="p-0">
+        <Table
+          // This targets the wrapper div inside your Table UI component
+          containerClassName="h-[390px] overflow-auto relative"
+          // This targets the table element itself
+          className="border-separate border-spacing-0"
+        >
+          <TableHeader className="bg-slate-100">
+            {/* ROW 1: ENTITY NAME & MONTHS */}
+            <TableRow className="hover:bg-transparent border-none">
+              <TableHead
+                rowSpan={2}
+                className="border-r border-b font-bold min-w-[180px] sticky left-0 top-0 bg-slate-100 z-[100] h-[80px]"
+              >
+                {entityLabel}
+              </TableHead>
+
+              {tablePeriods.map((p) => (
+                <TableHead
+                  key={p.label}
+                  colSpan={9}
+                  className="text-center border-r border-b font-semibold min-w-[600px] sticky top-0 bg-slate-100 z-[80] h-[40px]"
+                >
+                  {p.label}
+                </TableHead>
+              ))}
+
+              <TableHead
+                colSpan={3}
+                className="text-center bg-slate-200 border-b font-bold sticky right-0 top-0 z-[100] min-w-[360px] h-[40px]"
+              >
+                TOTAL
+              </TableHead>
+            </TableRow>
+
+            {/* ROW 2: SUB-METRICS */}
+            <TableRow className="hover:bg-transparent border-none">
+              {tablePeriods.map((_, i) => (
+                <React.Fragment key={i}>
+                  {[
+                    'Clients',
+                    'Target',
+                    'Achieved',
+                    'Achieved (%)',
+                    'Total Invoice',
+                    'Self (Invoice)',
+                    'Up / Down (Self)',
+                    'Transferred (Invoice)',
+                    'Up / Down (Transferred)',
+                  ].map((header) => (
+                    <TableHead
+                      key={header}
+                      className="text-center border-r border-b text-[10px] uppercase bg-slate-50 sticky top-[40px] z-[70] h-[40px]"
+                    >
+                      {header}
+                    </TableHead>
+                  ))}
+                </React.Fragment>
+              ))}
+
+              <TableHead className="text-center border-r border-b text-[10px] uppercase bg-slate-200 sticky top-[40px] right-[240px] z-[90] min-w-[120px] h-[40px]">
+                Total Invoice
+              </TableHead>
+              <TableHead className="text-center border-r border-b text-[10px] uppercase bg-slate-200 sticky top-[40px] right-[120px] z-[90] min-w-[120px] h-[40px]">
+                Total Target
+              </TableHead>
+              <TableHead className="text-center border-b text-[10px] uppercase bg-slate-200 sticky top-[40px] right-0 z-[90] min-w-[120px] h-[40px]">
+                Total Achievement
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+
+          <TableBody>
+            {kamPerformanceData.map((kam) => (
+              <TableRow key={kam.id} className="hover:bg-muted/20">
+                <TableCell className="font-medium border-r border-b bg-white sticky left-0 z-20">
+                  {kam.name}
+                </TableCell>
+
+                {kam.periodStats.map((stat, i) => (
+                  <React.Fragment key={i}>
+                    <TableCell className="text-center border-r border-b text-sm">
+                      {stat.clientCount}
+                    </TableCell>
+                    <TableCell className="text-center border-r border-b text-sm text-slate-600">
+                      {formatCurrency(stat.targetAmount)}
+                    </TableCell>
+                    <TableCell
+                      className={`text-center border-r border-b font-semibold text-sm ${stat.successAchieved >= 0 ? 'text-emerald-600' : 'text-red-600'}`}
+                    >
+                      {formatCurrency(stat.successAchieved)}
+                    </TableCell>
+                    <TableCell className="text-center border-r border-b text-sm text-slate-600">
+                      {stat.targetAmount > 0
+                        ? `${((stat.successAchieved / stat.targetAmount) * 100).toFixed(2)}%`
+                        : '0%'}
+                    </TableCell>
+                    <TableCell
+                      className={`text-center border-r border-b font-semibold text-sm ${stat.achieved >= stat.targetAmount ? 'text-emerald-600' : 'text-orange-600'}`}
+                    >
+                      {formatCurrency(stat.achieved)}
+                    </TableCell>
+                    <TableCell className="text-center border-r border-b text-sm text-slate-600">
+                      {formatCurrency(stat.selfAchieved)}
+                    </TableCell>
+                    <TableCell
+                      className={`text-center border-r border-b font-semibold text-sm ${stat.selfUpDown >= 0 ? 'text-emerald-600' : 'text-red-600'}`}
+                    >
+                      {formatCurrency(stat.selfUpDown)}
+                    </TableCell>
+                    <TableCell className="text-center border-r border-b text-sm text-slate-600">
+                      {formatCurrency(stat.transferredAchieved)}
+                    </TableCell>
+                    <TableCell
+                      className={`text-center border-r border-b font-semibold text-sm ${stat.transferredUpDown >= 0 ? 'text-emerald-600' : 'text-red-600'}`}
+                    >
+                      {formatCurrency(stat.transferredUpDown)}
+                    </TableCell>
+                  </React.Fragment>
+                ))}
+
+                <TableCell
+                  className={`text-center border-r border-b font-bold bg-slate-50 text-sm min-w-[120px] sticky right-[240px] z-10 ${kam.rangeAchievedSum >= kam.rangeTargetSum ? 'text-emerald-700' : 'text-destructive'}`}
+                >
+                  {formatCurrency(kam.rangeAchievedSum)}
+                </TableCell>
+                <TableCell className="text-center border-r border-b font-bold bg-slate-50 text-sm min-w-[120px] sticky right-[120px] z-10">
+                  {formatCurrency(kam.rangeTargetSum)}
+                </TableCell>
+                <TableCell
+                  className={`text-center border-b font-bold bg-slate-50 text-sm min-w-[120px] sticky right-0 z-10 ${kam.rangeSuccessAchievedSum >= kam.rangeTargetSum ? 'text-emerald-700' : 'text-destructive'}`}
+                >
+                  {formatCurrency(kam.rangeSuccessAchievedSum)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+          <TableFooter className="sticky bottom-0 z-[40] bg-slate-200">
+            <TableRow className="font-bold">
+              {/* ✅ GRAND TOTAL – LEFT FROZEN (NO COLSPAN) */}
+              <TableCell
+                className="
+        sticky
+        left-0
+        bottom-0
+        z-[300]
+        bg-slate-300
+        border-t
+        min-w-[180px]
+      "
+              >
+                GRAND TOTAL
+              </TableCell>
+
+              {/* 🔹 FAKE EMPTY CELLS (scrollable area) */}
+              {Array.from({ length: tablePeriods.length * 9 }).map((_, i) => (
+                <TableCell key={i} className="border-t bg-slate-200" />
+              ))}
+
+              {/* ✅ RIGHT FROZEN TOTALS */}
+              <TableCell className="sticky right-[240px] bottom-0 z-[300] bg-slate-300 border-t min-w-[120px] text-center">
+                {formatCurrency(footerTotals.totalInvoice)}
+              </TableCell>
+
+              <TableCell className="sticky right-[120px] bottom-0 z-[300] bg-slate-300 border-t min-w-[120px] text-center">
+                {formatCurrency(footerTotals.totalTarget)}
+              </TableCell>
+
+              <TableCell
+                className={`sticky right-0 bottom-0 z-[300] bg-slate-300 border-t min-w-[120px] text-center ${
+                  footerTotals.totalAchievement >= footerTotals.totalTarget
+                    ? 'text-emerald-700'
+                    : 'text-destructive'
+                }`}
+              >
+                {formatCurrency(footerTotals.totalAchievement)}
+              </TableCell>
+            </TableRow>
+          </TableFooter>
+        </Table>
       </CardContent>
     </Card>
   );
