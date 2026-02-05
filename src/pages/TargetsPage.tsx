@@ -36,7 +36,7 @@ const MONTHS_ARRAY = [
 
 export default function TargetsPage() {
   const { currentUser } = useAuth();
-
+  const isSupervisor = currentUser?.role === 'supervisor';
   const [targets, setTargets] = useState<any[]>([]);
   const [targetSummary, setTargetSummary] = useState<any[]>([]);
   const [isTargetModalOpen, setIsTargetModalOpen] = useState(false);
@@ -370,6 +370,9 @@ export default function TargetsPage() {
           <h2 className="text-lg font-semibold">Target Details</h2>
           {/* FILTER DRAWER */}
           <TargetFilterDrawer
+            isSupervisor={isSupervisor}
+            isManagement={isManagement}
+            supervisor_ids={currentUser?.supervisor_ids}
             division={divisionFilter}
             setDivision={setDivisionFilter}
             kam={filterKam}
