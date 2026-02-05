@@ -1,11 +1,5 @@
 import api from './axiosInstance';
 
-// export const ClientAPI = {
-//   getClients: () => api.get('/clients'),
-// };
-
-
-
 export const ClientAPI = {
   getClients: (page = 1) => api.get('/clients', { params: { page } }),
   getLocalClients: (params = {}) =>
@@ -18,4 +12,7 @@ export const ClientAPI = {
     api.put(`/clients/local-clients/${id}`, data),  // Fixed
   deleteLocalClient: (id) =>
     api.delete(`/clients/local-clients/${id}`),  // Fixed
+
+  getUnitCost: (data) =>
+    api.post('/clients/local-clients/unit-cost', data),
 };
