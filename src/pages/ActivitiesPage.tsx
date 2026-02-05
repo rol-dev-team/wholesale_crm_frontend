@@ -149,17 +149,63 @@ export default function ActivitiesPage() {
     }
   };
 
+  // const fetchKams = async () => {
+  //   try {
+  //     const res = await PrismAPI.getKams();
+  //     const options = (res.data || []).map((item: any) => ({
+  //       value: item.kam_id,
+  //       label: item.kam_name,
+  //     }));
+  //     setKamOptions(options);
+  //   } catch {
+  //     toast({
+  //       title: 'Failed to load activities',
+  //       variant: 'destructive',
+  //     });
+  //   }
+  // };
+
   const fetchKams = async () => {
     try {
-      const res = await PrismAPI.getKams();
-      const options = (res.data || []).map((item: any) => ({
+      let res;
+
+      // CASE 1: Super Admin or Management
+      if (isSuperAdmin() || isManagement()) {
+        res = await PrismAPI.getKams();
+        console.log('all kams', res);
+      }
+
+      // CASE 2: Supervisor
+      else if (isSupervisor()) {
+        res = await PrismAPI.getKamListBySupervisor(supervisorIds);
+        console.log('supervisor kams', res);
+      }
+
+      // CASE 3: KAM user
+      else if (isKAM()) {
+        const defaultKamId = getUserInfo()?.default_kam_id;
+
+        if (defaultKamId) {
+          res = await PrismAPI.getKamListBySupervisor([defaultKamId]);
+        } else {
+          res = { data: [] };
+        }
+      }
+
+      // Fallback safety
+      else {
+        res = { data: [] };
+      }
+      const options = (res?.data || []).map((item: any) => ({
         value: item.kam_id,
         label: item.kam_name,
       }));
+
       setKamOptions(options);
-    } catch {
+    } catch (error) {
+      console.error('fetchKams error:', error);
       toast({
-        title: 'Failed to load activities',
+        title: 'Failed to load KAM list',
         variant: 'destructive',
       });
     }
@@ -339,7 +385,7 @@ export default function ActivitiesPage() {
   // console.log('kamOptions', kamOptions);
   // console.log(getUserInfo()?.id);
   // console.log('userkam', user?.default_kam_id);
-  console.log('kamOptions in page', kamOptions);
+  // console.log('kamOptions in page', kamOptions);
 
   return (
     <div className="space-y-6 p-6 lg:p-8">

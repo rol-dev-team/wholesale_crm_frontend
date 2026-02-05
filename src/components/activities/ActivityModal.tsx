@@ -393,7 +393,6 @@ export function ActivityModal({
             // onValueChange={handleKamChange}
             placeholder=""
             onValueChange={(value) => {
-              if (user?.role === 'kam') return; // ⛔ HARD BLOCK
               handleKamChange(value);
             }}
           >

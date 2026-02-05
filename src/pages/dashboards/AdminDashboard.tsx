@@ -38,10 +38,10 @@ import {
 
 import { ActivityTypeAPI, TaskAPI } from '@/api';
 import { PrismAPI } from '@/api';
-import { getUserInfo } from '@/utility/utility';
 import { DashboardAPI } from '@/api';
 import { hasRole } from '@/utility/hasRole';
 import { get } from 'http';
+import { isSuperAdmin, isManagement, isKAM, isSupervisor, getUserInfo } from '@/utility/utility';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -75,10 +75,10 @@ export default function AdminDashboard() {
 
   // ---------------- ROLE CHECK ----------------
   const role = currentUser?.role;
-
-  const isKAM = role === 'kam';
-  const isSupervisor = role === 'supervisor';
-  const isManagement = role === 'boss' || role === 'super_admin';
+  const supervisorIds = user?.supervisor_ids || [];
+  // const isKAM = role === 'kam';
+  // const isSupervisor = role === 'supervisor';
+  // const isManagement = role === 'boss' || role === 'super_admin';
 
   // ---------------- OPTIONS ----------------
   const kams = [
@@ -167,17 +167,63 @@ export default function AdminDashboard() {
     }
   };
 
+  // const fetchKams = async () => {
+  //   try {
+  //     const res = await PrismAPI.getKams();
+  //     const options = (res.data || []).map((item: any) => ({
+  //       value: item.kam_id,
+  //       label: item.kam_name,
+  //     }));
+  //     setKamOptions(options);
+  //   } catch (error) {
+  //     toast({
+  //       title: 'Failed to load activities',
+  //       variant: 'destructive',
+  //     });
+  //   }
+  // };
+
   const fetchKams = async () => {
     try {
-      const res = await PrismAPI.getKams();
-      const options = (res.data || []).map((item: any) => ({
+      let res;
+
+      // CASE 1: Super Admin or Management
+      if (isSuperAdmin() || isManagement()) {
+        res = await PrismAPI.getKams();
+        console.log('all kams', res);
+      }
+
+      // CASE 2: Supervisor
+      else if (isSupervisor()) {
+        res = await PrismAPI.getKamListBySupervisor(supervisorIds);
+        console.log('supervisor kams', res);
+      }
+
+      // CASE 3: KAM user
+      else if (isKAM()) {
+        const defaultKamId = getUserInfo()?.default_kam_id;
+
+        if (defaultKamId) {
+          res = await PrismAPI.getKamListBySupervisor([defaultKamId]);
+        } else {
+          res = { data: [] };
+        }
+      }
+
+      // Fallback safety
+      else {
+        res = { data: [] };
+      }
+      const options = (res?.data || []).map((item: any) => ({
         value: item.kam_id,
         label: item.kam_name,
       }));
+
       setKamOptions(options);
     } catch (error) {
+      console.error('fetchKams error:', error);
       toast({
-        title: 'Failed to load activities',
+        title: 'Failed to load KAM list',
         variant: 'destructive',
       });
     }

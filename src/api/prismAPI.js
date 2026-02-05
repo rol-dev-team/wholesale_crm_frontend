@@ -28,4 +28,7 @@ export const PrismAPI = {
   getClientList: () => api.get('/prism/client-list'),
   getLocalClientsByKAM: (kamIds) => api.post('/prism/local-clients', { kam_ids: kamIds }),
   getAllLocalClients: () => api.get('/prism/all-local-clients'),
+
+  getKamListBySupervisor: (supervisorIds) =>
+    api.post('/prism/kam-list-by-supervisor', { supervisor_ids: supervisorIds }),
 };
