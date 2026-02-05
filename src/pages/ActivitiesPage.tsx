@@ -339,7 +339,7 @@ export default function ActivitiesPage() {
   // console.log('kamOptions', kamOptions);
   // console.log(getUserInfo()?.id);
   // console.log('userkam', user?.default_kam_id);
-  // console.log('kamOptions in page', kamOptions);
+  console.log('kamOptions in page', kamOptions);
 
   return (
     <div className="space-y-6 p-6 lg:p-8">

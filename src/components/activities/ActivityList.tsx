@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -177,7 +178,12 @@ export function ActivityList({
                   <ActivityTypeBadge type={activity.activity_type_name} />
                 </TableCell>
 
-                <TableCell className="text-muted-foreground">{activity.client_name}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {activity.client_name}{' '}
+                  <Badge variant="secondary" className="ml-2">
+                    {activity.client_source}
+                  </Badge>
+                </TableCell>
 
                 <TableCell>
                   <span
