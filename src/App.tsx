@@ -25,6 +25,7 @@ import OrderProposal from './pages/OrderProposal';
 import ReviseOrderProposalPage from './pages/ReviseOrderProposalPage';
 import OrderProposalListPage from './pages/OrderProposalListPage';
 import 'react-datepicker/dist/react-datepicker.css';
+import ClientCreatePage from './pages/ClientCreatePage';
 
 const queryClient = new QueryClient();
 
@@ -71,6 +72,7 @@ const App = () => (
               <Route path="/order-proposals" element={<OrderProposal />} />
               <Route path="/order-proposal/revise" element={<ReviseOrderProposalPage />} />
               <Route path="/order-proposal-list" element={<OrderProposalListPage />} />
+              <Route path="/clients-create" element={<ClientCreatePage />} />
             </Route>
 
             {/* 404 */}
