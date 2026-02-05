@@ -219,6 +219,7 @@ export default function OrderProposalList() {
   };
 
   if (!currentUser) return null;
+   const currentLevel = 2; // 1 | 2 | 3
 
   return (
     <div className="space-y-4">
@@ -237,13 +238,43 @@ export default function OrderProposalList() {
         </div>
 
         {/* STATIC PIPELINE */}
-        <div className="flex items-center space-x-2 text-sm font-medium text-gray-600">
-          <span>Level 1</span>
-          <span className="text-gray-400">→</span>
-          <span>Level 2</span>
-          <span className="text-gray-400">→</span>
-          <span>Level 3</span>
-        </div>
+      {/* <div className="flex items-center gap-2">
+  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+    Level 1
+  </span>
+
+  <span className="text-gray-400">→</span>
+
+  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+    Level 2
+  </span>
+
+  <span className="text-gray-400">→</span>
+
+  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-200 text-gray-700">
+    Level 3
+  </span>
+</div> */}
+
+<div className="flex items-center gap-2">
+  {[1, 2, 3].map((level, idx) => (
+    <div key={level} className="flex items-center gap-2">
+      <span
+        className={`px-3 py-1 rounded-full text-xs font-semibold
+          ${
+            level === currentLevel
+              ? 'bg-green-100 text-green-800'
+              : 'bg-gray-200 text-gray-600'
+          }`}
+      >
+        Level {level}
+      </span>
+
+      {idx < 2 && <span className="text-gray-400">→</span>}
+    </div>
+  ))}
+</div>
+
       </div>
 
       {loading ? (
@@ -377,15 +408,15 @@ export default function OrderProposalList() {
               onChange={(e) =>
                 setRejectData((prev) => ({ ...prev, rejected_note: e.target.value }))
               }
-              placeholder="Why is this item being rejected?"
+            
             />
 
             <div className="border-t pt-4">
-              <p className="text-sm font-medium mb-2">Suggested Alternatives (Optional)</p>
+             
               
               <div className="grid grid-cols-2 gap-4">
                 <FloatingInput
-                  label="Suggested Price"
+                  label="Recommended Price"
                   type="number"
                   step="0.01"
                   value={rejectData.suggested_price}
@@ -395,7 +426,7 @@ export default function OrderProposalList() {
                 />
                 
                 <FloatingInput
-                  label="Suggested Volume"
+                  label="Recommended Volume"
                   type="number"
                   value={rejectData.suggested_volume}
                   onChange={(e) =>
