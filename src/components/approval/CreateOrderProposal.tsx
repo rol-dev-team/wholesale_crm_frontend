@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SelectItem } from '@/components/ui/select';
 import { useNavigate } from 'react-router-dom';
+import { PriceProposalAPI } from '@/api/priceProposalApi.js'
 import {
   Table,
   TableBody,
@@ -12,6 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { FloatingSearchSelect } from '@/components/ui/FloatingSearchSelect';
+import { FloatingInput } from '../ui/FloatingInput';  
 import { FloatingMultiSelect } from '@/components/ui/FloatingMultiSelect';
 import { Trash2 } from 'lucide-react';
 import { PrismAPI } from '@/api';
@@ -43,6 +45,7 @@ interface RowItem {
   price: string;
   unit: string;
   volume: string;
+  total_amount?: string;
   status?: 'Approved' | 'Rejected';
 }
 
@@ -136,14 +139,39 @@ export default function CreateOrderProposal({ proposal }: Props) {
 
   /* ================= SUBMIT ================= */
 
-  const submitProposal = () => {
+  // const submitProposal = () => {
+  //   const payload = {
+  //     client,
+  //     items: rows,
+  //   };
+
+  //   console.log('Submit proposal', payload);
+  // };
+
+  const submitProposal = async () => {
+  try {
+    setLoading(true);
+
     const payload = {
-      client,
-      items: rows,
+      client_id: Number(client),
+      items: rows.map((r) => ({
+        product_id: Number(r.product),
+        price: Number(r.price),
+        volume: r.volume ? Number(r.volume) : 1,
+        unit: r.unit,
+        total_amount: Number(r.total_amount), 
+      })),
     };
 
-    console.log('Submit proposal', payload);
-  };
+    await PriceProposalAPI.create(payload);
+
+    navigate('/order-proposal-list');
+  } catch (error) {
+    console.error('Create proposal failed', error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   /* ================= UI ================= */
 
@@ -234,9 +262,17 @@ export default function CreateOrderProposal({ proposal }: Props) {
                     />
                   </TableCell>
 
-                  <TableCell className="font-semibold">
-                    {(Number(row.price) || 0) * (Number(row.volume) || 0)}
-                  </TableCell>
+                  <TableCell>
+            <Input
+              type="number"
+              value={row.total_amount || ''}
+              onChange={(e) =>
+                isEditable && updateRow(row.product, { total_amount: e.target.value })
+              }
+              disabled={!isEditable}
+            />
+          </TableCell>
+
 
                   <TableCell>
                     <Button

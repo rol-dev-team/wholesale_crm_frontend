@@ -243,6 +243,7 @@ interface FloatingSearchSelectProps {
   error?: string;
   onTouched?: () => void;
   searchable?: boolean;
+  disabled? : boolean;
 }
 
 export function FloatingSearchSelect({
@@ -255,6 +256,7 @@ export function FloatingSearchSelect({
   error,
   onTouched,
   searchable = false,
+  disabled = false,
 }: FloatingSearchSelectProps) {
   const hasValue = Boolean(value);
   const [search, setSearch] = React.useState('');

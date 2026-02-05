@@ -143,6 +143,7 @@ interface FloatingMultiSelectProps {
   placeholder?: string;
   searchable?: boolean;
   className?: string;
+  disabled?: boolean;
 }
 
 export function FloatingMultiSelect({
@@ -153,6 +154,7 @@ export function FloatingMultiSelect({
   placeholder = 'Select...',
   searchable = true,
   className,
+  disabled = false,
 }: FloatingMultiSelectProps) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
