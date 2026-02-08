@@ -1,6 +1,6 @@
 'use client';
-
-import { useMemo, useState, useEffect } from 'react';
+import React from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { PriceProposalAPI } from '@/api/priceProposalApi.js';
 import { PrismAPI } from '@/api/prismApi'; // Your PRISM API import
@@ -16,6 +16,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { FloatingInput } from '@/components/ui/FloatingInput';
+import { isSuperAdmin, isManagement, isKAM, isSupervisor, getUserInfo } from '@/utility/utility';
 
 // ---- proposal data model ----
 interface ProposalItem {
@@ -60,11 +61,18 @@ interface Proposal {
 
 export default function OrderProposalList() {
   const { currentUser, hasPermission } = useAuth();
+  const userInfo = getUserInfo();
 
   const [filter, setFilter] = useState<'pending' | 'approved' | 'rejected'>('pending');
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(false);
   const [clients, setClients] = useState<Record<number, string>>({}); // Cache for client names
+
+  // pagination states
+  const ITEMS_PER_PAGE = 10;
+  const lastPayloadRef = React.useRef<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const [rejectingItem, setRejectingItem] = useState<{
     proposal: Proposal;
@@ -84,76 +92,30 @@ export default function OrderProposalList() {
     rejected: 0,
   });
 
-  // Fetch proposals whenever filter changes
-  useEffect(() => {
-    fetchProposals();
-  }, [filter]);
-
-  useEffect(() => {
-    fetchItemCounts();
-  }, []);
-  useEffect(() => {
-    console.log('STATUS COUNTS 👉', statusCounts);
-  }, [statusCounts]);
-
-  const fetchItemCounts = async () => {
-    try {
-      const counts = await PriceProposalAPI.getItemStatusCounts();
-      setStatusCounts(counts); // ✅ directly set counts
-    } catch (err) {
-      console.error('Failed to fetch item counts', err);
-    }
-  };
-
-  const fetchProposals = async () => {
+  const fetchProposals = async (payload: any) => {
+    lastPayloadRef.current = payload;
     setLoading(true);
+
     try {
-      const response = await PriceProposalAPI.getAll({
-        status: filter,
-      });
-
-      const proposalsData = response.data.data || response.data;
-      setProposals(proposalsData);
-
-      // Extract unique client IDs
-      const clientIds = [...new Set(proposalsData.map((p: Proposal) => p.client_id))];
-
-      // Fetch client names from PRISM API
-      await fetchClientNames(clientIds);
+      const res = await PriceProposalAPI.getAll(payload);
+      setProposals(res.data || []);
+      console.log('Fetched proposals:', res);
+      setCurrentPage(res?.meta?.current_page || 1);
+      setTotalPages(res?.meta?.last_page || 1);
     } catch (error) {
       console.error('Failed to fetch proposals:', error);
-      alert('Failed to load proposals');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchClientNames = async (clientIds: number[]) => {
-    try {
-      // Option 1: If you have a batch endpoint
-      // const response = await PrismAPI.getClientsByIds(clientIds);
-
-      // Option 2: If you need to fetch the full client list
-      const response = await fetch('/api/prism/client-list', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`, // Add auth if needed
-        },
-      });
-      const clientsData = await response.json();
-
-      // Create a map of client_id -> client_name
-      const clientMap: Record<number, string> = {};
-      clientsData.forEach((client: any) => {
-        if (clientIds.includes(client.id)) {
-          clientMap[client.id] = client.name;
-        }
-      });
-
-      setClients(clientMap);
-    } catch (error) {
-      console.error('Failed to fetch client names:', error);
-    }
-  };
+  useEffect(() => {
+    fetchProposals({
+      page: 1,
+      per_page: ITEMS_PER_PAGE,
+      status: filter,
+    });
+  }, [filter]);
 
   const handleApproveItem = async (proposal: Proposal, item: ProposalItem) => {
     if (!confirm(`Are you sure you want to approve this item?`)) {
@@ -162,13 +124,9 @@ export default function OrderProposalList() {
 
     try {
       await PriceProposalAPI.approveItem(proposal.id, item.id);
-
-      alert('Item approved successfully!');
-      fetchProposals();
-      fetchItemCounts();
+      fetchProposals(lastPayloadRef.current);
     } catch (error: any) {
       console.error('Approval failed:', error);
-      alert(error.response?.data?.message || 'Failed to approve item');
     }
   };
 
@@ -207,8 +165,6 @@ export default function OrderProposalList() {
         payload
       );
 
-      alert('Item rejected successfully!');
-
       setRejectingItem(null);
       setRejectData({
         rejected_note: '',
@@ -225,12 +181,14 @@ export default function OrderProposalList() {
   };
 
   const canApproveOrReject = (proposal: Proposal) => {
-    const role = currentUser?.role?.toLowerCase();
-    const isOwner = currentUser?.id === proposal.current_owner_id;
+    const user = getUserInfo();
+    if (!user) return false;
 
-    return (
-      isOwner && (role === 'supervisor' || role === 'super_admin') && proposal.status === 'pending'
-    );
+    const isOwner = user.id === proposal.current_owner_id;
+
+    const hasApprovalRole = isSupervisor() || isSuperAdmin() || isManagement();
+
+    return isOwner && hasApprovalRole && proposal.status === 'pending';
   };
 
   const getItemStatusBadge = (status?: string) => {
@@ -305,7 +263,7 @@ export default function OrderProposalList() {
         </div>
 
         {/* STATIC PIPELINE */}
-        <div className="flex items-center gap-2">
+        {/* <div className="flex items-center gap-2">
           <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
             Default Supervisor
           </span>
@@ -321,26 +279,7 @@ export default function OrderProposalList() {
           <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
             Chairman
           </span>
-        </div>
-
-        {/* <div className="flex items-center gap-2">
-  {[1, 2, 3].map((level, idx) => (
-    <div key={level} className="flex items-center gap-2">
-      <span
-        className={`px-3 py-1 rounded-full text-xs font-semibold
-          ${
-            level === currentLevel
-              ? 'bg-green-100 text-green-800'
-              : 'bg-gray-200 text-gray-600'
-          }`}
-      >
-        Level {level}
-      </span>
-
-      {idx < 2 && <span className="text-gray-400">→</span>}
-    </div>
-  ))}
-</div> */}
+        </div> */}
       </div>
 
       {loading ? (

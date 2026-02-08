@@ -365,9 +365,6 @@
 //   );
 // }
 
-
-
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -437,31 +434,23 @@ export default function CreateOrderProposal({ proposal }: Props) {
 
   const [client, setClient] = useState<string | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-  const [status, setStatus] = useState<'active' | 'inactive'>('active');
+  const [status, setStatus] = useState<'active' | 'inactive' | 'organisation'>('active');
 
   const [rows, setRows] = useState<RowItem[]>([]);
   const [clients, setClients] = useState<Option[]>([]);
   const [products, setProducts] = useState<Option[]>([]);
   const [loading, setLoading] = useState(false);
+  const [clientLoading, setClientLoading] = useState(false);
   const [fetchingUnitCosts, setFetchingUnitCosts] = useState(false);
 
   /* ================= LOAD CLIENTS ================= */
   useEffect(() => {
     const loadClients = async () => {
       try {
-        setLoading(true);
-        setClient(null);
+        setClientLoading(true);
+        setClients([]);
 
-        let response;
-
-        if (status === 'active') {
-          // 🔵 ACTIVE → Prism
-          response = await PrismAPI.getClientList();
-        } else {
-          // 🟠 INACTIVE → Local DB
-          response = await ClientAPI.getLocalClients();
-        }
-
+        const response = await PrismAPI.getClientsByStatus(status);
         setClients(
           response.data.map((c: any) => ({
             label: c.client,
@@ -472,7 +461,7 @@ export default function CreateOrderProposal({ proposal }: Props) {
         console.error('Client load failed', err);
         setClients([]);
       } finally {
-        setLoading(false);
+        setClientLoading(false);
       }
     };
 
@@ -526,76 +515,115 @@ export default function CreateOrderProposal({ proposal }: Props) {
   }, [selectedProducts]);
 
   /* ================= FETCH UNIT COSTS ================= */
+  // useEffect(() => {
+  //   const fetchUnitCosts = async () => {
+  //     // ✅ FIX: Check if we have client and rows with products that don't have rates yet
+  //     if (!client || rows.length === 0) {
+  //       console.log('⚠️ Skipping fetch: client or rows empty');
+  //       return;
+  //     }
+
+  //     // Check if any row still has '-' as current_rate
+  //     const needsFetch = rows.some((r) => r.current_rate === '-');
+  //     if (!needsFetch) {
+  //       console.log('✅ All rows already have rates');
+  //       return;
+  //     }
+
+  //     setFetchingUnitCosts(true);
+
+  //     try {
+  //       console.log('🔵 Fetching unit costs for rows:', rows);
+
+  //       // Call ClientAPI.getUnitCost for each product
+  //       const updatedRows = await Promise.all(
+  //         rows.map(async (row) => {
+  //           // Skip if already fetched
+  //           if (row.current_rate !== '-') {
+  //             return row;
+  //           }
+
+  //           try {
+  //             console.log('🔵 Fetching unit cost for:', {
+  //               party_id: Number(client),
+  //               product_id: Number(row.product),
+  //             });
+
+  //             const response = await ClientAPI.getUnitCost({
+  //               party_id: Number(client),
+  //               product_id: Number(row.product),
+  //             });
+
+  //             console.log('🔵 Full Response:', response);
+
+  //             // ✅ FIX: Response is directly { status: true, unit_cost: "33.000000" }, not nested in response.data
+  //             if (response && response.status && response.unit_cost) {
+  //               const unitCost = parseFloat(response.unit_cost);
+  //               console.log('🟢 Unit cost found:', unitCost);
+
+  //               return {
+  //                 ...row,
+  //                 current_rate: unitCost,
+  //               };
+  //             } else {
+  //               console.warn('🟡 No unit cost in response:', response);
+  //               return row;
+  //             }
+  //           } catch (error) {
+  //             console.error(`❌ Failed to fetch unit cost for product ${row.product}:`, error);
+  //             return row;
+  //           }
+  //         })
+  //       );
+
+  //       console.log('🔵 Updated rows:', updatedRows);
+  //       setRows(updatedRows);
+  //     } catch (error) {
+  //       console.error('❌ Failed to fetch unit costs', error);
+  //     } finally {
+  //       setFetchingUnitCosts(false);
+  //     }
+  //   };
+
+  //   // ✅ FIX: Depend on rows instead of selectedProducts to ensure rows are created first
+  //   fetchUnitCosts();
+  // }, [client, rows.length]);
+
   useEffect(() => {
     const fetchUnitCosts = async () => {
-      // ✅ FIX: Check if we have client and rows with products that don't have rates yet
-      if (!client || rows.length === 0) {
-        console.log('⚠️ Skipping fetch: client or rows empty');
-        return;
-      }
+      if (!client || rows.length === 0) return;
 
-      // Check if any row still has '-' as current_rate
       const needsFetch = rows.some((r) => r.current_rate === '-');
-      if (!needsFetch) {
-        console.log('✅ All rows already have rates');
-        return;
-      }
+      if (!needsFetch) return;
 
       setFetchingUnitCosts(true);
 
       try {
-        console.log('🔵 Fetching unit costs for rows:', rows);
-        
-        // Call ClientAPI.getUnitCost for each product
-        const updatedRows = await Promise.all(
+        const updated = await Promise.all(
           rows.map(async (row) => {
-            // Skip if already fetched
-            if (row.current_rate !== '-') {
-              return row;
+            if (row.current_rate !== '-') return row;
+
+            const res = await ClientAPI.getUnitCost({
+              party_id: Number(client),
+              product_id: Number(row.product),
+            });
+
+            if (res?.status && res.unit_cost) {
+              return { ...row, current_rate: Number(res.unit_cost) };
             }
 
-            try {
-              console.log('🔵 Fetching unit cost for:', { party_id: Number(client), product_id: Number(row.product) });
-              
-              const response = await ClientAPI.getUnitCost({
-                party_id: Number(client),
-                product_id: Number(row.product),
-              });
-
-              console.log('🔵 Full Response:', response);
-
-              // ✅ FIX: Response is directly { status: true, unit_cost: "33.000000" }, not nested in response.data
-              if (response && response.status && response.unit_cost) {
-                const unitCost = parseFloat(response.unit_cost);
-                console.log('🟢 Unit cost found:', unitCost);
-                
-                return {
-                  ...row,
-                  current_rate: unitCost,
-                };
-              } else {
-                console.warn('🟡 No unit cost in response:', response);
-                return row;
-              }
-            } catch (error) {
-              console.error(`❌ Failed to fetch unit cost for product ${row.product}:`, error);
-              return row;
-            }
+            return row;
           })
         );
 
-        console.log('🔵 Updated rows:', updatedRows);
-        setRows(updatedRows);
-      } catch (error) {
-        console.error('❌ Failed to fetch unit costs', error);
+        setRows(updated);
       } finally {
         setFetchingUnitCosts(false);
       }
     };
 
-    // ✅ FIX: Depend on rows instead of selectedProducts to ensure rows are created first
     fetchUnitCosts();
-  }, [client, rows.length]);
+  }, [rows.length]);
 
   /* ================= HELPERS ================= */
 
@@ -616,15 +644,15 @@ export default function CreateOrderProposal({ proposal }: Props) {
         client_id: Number(client),
         items: rows.map((r) => ({
           product_id: Number(r.product),
+          current_rate:
+            r.current_rate !== undefined && r.current_rate !== '-' ? Number(r.current_rate) : null,
           price: Number(r.price),
           volume: r.volume ? Number(r.volume) : 1,
           unit: r.unit,
           total_amount: Number(r.total_amount),
         })),
       };
-
       await PriceProposalAPI.create(payload);
-
       navigate('/order-proposal-list');
     } catch (error) {
       console.error('Create proposal failed', error);
@@ -664,6 +692,18 @@ export default function CreateOrderProposal({ proposal }: Props) {
           />
           <span>Inactive</span>
         </label>
+        <label className="flex items-center space-x-2">
+          <input
+            type="radio"
+            name="status"
+            value="organisation"
+            checked={status === 'organisation'}
+            onChange={() => setStatus('organisation')}
+            disabled={loading}
+            className="accent-blue-500"
+          />
+          <span>Organisation</span>
+        </label>
       </div>
 
       {/* CLIENT & PRODUCTS SELECTION */}
@@ -672,7 +712,7 @@ export default function CreateOrderProposal({ proposal }: Props) {
           label="Client"
           value={client ?? undefined}
           onValueChange={isRevision ? undefined : setClient}
-          disabled={isRevision || loading}
+          disabled={clientLoading}
           searchable
         >
           {clients.map((c) => (
