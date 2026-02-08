@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { PriceProposalAPI } from '@/api/priceProposalApi.js';
-import { PrismAPI } from '@/api/prismApi'; // Your PRISM API import
+import { PrismAPI } from '@/api/prismAPI';
 
 import {
   Table,

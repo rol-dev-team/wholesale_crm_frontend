@@ -84,4 +84,10 @@ export const PriceProposalAPI = {
   rejectItem(proposalId, itemId, payload) {
     return api.post(`/price-proposals/${proposalId}/items/${itemId}/reject`, payload);
   },
+
+
+    getAllPriceByFilter(params = {}) {
+      return api.get('/price-proposals/items-filtered', { params });
+  },
+
 };
