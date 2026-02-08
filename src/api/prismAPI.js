@@ -31,4 +31,7 @@ export const PrismAPI = {
 
   getKamListBySupervisor: (supervisorIds) =>
     api.post('/prism/kam-list-by-supervisor', { supervisor_ids: supervisorIds }),
+  getClientsByStatus: (status) => api.get(`/prism/client-type/${status}`),
+
+  getClientsByStatusAndKam: (status, kamId) => api.get(`/prism/clients/${status}/${kamId}`),
 };
