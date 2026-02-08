@@ -87,7 +87,9 @@ export function ActivityModal({
 
   const [clientsByKam, setClientsByKam] = useState<ClientOption[]>([]);
   const [isLoadingClients, setIsLoadingClients] = useState(false);
-  const [clientSource, setClientSource] = useState<'erp' | 'local'>('erp'); // default ERP
+  const [clientSource, setClientSource] = useState<'active' | 'inactive' | 'organization'>(
+    'active'
+  ); // default active
 
   // Track if options are empty
   const hasKams = kams.length > 0;
@@ -127,7 +129,6 @@ export function ActivityModal({
             value: item.party_id,
             label: item.client,
           }));
-          console.log('Clients fetched successfully:', options);
           setClientsByKam(options);
           setIsLoadingClients(false);
         })
@@ -168,62 +169,6 @@ export function ActivityModal({
   }, [clientsByKam, editingActivity?.id, open, isLoadingClients]);
 
   /* -------------------- HANDLE KAM CHANGE -------------------- */
-  // const handleKamChange = async (value: string) => {
-  //   const kamId = value ? Number(value) : null;
-
-  //   setFormData((prev) => ({
-  //     ...prev,
-  //     kam_id: kamId,
-  //     client_id: null, // Reset client when KAM changes
-  //   }));
-
-  //   if (kamId) {
-  //     setIsLoadingClients(true);
-  //     try {
-  //       const res = await PrismAPI.getKamWiseClients(kamId);
-  //       const options = (res.data || []).map((item: any) => ({
-  //         value: item.party_id,
-  //         label: item.client,
-  //       }));
-  //       setClientsByKam(options);
-  //     } catch (err) {
-  //       setClientsByKam([]);
-  //     } finally {
-  //       setIsLoadingClients(false);
-  //     }
-  //   } else {
-  //     setClientsByKam([]);
-  //     setIsLoadingClients(false);
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   if (user?.role === 'kam' && user?.default_kam_id && open) {
-  //     // 🔑 1️⃣ set KAM
-  //     setFormData((prev) => ({
-  //       ...prev,
-  //       kam_id: user.default_kam_id,
-  //       client_id: null,
-  //     }));
-
-  //     // 🔑 2️⃣ fetch clients USING SAME LOGIC
-  //     (async () => {
-  //       setIsLoadingClients(true);
-  //       try {
-  //         const res = await PrismAPI.getKamWiseClients(user?.default_kam_id);
-  //         const options = (res?.data || []).map((item: any) => ({
-  //           value: item.party_id,
-  //           label: item.client,
-  //         }));
-  //         setClientsByKam(options);
-  //       } catch {
-  //         setClientsByKam([]);
-  //       } finally {
-  //         setIsLoadingClients(false);
-  //       }
-  //     })();
-  //   }
-  // }, [user?.role, user?.default_kam_id, open]);
 
   const fetchErpClientsByKam = async (kamId: number) => {
     setIsLoadingClients(true);
@@ -265,19 +210,38 @@ export function ActivityModal({
     }
   };
 
-  const loadClientsByKamAndSource = (kamId: number, source: 'erp' | 'local') => {
+  const fetchPrismClients = async (
+    kamId: number,
+    source: 'active' | 'inactive' | 'organization'
+  ) => {
+    setIsLoadingClients(true);
+
+    try {
+      const res = await PrismAPI.getClientsByStatusAndKam(source, kamId);
+
+      const options = (res?.data || []).map((item: any) => ({
+        value: item.id,
+        label: item.client,
+      }));
+
+      setClientsByKam(options);
+    } catch (error) {
+      console.error('Failed to fetch prism clients', error);
+      setClientsByKam([]);
+    } finally {
+      setIsLoadingClients(false);
+    }
+  };
+
+  const loadClientsByKamAndSource = (
+    kamId: number,
+    source: 'active' | 'inactive' | 'organization'
+  ) => {
     if (!kamId) {
       setClientsByKam([]);
       return;
     }
-
-    if (source === 'erp') {
-      fetchErpClientsByKam(kamId);
-    }
-
-    if (source === 'local') {
-      fetchLocalClients(kamId);
-    }
+    fetchPrismClients(kamId, source);
   };
 
   const handleKamChange = (value: string) => {
@@ -296,7 +260,7 @@ export function ActivityModal({
     }
   };
 
-  const handleClientSourceChange = (source: 'erp' | 'local') => {
+  const handleClientSourceChange = (source: 'active' | 'inactive' | 'organization') => {
     setClientSource(source);
 
     setFormData((prev) => ({
@@ -408,10 +372,10 @@ export function ActivityModal({
               <input
                 type="radio"
                 name="clientSource"
-                value="erp"
-                checked={clientSource === 'erp'}
+                value="active"
+                checked={clientSource === 'active'}
                 disabled={isEditMode}
-                onChange={() => handleClientSourceChange('erp')}
+                onChange={() => handleClientSourceChange('active')}
               />
               <span>Active</span>
             </label>
@@ -420,12 +384,23 @@ export function ActivityModal({
               <input
                 type="radio"
                 name="clientSource"
-                value="local"
-                checked={clientSource === 'local'}
+                value="inactive"
+                checked={clientSource === 'inactive'}
                 disabled={isEditMode}
-                onChange={() => handleClientSourceChange('local')}
+                onChange={() => handleClientSourceChange('inactive')}
               />
               <span>Inactive</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="clientSource"
+                value="organization"
+                checked={clientSource === 'organization'}
+                disabled={isEditMode}
+                onChange={() => handleClientSourceChange('organization')}
+              />
+              <span>Organization</span>
             </label>
           </div>
 
