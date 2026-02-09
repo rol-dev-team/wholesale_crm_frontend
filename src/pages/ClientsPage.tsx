@@ -130,8 +130,8 @@ export default function ClientsPage() {
 
       {/* STATS */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-        <Card><CardContent className="p-3"><p>Prism Clients</p><p className="text-2xl font-bold">{counts.customers}</p></CardContent></Card>
-        <Card><CardContent className="p-3"><p>Local Clients</p><p className="text-2xl font-bold">{counts.local_clients}</p></CardContent></Card>
+        <Card><CardContent className="p-3"><p>Prism Active Clients</p><p className="text-2xl font-bold">{counts.customers}</p></CardContent></Card>
+        <Card><CardContent className="p-3"><p>Prism InActive Clients</p><p className="text-2xl font-bold">{counts.local_clients}</p></CardContent></Card>
         <Card><CardContent className="p-3"><p>Total Branch</p><p className="text-2xl font-bold">{counts.divisions}</p></CardContent></Card>
         <Card><CardContent className="p-3"><p>Total KAM</p><p className="text-2xl font-bold">{counts.kams}</p></CardContent></Card>
       </div>
@@ -180,7 +180,7 @@ export default function ClientsPage() {
               <TableRow>
                 <TableHead>Client</TableHead>
                 <TableHead>Contact</TableHead>
-                <TableHead>Branch</TableHead>
+                {/* <TableHead>Branch</TableHead> */}
                 <TableHead>Type</TableHead>
                 <TableHead>Assigned KAM</TableHead>
               </TableRow>
@@ -198,7 +198,7 @@ export default function ClientsPage() {
                   <TableRow key={client.id}>
                     <TableCell>{client.name}</TableCell>
                     <TableCell>{client.phone || '--'}</TableCell>
-                    <TableCell><Badge>{client.division}</Badge></TableCell>
+                    {/* <TableCell><Badge>{client.division}</Badge></TableCell> */}
                     <TableCell>{client.type}</TableCell>
                     <TableCell>{client.assignedKamId}</TableCell>
                   </TableRow>
