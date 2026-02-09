@@ -367,7 +367,7 @@ export function ActivityModal({
             ))}
           </FloatingSelect>
 
-          <div className="flex gap-2 mt-2">
+          <div className="flex justify-center gap-4 mt-2">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="radio"
