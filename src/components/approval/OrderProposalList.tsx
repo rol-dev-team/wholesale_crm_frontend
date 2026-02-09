@@ -1,5 +1,3 @@
-
-
 // 'use client';
 // import React from 'react';
 // import { useMemo, useState, useEffect, useRef } from 'react';
@@ -455,9 +453,6 @@
 //   );
 // }
 
-
-
-
 'use client';
 import React from 'react';
 import { useMemo, useState, useEffect, useRef } from 'react';
@@ -531,6 +526,7 @@ export default function OrderProposalList() {
   const { currentUser, hasPermission } = useAuth();
   const userInfo = getUserInfo();
 
+  const [approvalPipeline, setApprovalPipeline] = useState([]);
   const [filter, setFilter] = useState<'pending' | 'approved' | 'rejected'>('pending');
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(false);
@@ -567,6 +563,7 @@ export default function OrderProposalList() {
     try {
       const res = await PriceProposalAPI.getAll(payload);
       setProposals(res.data || []);
+      setApprovalPipeline(res.user_level_info || []);
       console.log('Fetched proposals:', res);
       setCurrentPage(res?.meta?.current_page || 1);
       setTotalPages(res?.meta?.last_page || 1);
@@ -652,9 +649,15 @@ export default function OrderProposalList() {
     const user = getUserInfo();
     if (!user) return false;
 
-    const hasApprovalRole = isSupervisor() || isSuperAdmin() || isManagement();
+    if (!Array.isArray(approvalPipeline) || approvalPipeline.length === 0) {
+      return false;
+    }
 
-    return hasApprovalRole;
+    const isDirectApprover = approvalPipeline.some((step: any) => step.user_id === user.id);
+
+    const hasSupervisorFallback = approvalPipeline.some((step: any) => step.user_id === 9001);
+
+    return isDirectApprover || (hasSupervisorFallback && isSupervisor());
   };
 
   const getItemStatusBadge = (status?: string) => {
@@ -700,7 +703,8 @@ export default function OrderProposalList() {
     }
 
     const total = typeof totalAmount === 'number' ? totalAmount : parseFloat(String(totalAmount));
-    const current = typeof currentTotal === 'number' ? currentTotal : parseFloat(String(currentTotal));
+    const current =
+      typeof currentTotal === 'number' ? currentTotal : parseFloat(String(currentTotal));
 
     if (isNaN(total) || isNaN(current)) {
       return null;
@@ -721,13 +725,16 @@ export default function OrderProposalList() {
 
     return (
       <span className={`font-semibold ${color}`}>
-        {isPositive ? '+' : ''}{difference.toFixed(2)}
+        {isPositive ? '+' : ''}
+        {difference.toFixed(2)}
       </span>
     );
   };
 
   if (!currentUser) return null;
   const currentLevel = 2; // 1 | 2 | 3
+
+  console.log('Approval Pipeline:', approvalPipeline);
 
   return (
     <div className="space-y-4">
@@ -891,6 +898,15 @@ export default function OrderProposalList() {
                             </>
                           )}
                         </div>
+                        {item.status == 'rejected' && p.created_by == userInfo?.id && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleRejectClick(p, item)}
+                          >
+                            Revise
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
