@@ -339,7 +339,7 @@ export default function CreateOrderProposal({ proposal }: Props) {
               <TableHead>Current Rate</TableHead>
               <TableHead>Price / Unit (Proposed)</TableHead>
               <TableHead>Volume</TableHead>
-              <TableHead>Total Amount</TableHead>
+              <TableHead>Proposed Amount</TableHead>
               <TableHead>Current Invoice</TableHead>
               <TableHead>Invoice Difference</TableHead>
               <TableHead />
