@@ -1,3 +1,5 @@
+
+
 // 'use client';
 // import React from 'react';
 // import { useMemo, useState, useEffect, useRef } from 'react';
@@ -23,7 +25,8 @@
 //   id: number;
 //   product_id: number;
 //   product_name?: string;
-//   price: string;
+//   current_price: string;
+//   proposed_price: string;
 //   unit: string;
 //   volume: string;
 //   total_amount: number;
@@ -32,6 +35,8 @@
 //   suggested_price?: number;
 //   suggested_volume?: number;
 //   rejected_by?: number;
+//   action_by?: number;
+//   action_by_name?: string;
 //   rejected_by_user?: {
 //     id: number;
 //     name: string;
@@ -47,7 +52,7 @@
 //   rejected_note?: string;
 //   created_by: number;
 //   current_owner_id: number;
-//   action_by: number;
+//   action_by_name: string;
 //   created_by_user?: {
 //     id: number;
 //     name: string;
@@ -57,6 +62,7 @@
 //     id: number;
 //     name: string;
 //   };
+
 //   items: ProposalItem[];
 // }
 
@@ -135,7 +141,7 @@
 //     setRejectingItem({ proposal, item });
 //     setRejectData({
 //       rejected_note: '',
-//       suggested_price: item.price,
+//       suggested_price: item.proposed_price,
 //       suggested_volume: item.volume,
 //     });
 //   };
@@ -185,11 +191,9 @@
 //     const user = getUserInfo();
 //     if (!user) return false;
 
-//     const isOwner = user.id === proposal.current_owner_id;
-
 //     const hasApprovalRole = isSupervisor() || isSuperAdmin() || isManagement();
 
-//     return isOwner && hasApprovalRole && proposal.status === 'pending';
+//     return hasApprovalRole;
 //   };
 
 //   const getItemStatusBadge = (status?: string) => {
@@ -332,9 +336,9 @@
 //                       )}
 
 //                       <TableCell>{item.product_name || `Product #${item.product_id}`}</TableCell>
-//                       <TableCell>TBA</TableCell>
+//                       <TableCell>{item.current_price}</TableCell>
 //                       <TableCell>
-//                         {item.price}/{item.unit}
+//                         {item.proposed_price}/{item.unit}
 //                       </TableCell>
 //                       <TableCell>{item.volume}</TableCell>
 //                       <TableCell className="font-semibold">
@@ -344,7 +348,7 @@
 
 //                       {idx === 0 && filter === 'pending' && (
 //                         <TableCell rowSpan={p.items.length}>
-//                           {p.current_owner?.name || 'N/A'}
+//                           {item.action_by_name || 'N/A'}
 //                         </TableCell>
 //                       )}
 
@@ -451,6 +455,9 @@
 //   );
 // }
 
+
+
+
 'use client';
 import React from 'react';
 import { useMemo, useState, useEffect, useRef } from 'react';
@@ -488,6 +495,9 @@ interface ProposalItem {
   rejected_by?: number;
   action_by?: number;
   action_by_name?: string;
+  current_unit_cost?: string | number;
+  current_quantity?: string | number;
+  current_total?: string | number;
   rejected_by_user?: {
     id: number;
     name: string;
@@ -672,6 +682,50 @@ export default function OrderProposalList() {
     return null;
   };
 
+  const formatPrice = (value?: string | number) => {
+    if (value === undefined || value === null) return 'N/A';
+    const num = typeof value === 'string' ? parseFloat(value) : value;
+    return isNaN(num) ? 'N/A' : num.toFixed(2);
+  };
+
+  const formatQuantity = (value?: string | number) => {
+    if (value === undefined || value === null) return 'N/A';
+    const num = typeof value === 'string' ? parseFloat(value) : value;
+    return isNaN(num) ? 'N/A' : num.toLocaleString();
+  };
+
+  const getInvoiceDifference = (totalAmount?: number, currentTotal?: string | number) => {
+    if (totalAmount === undefined || currentTotal === undefined || currentTotal === null) {
+      return null;
+    }
+
+    const total = typeof totalAmount === 'number' ? totalAmount : parseFloat(String(totalAmount));
+    const current = typeof currentTotal === 'number' ? currentTotal : parseFloat(String(currentTotal));
+
+    if (isNaN(total) || isNaN(current)) {
+      return null;
+    }
+
+    return total - current;
+  };
+
+  const renderInvoiceDifference = (totalAmount?: number, currentTotal?: string | number) => {
+    const difference = getInvoiceDifference(totalAmount, currentTotal);
+
+    if (difference === null) {
+      return <span className="text-gray-400">N/A</span>;
+    }
+
+    const isPositive = difference >= 0;
+    const color = isPositive ? 'text-green-600' : 'text-red-600';
+
+    return (
+      <span className={`font-semibold ${color}`}>
+        {isPositive ? '+' : ''}{difference.toFixed(2)}
+      </span>
+    );
+  };
+
   if (!currentUser) return null;
   const currentLevel = 2; // 1 | 2 | 3
 
@@ -717,25 +771,6 @@ export default function OrderProposalList() {
             </Button>
           ))}
         </div>
-
-        {/* STATIC PIPELINE */}
-        {/* <div className="flex items-center gap-2">
-          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
-            Default Supervisor
-          </span>
-
-          <span className="text-gray-400">→</span>
-
-          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
-            HOD
-          </span>
-
-          <span className="text-gray-400">→</span>
-
-          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
-            Chairman
-          </span>
-        </div> */}
       </div>
 
       {loading ? (
@@ -751,7 +786,11 @@ export default function OrderProposalList() {
                 <TableHead>Current Rate</TableHead>
                 <TableHead>Proposed Unit Price</TableHead>
                 <TableHead>Proposed Volume</TableHead>
-                <TableHead>Total Amount</TableHead>
+                <TableHead>Proposed Amount</TableHead>
+                <TableHead>Current Unit Cost</TableHead>
+                <TableHead>Current Quantity</TableHead>
+                <TableHead>Current Invoice</TableHead>
+                <TableHead>Invoice Difference</TableHead>
                 <TableHead>Item Status</TableHead>
 
                 {filter === 'pending' && <TableHead>Pending Under</TableHead>}
@@ -767,7 +806,7 @@ export default function OrderProposalList() {
             <TableBody>
               {proposals.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={12} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={16} className="text-center py-8 text-gray-500">
                     No proposals found
                   </TableCell>
                 </TableRow>
@@ -795,6 +834,23 @@ export default function OrderProposalList() {
                       <TableCell className="font-semibold">
                         {item.total_amount.toLocaleString()}
                       </TableCell>
+
+                      {/* NEW COLUMNS - Unit Cost, Quantity, Total Invoice */}
+                      <TableCell className="font-medium">
+                        {formatPrice(item.current_unit_cost)}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {formatQuantity(item.current_quantity)}
+                      </TableCell>
+                      <TableCell className="font-medium text-blue-600">
+                        {formatPrice(item.current_total)}
+                      </TableCell>
+
+                      {/* Invoice Difference Column */}
+                      <TableCell>
+                        {renderInvoiceDifference(item.total_amount, item.current_total)}
+                      </TableCell>
+
                       <TableCell>{getItemStatusBadge(item.status)}</TableCell>
 
                       {idx === 0 && filter === 'pending' && (
