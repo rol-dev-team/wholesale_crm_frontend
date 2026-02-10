@@ -550,6 +550,14 @@ export default function OrderProposalList() {
     suggested_volume: '',
   });
 
+  const [revisingItem, setRevisingItem] = useState(null);
+  const [reviseData, setReviseData] = useState({
+    proposed_price: '',
+    unit: '',
+    volume: '',
+    proposed_amount: '',
+  });
+
   //count
   const [statusCounts, setStatusCounts] = useState({
     pending: 0,
@@ -645,6 +653,36 @@ export default function OrderProposalList() {
     } catch (error: any) {
       console.error('Rejection failed:', error);
       alert(error.response?.data?.message || 'Failed to reject item');
+    }
+  };
+
+  // Revise
+  const handleReviseClick = (item: ProposalItem) => {
+    setRevisingItem(item);
+    setReviseData({
+      proposed_price: item.proposed_price,
+      unit: item.unit,
+      volume: item.volume,
+      proposed_amount: item.total_amount.toString(),
+    });
+  };
+
+  const submitRevise = async () => {
+    if (!revisingItem) return;
+
+    try {
+      await PriceProposalAPI.reviseItem(revisingItem.id, {
+        proposed_price: Number(reviseData.proposed_price),
+        unit: reviseData.unit,
+        volume: Number(reviseData.volume),
+        proposed_amount: Number(reviseData.proposed_amount),
+      });
+
+      setRevisingItem(null);
+      fetchProposals(lastPayloadRef.current);
+    } catch (err) {
+      console.error('Failed to revise proposal:', err);
+      alert('Failed to revise proposal');
     }
   };
 
@@ -758,9 +796,6 @@ export default function OrderProposalList() {
     );
   };
 
-  if (!currentUser) return null;
-  const currentLevel = 2; // 1 | 2 | 3
-
   console.log('Approval Pipeline:', approvalPipeline);
 
   return (
@@ -830,7 +865,7 @@ export default function OrderProposalList() {
 
                 {filter === 'pending' && (
                   <>
-                    <TableHead>Pending Under</TableHead>{' '}
+                    <TableHead>Requested By</TableHead>{' '}
                   </>
                 )}
                 {filter === 'rejected' && <TableHead>Rejected By</TableHead>}
@@ -896,7 +931,7 @@ export default function OrderProposalList() {
                       {idx === 0 && filter === 'pending' && (
                         <>
                           <TableCell rowSpan={p.items.length}>
-                            {item.action_by_name || 'N/A'}
+                            {item.created_by_name || 'N/A'}
                           </TableCell>
                         </>
                       )}
@@ -938,7 +973,7 @@ export default function OrderProposalList() {
                           <Button
                             size="sm"
                             variant="destructive"
-                            onClick={() => handleRejectClick(p, item)}
+                            onClick={() => handleReviseClick(item)}
                           >
                             Revise
                           </Button>
@@ -1006,6 +1041,58 @@ export default function OrderProposalList() {
             </Button>
             <Button variant="destructive" className="flex-1" onClick={submitReject}>
               Confirm Reject
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Revise Item Dialog */}
+      <Dialog open={!!revisingItem} onOpenChange={() => setRevisingItem(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Revise Proposal</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <FloatingInput
+              label="Proposed Price"
+              type="number"
+              value={reviseData.proposed_price}
+              onChange={(e) => setReviseData((p) => ({ ...p, proposed_price: e.target.value }))}
+            />
+
+            <select
+              className="w-full border rounded-md px-3 py-2"
+              value={reviseData.unit}
+              onChange={(e) => setReviseData((p) => ({ ...p, unit: e.target.value }))}
+            >
+              <option value="">Select Unit</option>
+              <option value="MB">MB</option>
+              <option value="GB">GB</option>
+              <option value="Quantity">Quantity</option>
+            </select>
+
+            <FloatingInput
+              label="Volume"
+              type="number"
+              value={reviseData.volume}
+              onChange={(e) => setReviseData((p) => ({ ...p, volume: e.target.value }))}
+            />
+
+            <FloatingInput
+              label="Proposed Amount"
+              type="number"
+              value={reviseData.proposed_amount}
+              onChange={(e) => setReviseData((p) => ({ ...p, proposed_amount: e.target.value }))}
+            />
+          </div>
+
+          <div className="flex gap-2 mt-4">
+            <Button variant="outline" className="flex-1" onClick={() => setRevisingItem(null)}>
+              Cancel
+            </Button>
+            <Button className="flex-1" onClick={submitRevise}>
+              Submit Revision
             </Button>
           </div>
         </DialogContent>

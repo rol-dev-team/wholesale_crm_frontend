@@ -79,9 +79,10 @@ export const PriceProposalAPI = {
     return api.post(`/price-proposals/${itemId}/status-tracks-levels`, { status });
   },
 
-  revise(payload) {
-    return api.post('/price-proposals/revise', payload);
+  reviseItem(itemId, payload) {
+    return api.post(`/price-proposals/${itemId}/revise`, payload);
   },
+
   getAllPriceByFilter(params = {}) {
     return api.get('/price-proposals/items-filtered', { params });
   },
