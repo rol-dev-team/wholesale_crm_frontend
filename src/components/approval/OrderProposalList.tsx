@@ -712,6 +712,21 @@ export default function OrderProposalList() {
     const user = getUserInfo();
     if (!user) return false;
 
+    if (!Array.isArray(approvalPipeline) || approvalPipeline.length === 0) {
+      return false;
+    }
+
+    const isDirectApprover = approvalPipeline.some(
+      (step: any) =>
+        Number(step.user_id) === Number(user.id) &&
+        Number(step.level_id) === Number(item.current_level)
+    );
+
+    // ✅ RULE 1: direct approver → always allow (ignore creator check)
+    if (isDirectApprover) {
+      return true;
+    }
+
     // 🔒 RULE 0:
     // Either same supervisor OR privileged role
     const hasSupervisorMatch =
@@ -730,21 +745,6 @@ export default function OrderProposalList() {
       console.log('Access denied: missing supervisor match or privileged role');
       return false;
     }
-    if (!Array.isArray(approvalPipeline) || approvalPipeline.length === 0) {
-      return false;
-    }
-
-    const isDirectApprover = approvalPipeline.some(
-      (step: any) =>
-        Number(step.user_id) === Number(user.id) &&
-        Number(step.level_id) === Number(item.current_level)
-    );
-
-    // ✅ RULE 1: direct approver → always allow (ignore creator check)
-    if (isDirectApprover) {
-      return true;
-    }
-
     const isCreatedBySupervisor = isSupervisor() && Number(user.id) === Number(item.created_by);
 
     // 🚫 RULE 2: supervisor cannot approve own created item (if not direct approver)
