@@ -694,6 +694,13 @@ export default function OrderProposalList() {
       return false;
     }
 
+    const isCreatedBySupervisor = isSupervisor() && Number(user.id) === Number(item.created_by);
+
+    // 🚫 HARD BLOCK: supervisor cannot approve own created item
+    if (isCreatedBySupervisor) {
+      return false;
+    }
+
     const isDirectApprover = approvalPipeline.some(
       (step: any) =>
         Number(step.user_id) === Number(user.id) &&
@@ -705,13 +712,7 @@ export default function OrderProposalList() {
         Number(step.user_id) === 9001 && Number(step.level_id) === Number(item.current_level)
     );
 
-    const isCreatedBySupervisor = user && Number(user.id) === Number(item.created_by);
-
-    return (
-      isDirectApprover ||
-      (hasSupervisorFallback && isSupervisor()) ||
-      (isCreatedBySupervisor && isSupervisor())
-    );
+    return isDirectApprover || (hasSupervisorFallback && isSupervisor());
   };
 
   const currentLevelPrint = (itemLevel: number) => {
