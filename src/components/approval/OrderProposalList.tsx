@@ -544,6 +544,7 @@ export default function OrderProposalList() {
   } | null>(null);
 
   const [rejectData, setRejectData] = useState({
+    status: 'rejected',
     rejected_note: '',
     suggested_price: '',
     suggested_volume: '',
@@ -593,7 +594,7 @@ export default function OrderProposalList() {
     }
 
     try {
-      await PriceProposalAPI.approveItem(item.id, item.status);
+      await PriceProposalAPI.approveItem(item.id, item);
       fetchProposals(lastPayloadRef.current);
     } catch (error) {
       console.error('Failed to approve item:', error);
@@ -603,6 +604,7 @@ export default function OrderProposalList() {
   const handleRejectClick = (proposal: Proposal, item: ProposalItem) => {
     setRejectingItem({ proposal, item });
     setRejectData({
+      status: 'rejected',
       rejected_note: '',
       suggested_price: item.proposed_price,
       suggested_volume: item.volume,
@@ -619,6 +621,7 @@ export default function OrderProposalList() {
 
     try {
       const payload = {
+        status: rejectData.status,
         rejected_note: rejectData.rejected_note,
         suggested_price: rejectData.suggested_price
           ? Number(rejectData.suggested_price)
@@ -628,29 +631,24 @@ export default function OrderProposalList() {
           : undefined,
       };
 
-      await PriceProposalAPI.rejectItem(
-        rejectingItem.proposal.id,
-        rejectingItem.item.id,
-        // currentUser.id,
-        payload
-      );
+      await PriceProposalAPI.rejectItem(rejectingItem.item.id, payload);
 
       setRejectingItem(null);
       setRejectData({
+        status: 'rejected',
         rejected_note: '',
         suggested_price: '',
         suggested_volume: '',
       });
 
-      fetchProposals();
-      fetchItemCounts();
+      fetchProposals(lastPayloadRef.current);
     } catch (error: any) {
       console.error('Rejection failed:', error);
       alert(error.response?.data?.message || 'Failed to reject item');
     }
   };
 
-  const canApproveOrReject = (proposal: Proposal) => {
+  const canApproveOrReject = (item: Proposal) => {
     const user = getUserInfo();
     if (!user) return false;
 
@@ -658,11 +656,35 @@ export default function OrderProposalList() {
       return false;
     }
 
-    const isDirectApprover = approvalPipeline.some((step: any) => step.user_id === user.id);
+    const isDirectApprover = approvalPipeline.some(
+      (step: any) =>
+        Number(step.user_id) === Number(user.id) &&
+        Number(step.level_id) === Number(item.current_level)
+    );
 
-    const hasSupervisorFallback = approvalPipeline.some((step: any) => step.user_id === 9001);
+    const hasSupervisorFallback = approvalPipeline.some(
+      (step: any) =>
+        Number(step.user_id) === 9001 && Number(step.level_id) === Number(item.current_level)
+    );
 
     return isDirectApprover || (hasSupervisorFallback && isSupervisor());
+  };
+
+  const currentLevelPrint = (itemLevel: number) => {
+    const step = approvalPipeline.find((s: any) => Number(s.level_id) === Number(itemLevel));
+
+    if (!step) {
+      return <span className="text-gray-400">N/A</span>;
+    }
+
+    return (
+      <span
+        className="inline-flex items-center px-2 py-0.5 rounded-full
+                 text-xs font-semibold bg-blue-100 text-blue-800"
+      >
+        {`L-${step.level_id} (${step.fullname})`}
+      </span>
+    );
   };
 
   const getItemStatusBadge = (status?: string) => {
@@ -804,8 +826,13 @@ export default function OrderProposalList() {
                 <TableHead>Current Invoice</TableHead>
                 <TableHead>Invoice Difference</TableHead>
                 <TableHead>Item Status</TableHead>
+                <TableHead>Current Level</TableHead>
 
-                {filter === 'pending' && <TableHead>Pending Under</TableHead>}
+                {filter === 'pending' && (
+                  <>
+                    <TableHead>Pending Under</TableHead>{' '}
+                  </>
+                )}
                 {filter === 'rejected' && <TableHead>Rejected By</TableHead>}
                 {filter === 'rejected' && <TableHead>Rejection Note</TableHead>}
                 {filter === 'rejected' && <TableHead>Suggested Price</TableHead>}
@@ -864,11 +891,14 @@ export default function OrderProposalList() {
                       </TableCell>
 
                       <TableCell>{getItemStatusBadge(item.status)}</TableCell>
+                      <TableCell>{currentLevelPrint(item.current_level)}</TableCell>
 
                       {idx === 0 && filter === 'pending' && (
-                        <TableCell rowSpan={p.items.length}>
-                          {item.action_by_name || 'N/A'}
-                        </TableCell>
+                        <>
+                          <TableCell rowSpan={p.items.length}>
+                            {item.action_by_name || 'N/A'}
+                          </TableCell>
+                        </>
                       )}
 
                       {filter === 'rejected' && (
@@ -888,20 +918,21 @@ export default function OrderProposalList() {
 
                       <TableCell>
                         <div className="flex gap-2">
-                          {canApproveOrReject(p) && (!item.status || item.status === 'pending') && (
-                            <>
-                              <Button size="sm" onClick={() => handleApproveItem(p, item)}>
-                                Approve
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => handleRejectClick(p, item)}
-                              >
-                                Reject
-                              </Button>
-                            </>
-                          )}
+                          {canApproveOrReject(item) &&
+                            (!item.status || item.status === 'pending') && (
+                              <>
+                                <Button size="sm" onClick={() => handleApproveItem(p, item)}>
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => handleRejectClick(p, item)}
+                                >
+                                  Reject
+                                </Button>
+                              </>
+                            )}
                         </div>
                         {item.status == 'rejected' && p.created_by == userInfo?.id && (
                           <Button

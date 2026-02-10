@@ -72,13 +72,16 @@ export const PriceProposalAPI = {
    * @param {number} itemId - Item ID
    */
   approveItem(itemId, status) {
-    return api.get(`/price-proposals/${itemId}/${status}/status-tracks-levels`);
+    return api.post(`/price-proposals/${itemId}/status-tracks-levels`, { status });
   },
 
   rejectItem(itemId, status) {
-    return api.get(`/price-proposals/${itemId}/${status}/status-tracks-levels`);
+    return api.post(`/price-proposals/${itemId}/status-tracks-levels`, { status });
   },
 
+  revise(payload) {
+    return api.post('/price-proposals/revise', payload);
+  },
   getAllPriceByFilter(params = {}) {
     return api.get('/price-proposals/items-filtered', { params });
   },
