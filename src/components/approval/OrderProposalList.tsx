@@ -587,11 +587,16 @@ export default function OrderProposalList() {
       return;
     }
 
+    if (item.status === 'approved') {
+      alert('This item is already approved.');
+      return;
+    }
+
     try {
-      await PriceProposalAPI.approveItem(proposal.id, item.id);
+      await PriceProposalAPI.approveItem(item.id, item.status);
       fetchProposals(lastPayloadRef.current);
-    } catch (error: any) {
-      console.error('Approval failed:', error);
+    } catch (error) {
+      console.error('Failed to approve item:', error);
     }
   };
 
