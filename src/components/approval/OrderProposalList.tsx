@@ -840,6 +840,30 @@ export default function OrderProposalList() {
             </Button>
           ))}
         </div>
+
+        {/* STATIC PIPELINE */}
+        {approvalPipeline.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            {approvalPipeline.map((step: any, index: number) => {
+              const isSupervisorStep = Number(step.user_id) === 9001;
+              const isLast = index === approvalPipeline.length - 1;
+              const capitalizeFirst = (text?: string) =>
+                text ? text.charAt(0).toUpperCase() + text.slice(1) : '';
+
+              return (
+                <React.Fragment key={`${step.level_id}-${step.user_id}`}>
+                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                    {isSupervisorStep
+                      ? `${capitalizeFirst(step.fullname)}`
+                      : `${capitalizeFirst(step.fullname)}`}
+                  </span>
+
+                  {!isLast && <span className="text-gray-400">→</span>}
+                </React.Fragment>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -931,14 +955,14 @@ export default function OrderProposalList() {
                       {idx === 0 && filter === 'pending' && (
                         <>
                           <TableCell rowSpan={p.items.length}>
-                            {item.created_by_name || 'N/A'}
+                            {p.created_by_name || 'N/A'}
                           </TableCell>
                         </>
                       )}
 
                       {filter === 'rejected' && (
                         <>
-                          <TableCell>{item.rejected_by_user?.name || 'N/A'}</TableCell>
+                          <TableCell>{item.action_by_name || 'N/A'}</TableCell>
                           <TableCell>{item.rejected_note || 'N/A'}</TableCell>
                           <TableCell>
                             {item.suggested_price ? `${item.suggested_price}/${item.unit}` : 'N/A'}
