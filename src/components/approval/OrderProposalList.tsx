@@ -686,18 +686,33 @@ export default function OrderProposalList() {
     }
   };
 
+  // const canApproveOrReject = (item: Proposal) => {
+  //   const user = getUserInfo();
+  //   if (!user) return false;
+
+  //   if (!Array.isArray(approvalPipeline) || approvalPipeline.length === 0) {
+  //     return false;
+  //   }
+
+  //   const isDirectApprover = approvalPipeline.some(
+  //     (step: any) =>
+  //       Number(step.user_id) === Number(user.id) &&
+  //       Number(step.level_id) === Number(item.current_level)
+  //   );
+
+  //   const hasSupervisorFallback = approvalPipeline.some(
+  //     (step: any) =>
+  //       Number(step.user_id) === 9001 && Number(step.level_id) === Number(item.current_level)
+  //   );
+
+  //   return isDirectApprover || (hasSupervisorFallback && isSupervisor());
+  // };
+
   const canApproveOrReject = (item: Proposal) => {
     const user = getUserInfo();
     if (!user) return false;
 
     if (!Array.isArray(approvalPipeline) || approvalPipeline.length === 0) {
-      return false;
-    }
-
-    const isCreatedBySupervisor = isSupervisor() && Number(user.id) === Number(item.created_by);
-
-    // 🚫 HARD BLOCK: supervisor cannot approve own created item
-    if (isCreatedBySupervisor) {
       return false;
     }
 
@@ -707,12 +722,25 @@ export default function OrderProposalList() {
         Number(step.level_id) === Number(item.current_level)
     );
 
-    const hasSupervisorFallback = approvalPipeline.some(
-      (step: any) =>
-        Number(step.user_id) === 9001 && Number(step.level_id) === Number(item.current_level)
-    );
+    // ✅ RULE 1: direct approver → always allow (ignore creator check)
+    if (isDirectApprover) {
+      return true;
+    }
 
-    return isDirectApprover || (hasSupervisorFallback && isSupervisor());
+    const isCreatedBySupervisor = isSupervisor() && Number(user.id) === Number(item.created_by);
+
+    // 🚫 RULE 2: supervisor cannot approve own created item (if not direct approver)
+    if (isCreatedBySupervisor) {
+      return false;
+    }
+
+    const hasSupervisorFallback =
+      approvalPipeline.some(
+        (step: any) =>
+          Number(step.user_id) === 9001 && Number(step.level_id) === Number(item.current_level)
+      ) && isSupervisor();
+
+    return hasSupervisorFallback;
   };
 
   const currentLevelPrint = (itemLevel: number) => {
