@@ -712,6 +712,24 @@ export default function OrderProposalList() {
     const user = getUserInfo();
     if (!user) return false;
 
+    // 🔒 RULE 0:
+    // Either same supervisor OR privileged role
+    const hasSupervisorMatch =
+      user.default_kam_id && Number(user.default_kam_id) === Number(item.created_by_supervisor_id);
+    console.log('hasSupervisorMatch', hasSupervisorMatch);
+    // 🔐 RULE 1: privileged role (any one is enough)
+    const hasPrivilegedRole = isSupervisor() || isSuperAdmin() || isManagement();
+    console.log('hasPrivilegedRole', {
+      hasPrivilegedRole,
+      isSupervisor,
+      isSuperAdmin,
+      isManagement,
+    });
+    // ❌ MUST satisfy BOTH
+    if (!hasSupervisorMatch || !hasPrivilegedRole) {
+      console.log('Access denied: missing supervisor match or privileged role');
+      return false;
+    }
     if (!Array.isArray(approvalPipeline) || approvalPipeline.length === 0) {
       return false;
     }
