@@ -64,7 +64,7 @@ const allNavItems = [
     title: 'Price Proposal',
     url: '/order-proposals',
     icon: ListOrdered,
-    roles: ['kam', 'super_admin', 'management'],
+    roles: ['kam', 'supervisor', 'super_admin', 'management'],
   },
   {
     title: 'Approval Requests',
