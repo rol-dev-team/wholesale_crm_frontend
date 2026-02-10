@@ -738,7 +738,8 @@ export default function OrderProposalList() {
       approvalPipeline.some(
         (step: any) =>
           Number(step.user_id) === 9001 && Number(step.level_id) === Number(item.current_level)
-      ) && isSupervisor();
+      ) &&
+      (isManagement() || isSupervisor() || isSuperAdmin());
 
     return hasSupervisorFallback;
   };
