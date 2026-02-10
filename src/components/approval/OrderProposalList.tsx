@@ -705,7 +705,13 @@ export default function OrderProposalList() {
         Number(step.user_id) === 9001 && Number(step.level_id) === Number(item.current_level)
     );
 
-    return isDirectApprover || (hasSupervisorFallback && isSupervisor());
+    const isCreatedBySupervisor = user && Number(user.id) === Number(item.created_by);
+
+    return (
+      isDirectApprover ||
+      (hasSupervisorFallback && isSupervisor()) ||
+      (isCreatedBySupervisor && isSupervisor())
+    );
   };
 
   const currentLevelPrint = (itemLevel: number) => {
