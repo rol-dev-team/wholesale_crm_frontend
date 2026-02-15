@@ -1,7 +1,9 @@
 import api from './axiosInstance';
 
 export const ClientAPI = {
-  getClients: (page = 1) => api.get('/clients', { params: { page } }),
+  // getClients: (page = 1) => api.get('/clients', { params: { page } }),
+  getClients: (page = 1, filters = {}) => 
+  api.get('/clients', { params: { page, ...filters } }),
   getLocalClients: (params = {}) =>
     api.get('/clients/local-clients', { params }),
   getLocalClient: (id) =>
