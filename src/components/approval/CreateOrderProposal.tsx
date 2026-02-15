@@ -708,8 +708,8 @@ export default function CreateOrderProposal({ proposal }: Props) {
         const proposedAmount = price * volume;
         const expectedInvoice = currentRate * volume;
         const newInvoiceAmount = currentInvoice + proposedAmount;
-        const invoiceDifference = currentInvoice - newInvoiceAmount;
-        const invoiceDifferenceUnitBased = expectedInvoice - proposedAmount;
+        const invoiceDifference = newInvoiceAmount - currentInvoice;
+        const invoiceDifferenceUnitBased = proposedAmount - expectedInvoice;
 
         return {
           ...updated,
@@ -790,10 +790,11 @@ export default function CreateOrderProposal({ proposal }: Props) {
               <TableHead>Propose Volume</TableHead>
               <TableHead>Proposed Amount</TableHead>
               <TableHead>Current Unit Invoice</TableHead>
+              <TableHead>Unit Based Invoice Difference</TableHead>
               <TableHead>Current Total Invoice</TableHead>
               <TableHead>New Total Invoice</TableHead>
               <TableHead>Invoice Difference</TableHead>
-              <TableHead>Invoice Difference Unit Based</TableHead>
+
               <TableHead />
             </TableRow>
           </TableHeader>
@@ -857,6 +858,15 @@ export default function CreateOrderProposal({ proposal }: Props) {
                   <TableCell>{row.total_amount?.toFixed(2)}</TableCell>
                   <TableCell>{row.expected_invoice?.toFixed(2)}</TableCell>
 
+                  <TableCell
+                    className={
+                      row.invoice_difference_unit_based && row.invoice_difference_unit_based >= 0
+                        ? 'text-green-600'
+                        : 'text-red-600'
+                    }
+                  >
+                    {row.invoice_difference_unit_based?.toFixed(2)}
+                  </TableCell>
                   <TableCell>{Number(row.current_invoice || 0).toFixed(2)}</TableCell>
 
                   <TableCell>{row.new_invoice_amount?.toFixed(2)}</TableCell>
@@ -868,16 +878,6 @@ export default function CreateOrderProposal({ proposal }: Props) {
                     }
                   >
                     {row.invoice_difference?.toFixed(2)}
-                  </TableCell>
-
-                  <TableCell
-                    className={
-                      row.invoice_difference_unit_based && row.invoice_difference_unit_based >= 0
-                        ? 'text-green-600'
-                        : 'text-red-600'
-                    }
-                  >
-                    {row.invoice_difference_unit_based?.toFixed(2)}
                   </TableCell>
 
                   <TableCell>
