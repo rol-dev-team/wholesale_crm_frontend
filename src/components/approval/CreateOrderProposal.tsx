@@ -709,7 +709,7 @@ export default function CreateOrderProposal({ proposal }: Props) {
         const expectedInvoice = currentRate * volume;
         const newInvoiceAmount = currentInvoice + proposedAmount;
         const invoiceDifference = currentInvoice - newInvoiceAmount;
-        const invoiceDifferenceUnitBased = expectedInvoice + proposedAmount;
+        const invoiceDifferenceUnitBased = expectedInvoice - proposedAmount;
 
         return {
           ...updated,
