@@ -785,13 +785,13 @@ export default function CreateOrderProposal({ proposal }: Props) {
             <TableRow>
               <TableHead>Product</TableHead>
               <TableHead>Current Price</TableHead>
-              <TableHead>Current Quantity</TableHead>
+              <TableHead>Current Volume</TableHead>
               <TableHead>Propose Price</TableHead>
               <TableHead>Propose Volume</TableHead>
               <TableHead>Proposed Amount</TableHead>
-              <TableHead>Expected Invoice</TableHead>
-              <TableHead>Current Invoice</TableHead>
-              <TableHead>New Invoice Amount</TableHead>
+              <TableHead>Current Unit Invoice</TableHead>
+              <TableHead>Current Total Invoice</TableHead>
+              <TableHead>New Total Invoice</TableHead>
               <TableHead>Invoice Difference</TableHead>
               <TableHead>Invoice Difference Unit Based</TableHead>
               <TableHead />
@@ -820,10 +820,11 @@ export default function CreateOrderProposal({ proposal }: Props) {
                           })
                         }
                         placeholder="0"
+                        className="min-w-[80px]"
                       />
                       <span>/</span>
                       <select
-                        className="border rounded-md px-2 py-1"
+                        className="border rounded-md px-2 py-1 min-w-[50px]"
                         value={row.unit}
                         onChange={(e) =>
                           updateRow(row.product, {
@@ -849,6 +850,7 @@ export default function CreateOrderProposal({ proposal }: Props) {
                           volume: e.target.value,
                         })
                       }
+                      className="min-w-[180px]"
                     />
                   </TableCell>
 
