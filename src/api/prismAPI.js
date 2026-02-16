@@ -14,11 +14,8 @@ export const PrismAPI = {
   getSupervisorWiseKAMList: (supervisorId) =>
     api.get(`/prism/supervisor-wise-kam-list/${supervisorId}`),
 
-  // 3️⃣ Supervisor Wise KAM List
-  getSupervisorWiseKAMList: (supervisorId) =>
-    api.get(`/prism/supervisor-wise-kam-list/${supervisorId}`),
-
   getKams: () => api.get('/prism/kam-list'),
+  getKamById: (kamId) => api.get(`/prism/kam-by-id/${kamId}`),
   getKamWiseClients: (kamId) => api.get(`/prism/kam-wise-client-list/${kamId}`),
   // 6️⃣ Supervisor List (new)
   getSupervisors: () => api.get('/prism/supervisor-list'),

@@ -332,6 +332,7 @@ export const FilterDrawer: React.FC<ActivityFilterDrawerProps> = ({ open, onClos
 
     // SUPERVISOR → own supervisor_ids
     if (isSup && supervisorIds.length) {
+      console.log('Fetching KAMs for supervisor IDs:', supervisorIds);
       PrismAPI.getMultiSupervisorWiseKAMList(supervisorIds)
         .then((res) => setKams(res.data?.data || res.data || []))
         .catch(() => setKams([]));

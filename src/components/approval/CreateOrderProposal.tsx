@@ -588,6 +588,7 @@ export default function CreateOrderProposal({ proposal }: Props) {
   useEffect(() => {
     const loadClients = async () => {
       try {
+        setClients([]);
         setClientLoading(true);
         const response = await PrismAPI.getClientsByStatusAndKam(status, userInfo?.default_kam_id);
         setClients(
@@ -638,8 +639,8 @@ export default function CreateOrderProposal({ proposal }: Props) {
           price: '',
           unit: 'MB',
           volume: '',
-          current_rate: '-',
-          current_invoice: '-',
+          current_rate: 0,
+          current_invoice: 0,
         })),
       ];
     });
@@ -755,6 +756,45 @@ export default function CreateOrderProposal({ proposal }: Props) {
 
   return (
     <div className="space-y-6">
+      {/* STATUS RADIO BUTTONS */}
+      <div className="flex items-center space-x-6">
+        <label className="flex items-center space-x-2">
+          <input
+            type="radio"
+            name="status"
+            value="active"
+            checked={status === 'active'}
+            onChange={() => setStatus('active')}
+            className="accent-blue-500"
+          />
+          <span>Active</span>
+        </label>
+
+        <label className="flex items-center space-x-2">
+          <input
+            type="radio"
+            name="status"
+            value="inactive"
+            checked={status === 'inactive'}
+            onChange={() => setStatus('inactive')}
+            className="accent-blue-500"
+          />
+          <span>Inactive</span>
+        </label>
+
+        <label className="flex items-center space-x-2">
+          <input
+            type="radio"
+            name="status"
+            value="organization"
+            checked={status === 'organization'}
+            onChange={() => setStatus('organization')}
+            className="accent-blue-500"
+          />
+          <span>Organization</span>
+        </label>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FloatingSearchSelect
           label="Client"
