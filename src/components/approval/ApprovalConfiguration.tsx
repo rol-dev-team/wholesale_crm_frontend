@@ -96,7 +96,7 @@ export function ApprovalConfiguration({ defaultSupervisorId }: { defaultSupervis
     }
 
     const newRule: RuleItem = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       configName,
       userId: selectedUser,
       userName: userObj.fullname,
