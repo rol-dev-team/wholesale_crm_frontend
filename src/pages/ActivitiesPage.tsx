@@ -172,13 +172,12 @@ export default function ActivitiesPage() {
       // CASE 1: Super Admin or Management
       if (isSuperAdmin() || isManagement()) {
         res = await PrismAPI.getKams();
-        console.log('all kams', res);
       }
 
       // CASE 2: Supervisor
       else if (isSupervisor()) {
-        res = await PrismAPI.getKamListBySupervisor(supervisorIds);
-        console.log('supervisor kams', res);
+        const defaultKamId = getUserInfo()?.default_kam_id;
+        res = await PrismAPI.getKamListBySupervisor([defaultKamId]);
       }
 
       // CASE 3: KAM user
