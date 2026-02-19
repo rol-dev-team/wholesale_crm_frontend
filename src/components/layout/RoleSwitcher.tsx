@@ -44,21 +44,21 @@ export function RoleSwitcher() {
   const uniqueRoles = Array.from(new Set(systemUsers.map((u) => u.role)));
 
   return (
-    <div className="flex items-center gap-3">
-      {/* Role Switcher only for Super Admin */}
+    <div className="flex items-center gap-2 sm:gap-3">
 
-      <div className="flex items-center gap-2">
-        <User className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">Role:</span>
+      {/* Role Switcher */}
+      <div className="flex items-center gap-1 sm:gap-2">
+        <User className="h-4 w-4 text-muted-foreground shrink-0" />
+        <span className="text-sm text-muted-foreground shrink-0">Role:</span>
 
         <Select value={currentUser?.role} onValueChange={handleRoleChange}>
-          <SelectTrigger className="w-[200px] h-9">
+          <SelectTrigger className="w-[100px] xs:w-[130px] sm:w-[200px] h-9 text-xs sm:text-sm focus:ring-1 focus:ring-primary">
             <SelectValue placeholder="Select role" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem key={currentUser?.id} value={currentUser.role}>
               <div className="flex items-center gap-2">
-                <Badge variant="secondary" className={roleColors[currentUser.role]}>
+                <Badge variant="secondary" className={`${roleColors[currentUser.role]} text-[10px] sm:text-xs px-1.5 sm:px-2`}>
                   {ROLE_LABELS[currentUser.role]}
                 </Badge>
               </div>
@@ -67,17 +67,17 @@ export function RoleSwitcher() {
         </Select>
       </div>
 
-      {/* User Profile & Logout (all users) */}
+      {/* User Profile & Logout */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
-            className="ml-2 gap-2 h-9 px-3 rounded-full hover:bg-muted/50 transition-all border-muted/60"
+            className="ml-1 sm:ml-2 gap-2 h-9 px-2 sm:px-3 rounded-full hover:bg-muted/50 transition-all border-muted/60 max-w-[160px] sm:max-w-none"
           >
-            <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+            <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
               <User className="h-3.5 w-3.5 text-primary" />
             </div>
-            <span className="text-sm font-medium">{currentUser.username}</span>
+            <span className="text-sm font-medium truncate">{currentUser.username}</span>
           </Button>
         </DropdownMenuTrigger>
 
@@ -86,17 +86,17 @@ export function RoleSwitcher() {
             <div className="flex flex-col space-y-1">
               <p className="text-xs leading-none text-muted-foreground flex items-center gap-1 mt-1">
                 <span className="flex items-center gap-1">
-                  <User className="h-3 w-3" /> {currentUser.fullname}
+                  <User className="h-3 w-3 shrink-0" /> {currentUser.fullname}
                 </span>
               </p>
               <p className="text-xs leading-none text-muted-foreground flex items-center gap-1 mt-1">
                 <span className="flex items-center gap-1">
-                  <Mail className="h-3 w-3" /> {currentUser.email || 'user@company.com'}
+                  <Mail className="h-3 w-3 shrink-0" /> {currentUser.email || 'user@company.com'}
                 </span>
               </p>
               <p className="text-xs leading-none text-muted-foreground flex items-center gap-1 mt-1">
                 <span className="flex items-center gap-1">
-                  <Phone className="h-3 w-3" /> {currentUser.phone || '+8801332232111'}
+                  <Phone className="h-3 w-3 shrink-0" /> {currentUser.phone || '+8801332232111'}
                 </span>
               </p>
             </div>

@@ -369,20 +369,32 @@ export const FilterDrawer: React.FC<ActivityFilterDrawerProps> = ({ open, onClos
             {filterConfigs.map((filter, idx) => {
               if (filter.type === 'search-select') {
                 return (
-                  <FloatingSearchSelect
+                  <FloatingSelect
                     key={`${filter.label}-${idx}`}
                     label={filter.label}
                     value={filter.value}
-                    searchable
                     onValueChange={filter.setter}
-                    disabled={filter.disabled}
                   >
                     {(filter.options || []).map((o) => (
-                      <SelectItem key={o.value} value={o.value}>
+                      <SelectItem key={o.value} value={o.value} textValue={o.label}>
                         {o.label}
                       </SelectItem>
                     ))}
-                  </FloatingSearchSelect>
+                  </FloatingSelect>
+                  // <FloatingSearchSelect
+                  //   key={`${filter.label}-${idx}`}
+                  //   label={filter.label}
+                  //   value={filter.value}
+                  //   searchable
+                  //   onValueChange={filter.setter}
+                  //   disabled={filter.disabled}
+                  // >
+                  //   {(filter.options || []).map((o) => (
+                  //     <SelectItem key={o.value} value={o.value}>
+                  //       {o.label}
+                  //     </SelectItem>
+                  //   ))}
+                  // </FloatingSearchSelect>
                 );
               }
 

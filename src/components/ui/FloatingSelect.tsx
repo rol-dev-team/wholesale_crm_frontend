@@ -1,3 +1,4 @@
+// // Recent Live
 // // FloatingSelect.tsx
 // import * as React from 'react';
 // import { cn } from '@/lib/utils';
@@ -27,9 +28,29 @@
 // }: FloatingSelectProps) {
 //   const hasValue = Boolean(value);
 //   const [open, setOpen] = React.useState(false);
+//   const [search, setSearch] = React.useState('');
+//   const inputRef = React.useRef<HTMLInputElement>(null);
 
-//   // ✅ track if a value was selected while dropdown is open
 //   const selectedWhileOpenRef = React.useRef(false);
+
+//   const items = React.useMemo(
+//     () => React.Children.toArray(children) as React.ReactElement[],
+//     [children]
+//   );
+
+//   const filteredItems = React.useMemo(() => {
+//     if (!search.trim()) return items;
+
+//     const q = search.toLowerCase();
+
+//     return items.filter((item) => {
+//       const text =
+//         item.props.textValue ??
+//         (typeof item.props.children === 'string' ? item.props.children : '');
+
+//       return text.toLowerCase().includes(q);
+//     });
+//   }, [items, search]);
 
 //   return (
 //     <div className={cn('relative w-full', className)}>
@@ -40,12 +61,14 @@
 //           onValueChange(v);
 //         }}
 //         onOpenChange={(isOpen) => {
-//           // reset flag on open
 //           if (isOpen) {
 //             selectedWhileOpenRef.current = false;
+//             setSearch('');
+//             requestAnimationFrame(() => {
+//               inputRef.current?.focus();
+//             });
 //           }
 
-//           // closing without selecting anything
 //           if (open && !isOpen && !selectedWhileOpenRef.current && !value) {
 //             onTouched?.();
 //           }
@@ -56,24 +79,65 @@
 //         <SelectTrigger
 //           className={cn(
 //             'peer h-10 w-full rounded-md border border-input bg-background px-3 pt-4 text-sm outline-none',
-//             'focus:border-none focus:ring-1 focus:ring-primary',
-//             error ? 'border-red-500' : '',
-//             className
+//             'focus:ring-1 focus:ring-primary',
+//             error && 'border-red-500'
 //           )}
 //         >
 //           <SelectValue placeholder={placeholder} />
 //         </SelectTrigger>
 
-//         <SelectContent className="max-h-[200px] overflow-y-scroll scrollbar-visible">
-//           {children}
+//         <SelectContent
+//           className="max-h-[260px] overflow-hidden"
+//           onOpenAutoFocus={(e) => e.preventDefault()}
+//           onCloseAutoFocus={(e) => e.preventDefault()}
+//           onFocusOutside={(e) => e.preventDefault()}
+//           onInteractOutside={(e) => {
+//             if ((e.target as HTMLElement).closest('input')) {
+//               e.preventDefault();
+//             }
+//           }}
+//           onKeyDownCapture={(e) => {
+//             const target = e.target as HTMLElement;
+//             if (target.tagName === 'INPUT') {
+//               e.stopPropagation();
+//             }
+//           }}
+//         >
+//           {/* 🔍 SEARCH INPUT */}
+//           <div className="border-b p-2">
+//             <input
+//               ref={inputRef}
+//               value={search}
+//               onChange={(e) => setSearch(e.target.value)}
+//               placeholder={`Search ${label}`}
+//               className="w-full rounded-md border px-2 py-1 text-sm outline-none"
+//               onKeyDown={(e) => e.stopPropagation()}
+//               onKeyDownCapture={(e) => e.stopPropagation()}
+//               onMouseDown={(e) => e.stopPropagation()}
+//               onBlur={() => {
+//                 requestAnimationFrame(() => {
+//                   inputRef.current?.focus();
+//                 });
+//               }}
+//             />
+//           </div>
+
+//           <div className="max-h-[200px] overflow-y-auto">
+//             {filteredItems.length > 0 ? (
+//               filteredItems
+//             ) : (
+//               <div className="p-3 text-sm text-muted-foreground">No results</div>
+//             )}
+//           </div>
 //         </SelectContent>
 //       </Select>
 
 //       <label
 //         className={cn(
-//           'pointer-events-none absolute left-3 px-1 transition-all',
-//           'text-muted-foreground bg-background',
-//           hasValue ? '-top-2 text-xs font-semibold text-primary' : 'top-2.5 text-sm',
+//           'pointer-events-none absolute left-3 bg-background px-1 transition-all',
+//           hasValue
+//             ? '-top-2 text-xs font-semibold text-primary'
+//             : 'top-2.5 text-sm text-muted-foreground',
 //           'peer-focus:-top-2 peer-focus:text-xs peer-focus:font-semibold peer-focus:text-primary'
 //         )}
 //       >
@@ -85,7 +149,8 @@
 //   );
 // }
 
-// FloatingSelect.tsx
+
+// =================================================================
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -116,8 +181,8 @@ export function FloatingSelect({
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
   const inputRef = React.useRef<HTMLInputElement>(null);
-
   const selectedWhileOpenRef = React.useRef(false);
+  const blockCloseRef = React.useRef(false);
 
   const items = React.useMemo(
     () => React.Children.toArray(children) as React.ReactElement[],
@@ -126,40 +191,46 @@ export function FloatingSelect({
 
   const filteredItems = React.useMemo(() => {
     if (!search.trim()) return items;
-
     const q = search.toLowerCase();
-
     return items.filter((item) => {
       const text =
         item.props.textValue ??
         (typeof item.props.children === 'string' ? item.props.children : '');
-
       return text.toLowerCase().includes(q);
     });
   }, [items, search]);
+
+
+  
+
+  // Block ALL outside close events while this is true
+  const preventClose = (e: Event) => {
+    if (blockCloseRef.current) {
+      e.preventDefault();
+    }
+  };
 
   return (
     <div className={cn('relative w-full', className)}>
       <Select
         value={value}
+        open={open}
         onValueChange={(v) => {
           selectedWhileOpenRef.current = true;
           onValueChange(v);
+          setOpen(false);
         }}
         onOpenChange={(isOpen) => {
           if (isOpen) {
             selectedWhileOpenRef.current = false;
             setSearch('');
-            requestAnimationFrame(() => {
-              inputRef.current?.focus();
-            });
           }
-
-          if (open && !isOpen && !selectedWhileOpenRef.current && !value) {
+          if (!isOpen && !selectedWhileOpenRef.current && !value) {
             onTouched?.();
           }
-
-          setOpen(isOpen);
+          if (!blockCloseRef.current) {
+            setOpen(isOpen);
+          }
         }}
       >
         <SelectTrigger
@@ -176,9 +247,16 @@ export function FloatingSelect({
           className="max-h-[260px] overflow-hidden"
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
-          onFocusOutside={(e) => e.preventDefault()}
+          onFocusOutside={preventClose}
+          onPointerDownOutside={preventClose}
           onInteractOutside={(e) => {
-            if ((e.target as HTMLElement).closest('input')) {
+            if (blockCloseRef.current) {
+              e.preventDefault();
+              return;
+            }
+            const target = e.target as HTMLElement;
+            if (target.closest('[data-radix-select-content]')) return;
+            if (target.tagName === 'INPUT') {
               e.preventDefault();
             }
           }}
@@ -189,7 +267,7 @@ export function FloatingSelect({
             }
           }}
         >
-          {/* 🔍 SEARCH INPUT */}
+          {/* SEARCH INPUT */}
           <div className="border-b p-2">
             <input
               ref={inputRef}
@@ -197,13 +275,23 @@ export function FloatingSelect({
               onChange={(e) => setSearch(e.target.value)}
               placeholder={`Search ${label}`}
               className="w-full rounded-md border px-2 py-1 text-sm outline-none"
+              onFocus={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
               onKeyDown={(e) => e.stopPropagation()}
               onKeyDownCapture={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.stopPropagation()}
-              onBlur={() => {
-                requestAnimationFrame(() => {
-                  inputRef.current?.focus();
-                });
+              onTouchStart={(e) => {
+                // Set block BEFORE the touch causes viewport resize
+                blockCloseRef.current = true;
+                e.stopPropagation();
+              }}
+              onTouchEnd={(e) => {
+                e.stopPropagation();
+                // Focus the input after touch
+                inputRef.current?.focus();
+                // Keep blocking for long enough for keyboard to appear
+                setTimeout(() => {
+                  blockCloseRef.current = false;
+                }, 1000);
               }}
             />
           </div>

@@ -285,7 +285,11 @@ export function TargetFilterDrawer({
         <Filter className="h-4 w-4 mr-1" /> Filters
       </Button>
 
-      <DrawerContent className="w-full sm:w-[420px]">
+      <DrawerContent className="w-full sm:w-[420px]"
+      onInteractOutside={(e) => {
+        e.preventDefault();
+      }}
+      >
         <DrawerHeader className="flex items-center justify-between">
           <div>
             <DrawerTitle>Target Filters</DrawerTitle>
@@ -300,7 +304,7 @@ export function TargetFilterDrawer({
           </DrawerClose>
         </DrawerHeader>
 
-        <ScrollArea className="flex-1 px-4">
+        <ScrollArea className="flex-1 px-4 h-auto">
           <div className="space-y-5 py-2">
             {!isSupervisor && (
               <FloatingSelect label="Filter Type" value={filterType} onValueChange={setFilterType}>

@@ -413,7 +413,33 @@ export default function SetTargetModal(props: Props) {
           )}
 
           {/* ✅ KAM - NOW FIRST (loads all KAMs by default) */}
-          <FloatingSearchSelect
+          <FloatingSelect
+            label="KAM"
+            value={selectedKam || '__select__'}
+            onValueChange={(v) => {
+              if (v !== '__select__') setSelectedKam(v);
+              if (!v || v === '__select__') {
+                setSelectedSupervisor('');
+                setSelectedDivisionId('');
+                setSelectedDivisionName('');
+              }
+            }}
+          >
+            <SelectItem value="__select__">Select KAM</SelectItem>
+            {kams.map((k) => {
+              const kamId = k.kam_id || k.id;
+              const kamName = k.kam_name || k.name || 'Unknown';
+              if (!kamId) return null;
+
+              return (
+                <SelectItem key={kamId} value={kamId.toString()} textValue={kamName}>
+                  {kamName}
+                </SelectItem>
+              );
+            })}
+          </FloatingSelect>
+
+          {/* <FloatingSearchSelect
             label="KAM"
             searchable
             value={selectedKam || '__select__'}
@@ -447,7 +473,7 @@ export default function SetTargetModal(props: Props) {
                 </SelectItem>
               );
             })}
-          </FloatingSearchSelect>
+          </FloatingSearchSelect> */}
 
           {/* ✅ Supervisor - AUTO-POPULATED from KAM selection - SHOWS FOR ALL ROLES */}
           <FloatingSelect
@@ -526,7 +552,7 @@ export default function SetTargetModal(props: Props) {
           />
         </div>
 
-        <DialogFooter>
+        <DialogFooter className='gap-2'>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>

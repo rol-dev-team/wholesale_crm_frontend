@@ -1281,7 +1281,7 @@ export function KAMFilterDrawer({
   /* ------------------------------------------------------------------ */
 
   return (
-    <Drawer direction="right" open={isOpen} onOpenChange={setIsOpen}>
+    <Drawer clssName="sm:z-[60]" direction="right" open={isOpen} onOpenChange={setIsOpen}>
       <Button variant="outline" onClick={() => setIsOpen(true)}>
         <Filter className="h-4 w-4" /> Filters
       </Button>
@@ -1302,26 +1302,50 @@ export function KAMFilterDrawer({
             {filterConfigs.map((filter, idx) => {
               if (filter.type === 'search-select') {
                 return (
-                  <FloatingSearchSelect
-                    key={idx}
-                    label={filter.label}
-                    value={filter.value}
-                    searchable
-                    onValueChange={filter.setter}
-                    disabled={filter.loading}
-                  >
-                    {filter.loading ? (
-                      <SelectItem value="loading" disabled>
-                        Loading...
-                      </SelectItem>
-                    ) : (
-                      filter.options.map((o: any) => (
-                        <SelectItem key={o.value} value={o.value}>
-                          {o.label}
+                  <>
+                  <div key={idx} className="block sm:hidden"> 
+                    <FloatingSelect
+                      label={filter.label}
+                      value={filter.value}
+                      onValueChange={filter.setter}
+                    >
+                      {filter.loading ? (
+                        <SelectItem value="loading" disabled textValue="Loading...">
+                          Loading...
                         </SelectItem>
-                      ))
-                    )}
-                  </FloatingSearchSelect>
+                      ) : (
+                        (filter.options || []).map((o: any) => (
+                          <SelectItem key={o.value} value={o.value} textValue={o.label}>
+                            {o.label}
+                          </SelectItem>
+                        ))
+                      )}
+                    </FloatingSelect>
+                  </div>
+                  
+                  <div className="hidden sm:block">
+                    <FloatingSearchSelect
+                      key={idx}
+                      label={filter.label}
+                      value={filter.value}
+                      searchable
+                      onValueChange={filter.setter}
+                      disabled={filter.loading}
+                    >
+                      {filter.loading ? (
+                        <SelectItem value="loading" disabled>
+                          Loading...
+                        </SelectItem>
+                      ) : (
+                        (filter.options || []).map((o: any) => (
+                          <SelectItem key={o.value} value={o.value}>
+                            {o.label}
+                          </SelectItem>
+                        ))
+                      )}
+                    </FloatingSearchSelect>
+                  </div>
+                  </>
                 );
               }
 
