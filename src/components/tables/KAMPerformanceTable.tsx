@@ -95,7 +95,20 @@
 //         return { ...stat, upDown: stat.achieved - stat.targetAmount };
 //       });
 
-//       return { ...kam, periodStats, rangeTargetSum, rangeAchievedSum, rangeSuccessAchievedSum };
+//       // ✅ Overall Achievement = last period Achieved - first period Achieved
+//       // Use `successAchieved` which maps to the "Achieved" column in the UI
+//       const firstPeriodAchievement = periodStats.length > 0 ? periodStats[0].successAchieved : 0;
+//       const lastPeriodAchievement  = periodStats.length > 0 ? periodStats[periodStats.length - 1].successAchieved : 0;
+//       const overallAchievement     = lastPeriodAchievement - firstPeriodAchievement;
+
+//       return {
+//         ...kam,
+//         periodStats,
+//         rangeTargetSum,
+//         rangeAchievedSum,
+//         rangeSuccessAchievedSum,
+//         overallAchievement,
+//       };
 //     });
 //   }, [sales, tablePeriods, dateRangeType, filterType]);
 
@@ -119,14 +132,16 @@
 
 //   const entityLabel = filterType === 'branch' ? 'Branch Name' : 'KAM Name';
 
+//   // ✅ footerTotals now includes totalOverallAchievement
 //   const footerTotals = kamPerformanceData.reduce(
 //     (acc, kam) => {
-//       acc.totalInvoice     += kam.rangeAchievedSum || 0;
-//       acc.totalTarget      += kam.rangeTargetSum || 0;
-//       acc.totalAchievement += kam.rangeSuccessAchievedSum || 0;
+//       acc.totalInvoice            += kam.rangeAchievedSum || 0;
+//       acc.totalTarget             += kam.rangeTargetSum || 0;
+//       acc.totalAchievement        += kam.rangeSuccessAchievedSum || 0;
+//       acc.totalOverallAchievement += kam.overallAchievement || 0;
 //       return acc;
 //     },
-//     { totalInvoice: 0, totalTarget: 0, totalAchievement: 0 }
+//     { totalInvoice: 0, totalTarget: 0, totalAchievement: 0, totalOverallAchievement: 0 }
 //   );
 
 //   const SUB_HEADERS = [
@@ -168,8 +183,9 @@
 //                     {p.label}
 //                   </th>
 //                 ))}
+//                 {/* ✅ colSpan 3 → 4 */}
 //                 <th
-//                   colSpan={3}
+//                   colSpan={4}
 //                   className="sticky top-0 z-[10] bg-slate-200 border-b px-2 py-2 text-center font-bold whitespace-nowrap"
 //                 >
 //                   TOTAL
@@ -190,9 +206,19 @@
 //                     ))}
 //                   </React.Fragment>
 //                 ))}
-//                 <th className="sticky top-[33px] z-[10] bg-slate-200 border-r border-b px-1.5 py-1.5 text-[9px] uppercase text-center whitespace-nowrap">Invoice</th>
-//                 <th className="sticky top-[33px] z-[10] bg-slate-200 border-r border-b px-1.5 py-1.5 text-[9px] uppercase text-center whitespace-nowrap">Target</th>
-//                 <th className="sticky top-[33px] z-[10] bg-slate-200 border-b px-1.5 py-1.5 text-[9px] uppercase text-center whitespace-nowrap">Achiev.</th>
+//                 <th className="sticky top-[33px] z-[10] bg-slate-200 border-r border-b px-1.5 py-1.5 text-[9px] uppercase text-center whitespace-nowrap">
+//                   Invoice
+//                 </th>
+//                 <th className="sticky top-[33px] z-[10] bg-slate-200 border-r border-b px-1.5 py-1.5 text-[9px] uppercase text-center whitespace-nowrap">
+//                   Target
+//                 </th>
+//                 {/* ✅ NEW */}
+//                 <th className="sticky top-[33px] z-[10] bg-slate-200 border-r border-b px-1.5 py-1.5 text-[9px] uppercase text-center whitespace-nowrap">
+//                   Overall
+//                 </th>
+//                 <th className="sticky top-[33px] z-[10] bg-slate-200 border-b px-1.5 py-1.5 text-[9px] uppercase text-center whitespace-nowrap">
+//                   Achiev.
+//                 </th>
 //               </tr>
 //             </thead>
 
@@ -200,7 +226,6 @@
 //               {kamPerformanceData.map((kam, ki) => (
 //                 <tr key={kam.id} className={ki % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
 
-//                   {/* ✅ Sticky left — explicit bg per alternating row (NOT bg-inherit) */}
 //                   <td
 //                     className={`sticky left-0 z-[20] border-r border-b px-2 py-2 font-medium min-w-[110px] max-w-[110px] whitespace-normal leading-tight text-[10px] ${ki % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}
 //                   >
@@ -210,8 +235,12 @@
 //                   {/* Period data */}
 //                   {kam.periodStats.map((stat: any, si: number) => (
 //                     <React.Fragment key={si}>
-//                       <td className="border-r border-b px-1.5 py-1.5 text-center whitespace-nowrap">{stat.clientCount}</td>
-//                       <td className="border-r border-b px-1.5 py-1.5 text-center text-slate-600 whitespace-nowrap">{formatCurrency(stat.targetAmount)}</td>
+//                       <td className="border-r border-b px-1.5 py-1.5 text-center whitespace-nowrap">
+//                         {stat.clientCount}
+//                       </td>
+//                       <td className="border-r border-b px-1.5 py-1.5 text-center text-slate-600 whitespace-nowrap">
+//                         {formatCurrency(stat.targetAmount)}
+//                       </td>
 //                       <td className={`border-r border-b px-1.5 py-1.5 text-center font-semibold whitespace-nowrap ${stat.successAchieved >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
 //                         {formatCurrency(stat.successAchieved)}
 //                       </td>
@@ -221,11 +250,15 @@
 //                       <td className={`border-r border-b px-1.5 py-1.5 text-center font-semibold whitespace-nowrap ${stat.achieved >= stat.targetAmount ? 'text-emerald-600' : 'text-orange-600'}`}>
 //                         {formatCurrency(stat.achieved)}
 //                       </td>
-//                       <td className="border-r border-b px-1.5 py-1.5 text-center text-slate-600 whitespace-nowrap">{formatCurrency(stat.selfAchieved)}</td>
+//                       <td className="border-r border-b px-1.5 py-1.5 text-center text-slate-600 whitespace-nowrap">
+//                         {formatCurrency(stat.selfAchieved)}
+//                       </td>
 //                       <td className={`border-r border-b px-1.5 py-1.5 text-center font-semibold whitespace-nowrap ${stat.selfUpDown >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
 //                         {formatCurrency(stat.selfUpDown)}
 //                       </td>
-//                       <td className="border-r border-b px-1.5 py-1.5 text-center text-slate-600 whitespace-nowrap">{formatCurrency(stat.transferredAchieved)}</td>
+//                       <td className="border-r border-b px-1.5 py-1.5 text-center text-slate-600 whitespace-nowrap">
+//                         {formatCurrency(stat.transferredAchieved)}
+//                       </td>
 //                       <td className={`border-r border-b px-1.5 py-1.5 text-center font-semibold whitespace-nowrap ${stat.transferredUpDown >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
 //                         {formatCurrency(stat.transferredUpDown)}
 //                       </td>
@@ -239,6 +272,10 @@
 //                   <td className="border-r border-b px-1.5 py-1.5 text-center font-bold bg-slate-100 whitespace-nowrap">
 //                     {formatCurrency(kam.rangeTargetSum)}
 //                   </td>
+//                   {/* ✅ NEW Overall Achievement cell */}
+//                   <td className={`border-r border-b px-1.5 py-1.5 text-center font-bold bg-slate-100 whitespace-nowrap ${kam.overallAchievement >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+//                     {formatCurrency(kam.overallAchievement)}
+//                   </td>
 //                   <td className={`border-b px-1.5 py-1.5 text-center font-bold bg-slate-100 whitespace-nowrap ${kam.rangeSuccessAchievedSum >= kam.rangeTargetSum ? 'text-emerald-700' : 'text-destructive'}`}>
 //                     {formatCurrency(kam.rangeSuccessAchievedSum)}
 //                   </td>
@@ -248,7 +285,6 @@
 
 //             <tfoot className="sticky bottom-0 z-[50]">
 //               <tr className="font-bold bg-slate-200">
-//                 {/* ✅ z-[60] so corner sits above body sticky cells */}
 //                 <td className="sticky left-0 z-[10] bg-slate-300 border-t border-r px-2 py-2 text-[10px] font-bold min-w-[110px] whitespace-nowrap">
 //                   GRAND TOTAL
 //                 </td>
@@ -261,6 +297,10 @@
 //                 <td className="border-t border-r px-1.5 py-2 text-center bg-slate-300 whitespace-nowrap">
 //                   {formatCurrency(footerTotals.totalTarget)}
 //                 </td>
+//                 {/* ✅ NEW Overall Achievement footer */}
+//                 <td className={`border-t border-r px-1.5 py-2 text-center bg-slate-300 whitespace-nowrap ${footerTotals.totalOverallAchievement >= 0 ? 'text-emerald-700' : 'text-destructive'}`}>
+//                   {formatCurrency(footerTotals.totalOverallAchievement)}
+//                 </td>
 //                 <td className={`border-t px-1.5 py-2 text-center bg-slate-300 whitespace-nowrap ${footerTotals.totalAchievement >= footerTotals.totalTarget ? 'text-emerald-700' : 'text-destructive'}`}>
 //                   {formatCurrency(footerTotals.totalAchievement)}
 //                 </td>
@@ -269,7 +309,7 @@
 //           </table>
 //         </div>
 
-//         {/* ==================== DESKTOP (md+) — UNCHANGED ==================== */}
+//         {/* ==================== DESKTOP (md+) ==================== */}
 //         <div className="hidden md:block">
 //           <Table
 //             containerClassName="h-[390px] overflow-auto relative"
@@ -292,9 +332,10 @@
 //                     {p.label}
 //                   </TableHead>
 //                 ))}
+//                 {/* ✅ colSpan 3 → 4, min-w 360 → 480 */}
 //                 <TableHead
-//                   colSpan={3}
-//                   className="text-center bg-slate-200 border-b font-bold sticky right-0 top-0 z-[100] min-w-[360px] h-[40px]"
+//                   colSpan={4}
+//                   className="text-center bg-slate-200 border-b font-bold sticky right-0 top-0 z-[100] min-w-[480px] h-[40px]"
 //                 >
 //                   TOTAL
 //                 </TableHead>
@@ -317,47 +358,102 @@
 //                     ))}
 //                   </React.Fragment>
 //                 ))}
-//                 <TableHead className="text-center border-r border-b text-[10px] uppercase bg-slate-200 sticky top-[40px] right-[240px] z-[90] min-w-[120px] h-[40px]">Total Invoice</TableHead>
-//                 <TableHead className="text-center border-r border-b text-[10px] uppercase bg-slate-200 sticky top-[40px] right-[120px] z-[90] min-w-[120px] h-[40px]">Total Target</TableHead>
-//                 <TableHead className="text-center border-b text-[10px] uppercase bg-slate-200 sticky top-[40px] right-0 z-[90] min-w-[120px] h-[40px]">Total Achievement</TableHead>
+//                 {/* ✅ right offsets shifted: 360 / 240 / 120 / 0 for 4 columns */}
+//                 <TableHead className="text-center border-r border-b text-[10px] uppercase bg-slate-200 sticky top-[40px] right-[360px] z-[90] min-w-[120px] h-[40px]">
+//                   Total Invoice
+//                 </TableHead>
+//                 <TableHead className="text-center border-r border-b text-[10px] uppercase bg-slate-200 sticky top-[40px] right-[240px] z-[90] min-w-[120px] h-[40px]">
+//                   Total Target
+//                 </TableHead>
+//                 {/* ✅ NEW Overall Achievement header */}
+//                 <TableHead className="text-center border-r border-b text-[10px] uppercase bg-slate-200 sticky top-[40px] right-[120px] z-[90] min-w-[120px] h-[40px]">
+//                   Overall  Achievement
+//                 </TableHead>
+//                 <TableHead className="text-center border-b text-[10px] uppercase bg-slate-200 sticky top-[40px] right-0 z-[90] min-w-[120px] h-[40px]">
+//                   Total Achievement
+//                 </TableHead>
 //               </TableRow>
 //             </TableHeader>
 
 //             <TableBody>
 //               {kamPerformanceData.map((kam) => (
 //                 <TableRow key={kam.id} className="hover:bg-muted/20">
-//                   <TableCell className="font-medium border-r border-b bg-white sticky left-0 z-20">{kam.name}</TableCell>
+//                   <TableCell className="font-medium border-r border-b bg-white sticky left-0 z-20">
+//                     {kam.name}
+//                   </TableCell>
+
 //                   {kam.periodStats.map((stat: any, i: number) => (
 //                     <React.Fragment key={i}>
-//                       <TableCell className="text-center border-r border-b text-sm">{stat.clientCount}</TableCell>
-//                       <TableCell className="text-center border-r border-b text-sm text-slate-600">{formatCurrency(stat.targetAmount)}</TableCell>
-//                       <TableCell className={`text-center border-r border-b font-semibold text-sm ${stat.successAchieved >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{formatCurrency(stat.successAchieved)}</TableCell>
+//                       <TableCell className="text-center border-r border-b text-sm">
+//                         {stat.clientCount}
+//                       </TableCell>
+//                       <TableCell className="text-center border-r border-b text-sm text-slate-600">
+//                         {formatCurrency(stat.targetAmount)}
+//                       </TableCell>
+//                       <TableCell className={`text-center border-r border-b font-semibold text-sm ${stat.successAchieved >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+//                         {formatCurrency(stat.successAchieved)}
+//                       </TableCell>
 //                       <TableCell className="text-center border-r border-b text-sm text-slate-600">
 //                         {stat.targetAmount > 0 ? `${((stat.successAchieved / stat.targetAmount) * 100).toFixed(2)}%` : '0%'}
 //                       </TableCell>
-//                       <TableCell className={`text-center border-r border-b font-semibold text-sm ${stat.achieved >= stat.targetAmount ? 'text-emerald-600' : 'text-orange-600'}`}>{formatCurrency(stat.achieved)}</TableCell>
-//                       <TableCell className="text-center border-r border-b text-sm text-slate-600">{formatCurrency(stat.selfAchieved)}</TableCell>
-//                       <TableCell className={`text-center border-r border-b font-semibold text-sm ${stat.selfUpDown >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{formatCurrency(stat.selfUpDown)}</TableCell>
-//                       <TableCell className="text-center border-r border-b text-sm text-slate-600">{formatCurrency(stat.transferredAchieved)}</TableCell>
-//                       <TableCell className={`text-center border-r border-b font-semibold text-sm ${stat.transferredUpDown >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{formatCurrency(stat.transferredUpDown)}</TableCell>
+//                       <TableCell className={`text-center border-r border-b font-semibold text-sm ${stat.achieved >= stat.targetAmount ? 'text-emerald-600' : 'text-orange-600'}`}>
+//                         {formatCurrency(stat.achieved)}
+//                       </TableCell>
+//                       <TableCell className="text-center border-r border-b text-sm text-slate-600">
+//                         {formatCurrency(stat.selfAchieved)}
+//                       </TableCell>
+//                       <TableCell className={`text-center border-r border-b font-semibold text-sm ${stat.selfUpDown >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+//                         {formatCurrency(stat.selfUpDown)}
+//                       </TableCell>
+//                       <TableCell className="text-center border-r border-b text-sm text-slate-600">
+//                         {formatCurrency(stat.transferredAchieved)}
+//                       </TableCell>
+//                       <TableCell className={`text-center border-r border-b font-semibold text-sm ${stat.transferredUpDown >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+//                         {formatCurrency(stat.transferredUpDown)}
+//                       </TableCell>
 //                     </React.Fragment>
 //                   ))}
-//                   <TableCell className={`text-center border-r border-b font-bold bg-slate-50 text-sm min-w-[120px] sticky right-[240px] z-10 ${kam.rangeAchievedSum >= kam.rangeTargetSum ? 'text-emerald-700' : 'text-destructive'}`}>{formatCurrency(kam.rangeAchievedSum)}</TableCell>
-//                   <TableCell className="text-center border-r border-b font-bold bg-slate-50 text-sm min-w-[120px] sticky right-[120px] z-10">{formatCurrency(kam.rangeTargetSum)}</TableCell>
-//                   <TableCell className={`text-center border-b font-bold bg-slate-50 text-sm min-w-[120px] sticky right-0 z-10 ${kam.rangeSuccessAchievedSum >= kam.rangeTargetSum ? 'text-emerald-700' : 'text-destructive'}`}>{formatCurrency(kam.rangeSuccessAchievedSum)}</TableCell>
+
+//                   {/* ✅ right offsets: 360 / 240 / 120 / 0 */}
+//                   <TableCell className={`text-center border-r border-b font-bold bg-slate-50 text-sm min-w-[120px] sticky right-[360px] z-10 ${kam.rangeAchievedSum >= kam.rangeTargetSum ? 'text-emerald-700' : 'text-destructive'}`}>
+//                     {formatCurrency(kam.rangeAchievedSum)}
+//                   </TableCell>
+//                   <TableCell className="text-center border-r border-b font-bold bg-slate-50 text-sm min-w-[120px] sticky right-[240px] z-10">
+//                     {formatCurrency(kam.rangeTargetSum)}
+//                   </TableCell>
+//                   {/* ✅ NEW Overall Achievement body cell */}
+//                   <TableCell className={`text-center border-r border-b font-bold bg-slate-50 text-sm min-w-[120px] sticky right-[120px] z-10 ${kam.overallAchievement >= 0 ? 'text-emerald-700' : 'text-destructive'}`}>
+//                     {formatCurrency(kam.overallAchievement)}
+//                   </TableCell>
+//                   <TableCell className={`text-center border-b font-bold bg-slate-50 text-sm min-w-[120px] sticky right-0 z-10 ${kam.rangeSuccessAchievedSum >= kam.rangeTargetSum ? 'text-emerald-700' : 'text-destructive'}`}>
+//                     {formatCurrency(kam.rangeSuccessAchievedSum)}
+//                   </TableCell>
 //                 </TableRow>
 //               ))}
 //             </TableBody>
 
 //             <TableFooter className="sticky bottom-0 z-[40] bg-slate-200">
 //               <TableRow className="font-bold">
-//                 <TableCell className="sticky left-0 bottom-0 z-[300] bg-slate-300 border-t min-w-[180px]">GRAND TOTAL</TableCell>
+//                 <TableCell className="sticky left-0 bottom-0 z-[300] bg-slate-300 border-t min-w-[180px]">
+//                   GRAND TOTAL
+//                 </TableCell>
 //                 {Array.from({ length: tablePeriods.length * 9 }).map((_, i) => (
 //                   <TableCell key={i} className="border-t bg-slate-200" />
 //                 ))}
-//                 <TableCell className="sticky right-[240px] bottom-0 z-[300] bg-slate-300 border-t min-w-[120px] text-center">{formatCurrency(footerTotals.totalInvoice)}</TableCell>
-//                 <TableCell className="sticky right-[120px] bottom-0 z-[300] bg-slate-300 border-t min-w-[120px] text-center">{formatCurrency(footerTotals.totalTarget)}</TableCell>
-//                 <TableCell className={`sticky right-0 bottom-0 z-[300] bg-slate-300 border-t min-w-[120px] text-center ${footerTotals.totalAchievement >= footerTotals.totalTarget ? 'text-emerald-700' : 'text-destructive'}`}>{formatCurrency(footerTotals.totalAchievement)}</TableCell>
+//                 {/* ✅ right offsets: 360 / 240 / 120 / 0 */}
+//                 <TableCell className="sticky right-[360px] bottom-0 z-[300] bg-slate-300 border-t min-w-[120px] text-center">
+//                   {formatCurrency(footerTotals.totalInvoice)}
+//                 </TableCell>
+//                 <TableCell className="sticky right-[240px] bottom-0 z-[300] bg-slate-300 border-t min-w-[120px] text-center">
+//                   {formatCurrency(footerTotals.totalTarget)}
+//                 </TableCell>
+//                 {/* ✅ NEW Overall Achievement footer cell */}
+//                 <TableCell className={`sticky right-[120px] bottom-0 z-[300] bg-slate-300 border-t min-w-[120px] text-center ${footerTotals.totalOverallAchievement >= 0 ? 'text-emerald-700' : 'text-destructive'}`}>
+//                   {formatCurrency(footerTotals.totalOverallAchievement)}
+//                 </TableCell>
+//                 <TableCell className={`sticky right-0 bottom-0 z-[300] bg-slate-300 border-t min-w-[120px] text-center ${footerTotals.totalAchievement >= footerTotals.totalTarget ? 'text-emerald-700' : 'text-destructive'}`}>
+//                   {formatCurrency(footerTotals.totalAchievement)}
+//                 </TableCell>
 //               </TableRow>
 //             </TableFooter>
 //           </Table>
@@ -367,8 +463,6 @@
 //     </Card>
 //   );
 // };
-
-
 
 
 
@@ -467,10 +561,8 @@ export const KAMPerformanceTable: React.FC<Props> = ({
         return { ...stat, upDown: stat.achieved - stat.targetAmount };
       });
 
-      // ✅ Overall Achievement = last period Achieved - first period Achieved
-      // Use `successAchieved` which maps to the "Achieved" column in the UI
-      const firstPeriodAchievement = periodStats.length > 0 ? periodStats[0].successAchieved : 0;
-      const lastPeriodAchievement  = periodStats.length > 0 ? periodStats[periodStats.length - 1].successAchieved : 0;
+      const firstPeriodAchievement = periodStats.length > 0 ? periodStats[0].achieved : 0;
+      const lastPeriodAchievement  = periodStats.length > 0 ? periodStats[periodStats.length - 1].achieved : 0;
       const overallAchievement     = lastPeriodAchievement - firstPeriodAchievement;
 
       return {
@@ -504,7 +596,6 @@ export const KAMPerformanceTable: React.FC<Props> = ({
 
   const entityLabel = filterType === 'branch' ? 'Branch Name' : 'KAM Name';
 
-  // ✅ footerTotals now includes totalOverallAchievement
   const footerTotals = kamPerformanceData.reduce(
     (acc, kam) => {
       acc.totalInvoice            += kam.rangeAchievedSum || 0;
@@ -521,6 +612,13 @@ export const KAMPerformanceTable: React.FC<Props> = ({
     'Invoice', 'Self', 'U/D Self',
     'Transfer', 'U/D Trans.',
   ];
+
+  // Column order: Total Invoice | Overall  Achievement | Total Target | Total Achievement
+  // right offsets (each col 120px wide):
+  //   Total Achievement  → right-0
+  //   Total Target       → right-[120px]
+  //   Overall  Achievement    → right-[240px]
+  //   Total Invoice      → right-[360px]
 
   return (
     <Card className="shadow-sm border-muted/60 overflow-hidden">
@@ -555,7 +653,6 @@ export const KAMPerformanceTable: React.FC<Props> = ({
                     {p.label}
                   </th>
                 ))}
-                {/* ✅ colSpan 3 → 4 */}
                 <th
                   colSpan={4}
                   className="sticky top-0 z-[10] bg-slate-200 border-b px-2 py-2 text-center font-bold whitespace-nowrap"
@@ -578,15 +675,15 @@ export const KAMPerformanceTable: React.FC<Props> = ({
                     ))}
                   </React.Fragment>
                 ))}
+                {/* Order: Invoice | Overall | Target | Achiev. */}
                 <th className="sticky top-[33px] z-[10] bg-slate-200 border-r border-b px-1.5 py-1.5 text-[9px] uppercase text-center whitespace-nowrap">
                   Invoice
                 </th>
                 <th className="sticky top-[33px] z-[10] bg-slate-200 border-r border-b px-1.5 py-1.5 text-[9px] uppercase text-center whitespace-nowrap">
-                  Target
-                </th>
-                {/* ✅ NEW */}
-                <th className="sticky top-[33px] z-[10] bg-slate-200 border-r border-b px-1.5 py-1.5 text-[9px] uppercase text-center whitespace-nowrap">
                   Overall
+                </th>
+                <th className="sticky top-[33px] z-[10] bg-slate-200 border-r border-b px-1.5 py-1.5 text-[9px] uppercase text-center whitespace-nowrap">
+                  Target
                 </th>
                 <th className="sticky top-[33px] z-[10] bg-slate-200 border-b px-1.5 py-1.5 text-[9px] uppercase text-center whitespace-nowrap">
                   Achiev.
@@ -637,16 +734,15 @@ export const KAMPerformanceTable: React.FC<Props> = ({
                     </React.Fragment>
                   ))}
 
-                  {/* Row totals */}
+                  {/* Row totals — Order: Invoice | Overall | Target | Achiev. */}
                   <td className={`border-r border-b px-1.5 py-1.5 text-center font-bold bg-slate-100 whitespace-nowrap ${kam.rangeAchievedSum >= kam.rangeTargetSum ? 'text-emerald-700' : 'text-destructive'}`}>
                     {formatCurrency(kam.rangeAchievedSum)}
                   </td>
-                  <td className="border-r border-b px-1.5 py-1.5 text-center font-bold bg-slate-100 whitespace-nowrap">
-                    {formatCurrency(kam.rangeTargetSum)}
-                  </td>
-                  {/* ✅ NEW Overall Achievement cell */}
                   <td className={`border-r border-b px-1.5 py-1.5 text-center font-bold bg-slate-100 whitespace-nowrap ${kam.overallAchievement >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
                     {formatCurrency(kam.overallAchievement)}
+                  </td>
+                  <td className="border-r border-b px-1.5 py-1.5 text-center font-bold bg-slate-100 whitespace-nowrap">
+                    {formatCurrency(kam.rangeTargetSum)}
                   </td>
                   <td className={`border-b px-1.5 py-1.5 text-center font-bold bg-slate-100 whitespace-nowrap ${kam.rangeSuccessAchievedSum >= kam.rangeTargetSum ? 'text-emerald-700' : 'text-destructive'}`}>
                     {formatCurrency(kam.rangeSuccessAchievedSum)}
@@ -663,15 +759,15 @@ export const KAMPerformanceTable: React.FC<Props> = ({
                 {Array.from({ length: tablePeriods.length * 9 }).map((_, i) => (
                   <td key={i} className="border-t bg-slate-200 px-1.5 py-2" />
                 ))}
+                {/* Order: Invoice | Overall | Target | Achiev. */}
                 <td className="border-t border-r px-1.5 py-2 text-center bg-slate-300 whitespace-nowrap">
                   {formatCurrency(footerTotals.totalInvoice)}
                 </td>
-                <td className="border-t border-r px-1.5 py-2 text-center bg-slate-300 whitespace-nowrap">
-                  {formatCurrency(footerTotals.totalTarget)}
-                </td>
-                {/* ✅ NEW Overall Achievement footer */}
                 <td className={`border-t border-r px-1.5 py-2 text-center bg-slate-300 whitespace-nowrap ${footerTotals.totalOverallAchievement >= 0 ? 'text-emerald-700' : 'text-destructive'}`}>
                   {formatCurrency(footerTotals.totalOverallAchievement)}
+                </td>
+                <td className="border-t border-r px-1.5 py-2 text-center bg-slate-300 whitespace-nowrap">
+                  {formatCurrency(footerTotals.totalTarget)}
                 </td>
                 <td className={`border-t px-1.5 py-2 text-center bg-slate-300 whitespace-nowrap ${footerTotals.totalAchievement >= footerTotals.totalTarget ? 'text-emerald-700' : 'text-destructive'}`}>
                   {formatCurrency(footerTotals.totalAchievement)}
@@ -704,7 +800,6 @@ export const KAMPerformanceTable: React.FC<Props> = ({
                     {p.label}
                   </TableHead>
                 ))}
-                {/* ✅ colSpan 3 → 4, min-w 360 → 480 */}
                 <TableHead
                   colSpan={4}
                   className="text-center bg-slate-200 border-b font-bold sticky right-0 top-0 z-[100] min-w-[480px] h-[40px]"
@@ -730,19 +825,19 @@ export const KAMPerformanceTable: React.FC<Props> = ({
                     ))}
                   </React.Fragment>
                 ))}
-                {/* ✅ right offsets shifted: 360 / 240 / 120 / 0 for 4 columns */}
+                {/* Order: Total Invoice | Overall  Achievement | Total Target | Total Achievement */}
+                {/* right offsets: Invoice=360, Overall=240, Target=120, Achievement=0 */}
                 <TableHead className="text-center border-r border-b text-[10px] uppercase bg-slate-200 sticky top-[40px] right-[360px] z-[90] min-w-[120px] h-[40px]">
                   Total Invoice
                 </TableHead>
                 <TableHead className="text-center border-r border-b text-[10px] uppercase bg-slate-200 sticky top-[40px] right-[240px] z-[90] min-w-[120px] h-[40px]">
+                  Overall  Achievement
+                </TableHead>
+                <TableHead className="text-center border-r border-b text-[10px] uppercase bg-slate-200 sticky top-[40px] right-[120px] z-[90] min-w-[120px] h-[40px]">
                   Total Target
                 </TableHead>
-                {/* ✅ NEW Overall Achievement header */}
-                <TableHead className="text-center border-r border-b text-[10px] uppercase bg-slate-200 sticky top-[40px] right-[120px] z-[90] min-w-[120px] h-[40px]">
-                  Overall Achiev.
-                </TableHead>
                 <TableHead className="text-center border-b text-[10px] uppercase bg-slate-200 sticky top-[40px] right-0 z-[90] min-w-[120px] h-[40px]">
-                  Total Achievement
+                  Total  Target Achieved
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -786,16 +881,15 @@ export const KAMPerformanceTable: React.FC<Props> = ({
                     </React.Fragment>
                   ))}
 
-                  {/* ✅ right offsets: 360 / 240 / 120 / 0 */}
+                  {/* Order: Total Invoice | Overall  Achievement | Total Target | Total Achievement */}
                   <TableCell className={`text-center border-r border-b font-bold bg-slate-50 text-sm min-w-[120px] sticky right-[360px] z-10 ${kam.rangeAchievedSum >= kam.rangeTargetSum ? 'text-emerald-700' : 'text-destructive'}`}>
                     {formatCurrency(kam.rangeAchievedSum)}
                   </TableCell>
-                  <TableCell className="text-center border-r border-b font-bold bg-slate-50 text-sm min-w-[120px] sticky right-[240px] z-10">
-                    {formatCurrency(kam.rangeTargetSum)}
-                  </TableCell>
-                  {/* ✅ NEW Overall Achievement body cell */}
-                  <TableCell className={`text-center border-r border-b font-bold bg-slate-50 text-sm min-w-[120px] sticky right-[120px] z-10 ${kam.overallAchievement >= 0 ? 'text-emerald-700' : 'text-destructive'}`}>
+                  <TableCell className={`text-center border-r border-b font-bold bg-slate-50 text-sm min-w-[120px] sticky right-[240px] z-10 ${kam.overallAchievement >= 0 ? 'text-emerald-700' : 'text-destructive'}`}>
                     {formatCurrency(kam.overallAchievement)}
+                  </TableCell>
+                  <TableCell className="text-center border-r border-b font-bold bg-slate-50 text-sm min-w-[120px] sticky right-[120px] z-10">
+                    {formatCurrency(kam.rangeTargetSum)}
                   </TableCell>
                   <TableCell className={`text-center border-b font-bold bg-slate-50 text-sm min-w-[120px] sticky right-0 z-10 ${kam.rangeSuccessAchievedSum >= kam.rangeTargetSum ? 'text-emerald-700' : 'text-destructive'}`}>
                     {formatCurrency(kam.rangeSuccessAchievedSum)}
@@ -812,16 +906,15 @@ export const KAMPerformanceTable: React.FC<Props> = ({
                 {Array.from({ length: tablePeriods.length * 9 }).map((_, i) => (
                   <TableCell key={i} className="border-t bg-slate-200" />
                 ))}
-                {/* ✅ right offsets: 360 / 240 / 120 / 0 */}
+                {/* Order: Total Invoice | Overall  Achievement | Total Target | Total Achievement */}
                 <TableCell className="sticky right-[360px] bottom-0 z-[300] bg-slate-300 border-t min-w-[120px] text-center">
                   {formatCurrency(footerTotals.totalInvoice)}
                 </TableCell>
-                <TableCell className="sticky right-[240px] bottom-0 z-[300] bg-slate-300 border-t min-w-[120px] text-center">
-                  {formatCurrency(footerTotals.totalTarget)}
-                </TableCell>
-                {/* ✅ NEW Overall Achievement footer cell */}
-                <TableCell className={`sticky right-[120px] bottom-0 z-[300] bg-slate-300 border-t min-w-[120px] text-center ${footerTotals.totalOverallAchievement >= 0 ? 'text-emerald-700' : 'text-destructive'}`}>
+                <TableCell className={`sticky right-[240px] bottom-0 z-[300] bg-slate-300 border-t min-w-[120px] text-center ${footerTotals.totalOverallAchievement >= 0 ? 'text-emerald-700' : 'text-destructive'}`}>
                   {formatCurrency(footerTotals.totalOverallAchievement)}
+                </TableCell>
+                <TableCell className="sticky right-[120px] bottom-0 z-[300] bg-slate-300 border-t min-w-[120px] text-center">
+                  {formatCurrency(footerTotals.totalTarget)}
                 </TableCell>
                 <TableCell className={`sticky right-0 bottom-0 z-[300] bg-slate-300 border-t min-w-[120px] text-center ${footerTotals.totalAchievement >= footerTotals.totalTarget ? 'text-emerald-700' : 'text-destructive'}`}>
                   {formatCurrency(footerTotals.totalAchievement)}

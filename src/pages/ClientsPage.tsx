@@ -1,6 +1,5 @@
 
 
-
 // import { useState, useEffect } from 'react';
 // import { useNavigate } from 'react-router-dom';
 // import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +17,6 @@
 // import { Building2, Search, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 // import ClientsFilterDrawer from '@/components/filters/ClientsFilterDrawer';
 // import { ClientAPI } from '@/api/clientApi';
-// import { initialKAMs } from '@/data/mockData';
 // import { isSuperAdmin } from '@/utility/utility';
 
 // interface Client {
@@ -32,107 +30,150 @@
 //   assignedKamId: string;
 // }
 
-// interface ClientCounts {
-//   clients: number;
-//   customers: number;
-//   local_clients: number;
-//   organizations: number;
-//   kams: number;
-//   divisions: number;
-//   types: number;
-// }
-
 // export default function ClientsPage() {
 //   const navigate = useNavigate();
 
-//   const [clients, setClients] = useState<Client[]>([]);
-//   const [searchQuery, setSearchQuery] = useState('');
+//   // All data from backend (fetched once)
+//   const [allClients, setAllClients] = useState<Client[]>([]);
 //   const [loading, setLoading] = useState(false);
 
-//   const [counts, setCounts] = useState<ClientCounts>({
-//     clients: 0,
-//     customers: 0,
-//     local_clients: 0,
-//     organizations: 0,
-//     kams: 0,
-//     divisions: 0,
-//     types: 0,
-//   });
-
+//   // Filter states
+//   const [searchQuery, setSearchQuery] = useState('');
 //   const [filterClient, setFilterClient] = useState('all');
 //   const [filterDivision, setFilterDivision] = useState('all');
 //   const [filterKam, setFilterKam] = useState('all');
-//   const [filterClientType, setFilterClientType] = useState('all');  // NEW
+//   const [filterClientType, setFilterClientType] = useState('all');
 
+//   // Pagination states
 //   const [page, setPage] = useState(1);
-//   const [lastPage, setLastPage] = useState(1);
+//   const itemsPerPage = 100;
 
+//   // ===== FETCH ALL DATA ONCE =====
 //   useEffect(() => {
 //     setLoading(true);
+    
+//     // Fetch all pages at once
+//     const fetchAllData = async () => {
+//       try {
+//         let allData: Client[] = [];
+//         let currentPage = 1;
+//         let hasMore = true;
 
-//     ClientAPI.getClients(page)
-//       .then((res) => {
-//         const mappedClients = (res.data || []).map(
-//           (c: any, index: number) => ({
-//             id: `${page}-${index}`,
-//             name: c.full_name,
-//             contact: c.full_name,
-//             phone: c.mobile,
-//             division: c.division,
-//             type: c.type,
-//             businessType: 'Customer',
-//             assignedKamId: c.assigned_kam,
-//           })
-//         );
+//         while (hasMore) {
+//           const res = await ClientAPI.getClients(currentPage);
+          
+//           if (res.data && res.data.length > 0) {
+//             const mappedClients = res.data.map((c: any, index: number) => ({
+//               id: `${currentPage}-${index}`,
+//               name: c.full_name || '',
+//               contact: c.full_name || '',
+//               phone: c.mobile || '',
+//               division: c.division || '',
+//               type: c.type || '',
+//               businessType: c.type === 'Organization' ? 'Organization' : 'Customer',
+//               assignedKamId: c.assigned_kam || '',
+//             }));
+            
+//             allData = [...allData, ...mappedClients];
+            
+//             // Check if there are more pages
+//             if (res.pagination && currentPage < res.pagination.last_page) {
+//               currentPage++;
+//             } else {
+//               hasMore = false;
+//             }
+//           } else {
+//             hasMore = false;
+//           }
+//         }
+        
+//         setAllClients(allData);
+//       } catch (error) {
+//         console.error('Error fetching clients:', error);
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
 
-//         setClients(mappedClients);
-//         if (res.counts) setCounts(res.counts);
-//         if (res.pagination) setLastPage(res.pagination.last_page);
-//       })
-//       .finally(() => setLoading(false));
-//   }, [page]);
+//     fetchAllData();
+//   }, []); // Only fetch once on mount
 
-//   const filteredClients = clients.filter((client) => {
-//     // Ensure name and contact exist
-//     const clientName = client.name || '';
-//     const clientContact = client.contact || '';
-
+//   // ===== FRONTEND FILTERING =====
+//   const filteredClients = allClients.filter((client) => {
+//     // Search filter
 //     const matchesSearch =
-//       clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-//       clientContact.toLowerCase().includes(searchQuery.toLowerCase());
+//       searchQuery === '' ||
+//       client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+//       client.contact.toLowerCase().includes(searchQuery.toLowerCase()) ||
+//       client.phone.toLowerCase().includes(searchQuery.toLowerCase());
 
+//     // Division filter
 //     const matchesDivision =
-//       filterDivision === 'all' || (client.division || '') === filterDivision;
+//       filterDivision === 'all' || client.division === filterDivision;
 
+//     // KAM filter
 //     const matchesKam =
-//       filterKam === 'all' || (client.assignedKamId || '') === filterKam;
+//       filterKam === 'all' || client.assignedKamId === filterKam;
 
-//     // NEW: Filter by client type
-//     const matchesClientType = filterClientType === 'all' 
-//       ? true
-//       : filterClientType === 'active' 
+//     // Client Type filter
+//     const matchesClientType =
+//       filterClientType === 'all'
+//         ? true
+//         : filterClientType === 'active'
 //         ? client.type === 'Active'
 //         : filterClientType === 'inactive'
-//           ? client.type === 'Inactive'
-//           : filterClientType === 'organization'
-//             ? client.businessType === 'Organization'
-//             : true;
+//         ? client.type === 'Inactive'
+//         : filterClientType === 'organization'
+//         ? client.type === 'Organization'
+//         : true;
 
 //     return matchesSearch && matchesDivision && matchesKam && matchesClientType;
 //   });
 
-//   // ===== PAGINATION LOGIC WITH FIRST AND LAST =====
+//   // ===== DYNAMIC COUNTS FROM FILTERED DATA =====
+//   const dynamicCounts = {
+//     customers: filteredClients.filter((c) => c.type === 'Active').length,
+//     local_clients: filteredClients.filter((c) => c.type === 'Inactive').length,
+//     organizations: filteredClients.filter((c) => c.type === 'Organization').length,
+//     divisions: new Set(filteredClients.map((c) => c.division).filter(Boolean)).size,
+//     kams: new Set(filteredClients.map((c) => c.assignedKamId).filter(Boolean)).size,
+//   };
+
+//   // ===== CHECK IF ANY FILTER IS ACTIVE =====
+//   const hasActiveFilters =
+//     filterClient !== 'all' ||
+//     filterDivision !== 'all' ||
+//     filterKam !== 'all' ||
+//     filterClientType !== 'all' ||
+//     searchQuery !== '';
+
+//   // ===== FRONTEND PAGINATION =====
+//   const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
+//   const startIndex = (page - 1) * itemsPerPage;
+//   const endIndex = startIndex + itemsPerPage;
+//   const paginatedClients = filteredClients.slice(startIndex, endIndex);
+
+//   // ===== PAGINATION LOGIC =====
 //   const getPageNumbers = () => {
 //     const pages = [];
 //     const start = Math.max(1, page - 2);
-//     const end = Math.min(lastPage, start + 4);
+//     const end = Math.min(totalPages, start + 4);
 //     for (let i = start; i <= end; i++) pages.push(i);
 //     return pages;
 //   };
 
 //   const pageNumbers = getPageNumbers();
 //   const showFirstEllipsis = pageNumbers[0] > 1;
-//   const showLastEllipsis = pageNumbers[pageNumbers.length - 1] < lastPage;
+//   const showLastEllipsis = pageNumbers[pageNumbers.length - 1] < totalPages;
+
+//   // ===== RESET PAGE TO 1 WHEN FILTERS CHANGE =====
+//   useEffect(() => {
+//     setPage(1);
+//   }, [filterClient, filterDivision, filterKam, filterClientType, searchQuery]);
+
+//   // ===== GET UNIQUE VALUES FOR FILTERS =====
+//   const uniqueDivisions = Array.from(new Set(allClients.map((c) => c.division).filter(Boolean)));
+//   const uniqueKams = Array.from(new Set(allClients.map((c) => c.assignedKamId).filter(Boolean)));
 
 //   return (
 //     <div className="page-container space-y-6">
@@ -144,16 +185,41 @@
 //         <h1 className="text-xl md:text-2xl font-bold">Clients</h1>
 //       </div>
 
-//       {/* STATS */}
+//       {/* DYNAMIC STATS */}
 //       <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-//         <Card><CardContent className="p-3"><p>Prism Active Clients</p><p className="text-2xl font-bold">{counts.customers}</p></CardContent></Card>
-//         <Card><CardContent className="p-3"><p>Prism InActive Clients</p><p className="text-2xl font-bold">{counts.local_clients}</p></CardContent></Card>
-//         <Card><CardContent className="p-3"><p>Organizations</p><p className="text-2xl font-bold">{counts.organizations}</p></CardContent></Card>
-//         <Card><CardContent className="p-3"><p>Total Branch</p><p className="text-2xl font-bold">{counts.divisions}</p></CardContent></Card>
-//         <Card><CardContent className="p-3"><p>Total KAM</p><p className="text-2xl font-bold">{counts.kams}</p></CardContent></Card>
+//         <Card>
+//           <CardContent className="p-3">
+//             <p className="text-sm text-muted-foreground">Prism Active Clients</p>
+//             <p className="text-2xl font-bold">{dynamicCounts.customers}</p>
+//           </CardContent>
+//         </Card>
+//         <Card>
+//           <CardContent className="p-3">
+//             <p className="text-sm text-muted-foreground">Prism InActive Clients</p>
+//             <p className="text-2xl font-bold">{dynamicCounts.local_clients}</p>
+//           </CardContent>
+//         </Card>
+//         <Card>
+//           <CardContent className="p-3">
+//             <p className="text-sm text-muted-foreground">Organizations</p>
+//             <p className="text-2xl font-bold">{dynamicCounts.organizations}</p>
+//           </CardContent>
+//         </Card>
+//         <Card>
+//           <CardContent className="p-3">
+//             <p className="text-sm text-muted-foreground">Total Branch</p>
+//             <p className="text-2xl font-bold">{dynamicCounts.divisions}</p>
+//           </CardContent>
+//         </Card>
+//         <Card>
+//           <CardContent className="p-3">
+//             <p className="text-sm text-muted-foreground">Total KAM</p>
+//             <p className="text-2xl font-bold">{dynamicCounts.kams}</p>
+//           </CardContent>
+//         </Card>
 //       </div>
 
-//       {/* SEARCH */}
+//       {/* SEARCH & FILTERS */}
 //       <div className="flex gap-2">
 //         <div className="relative flex-1">
 //           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" />
@@ -171,26 +237,34 @@
 //           setDivision={setFilterDivision}
 //           currentKam={filterKam}
 //           setKam={setFilterKam}
-//           currentClientType={filterClientType}  // NEW
-//           setClientType={setFilterClientType}  // NEW
-//           hasActiveFilters={false}
+//           currentClientType={filterClientType}
+//           setClientType={setFilterClientType}
+//           hasActiveFilters={hasActiveFilters}
 //           onApply={() => {}}
 //           onClear={() => {
 //             setSearchQuery('');
 //             setFilterClient('all');
 //             setFilterDivision('all');
 //             setFilterKam('all');
-//             setFilterClientType('all');  // NEW
+//             setFilterClientType('all');
 //           }}
+//           divisions={uniqueDivisions}
+//           kams={uniqueKams}
 //         />
 //       </div>
 
 //       {/* TABLE */}
 //       <Card>
 //         <CardHeader className="flex flex-row items-center justify-between">
-//           <CardTitle>Client List</CardTitle>
+//           <CardTitle>
+//             Client List
+//             {hasActiveFilters && (
+//               <span className="ml-2 text-sm font-normal text-muted-foreground">
+//                 ({filteredClients.length} results)
+//               </span>
+//             )}
+//           </CardTitle>
 
-//           {/* ✅ ADD NEW CLIENT BUTTON */}
 //           {isSuperAdmin() && (
 //             <Button onClick={() => navigate('/clients-create')}>
 //               <Plus className="h-4 w-4 mr-2" />
@@ -205,6 +279,7 @@
 //               <TableRow>
 //                 <TableHead>Client</TableHead>
 //                 <TableHead>Contact</TableHead>
+//                 <TableHead>Division</TableHead>
 //                 <TableHead>Type</TableHead>
 //                 <TableHead>Assigned KAM</TableHead>
 //               </TableRow>
@@ -214,126 +289,150 @@
 //               {loading ? (
 //                 <TableRow>
 //                   <TableCell colSpan={5} className="text-center py-6">
-//                     Loading...
+//                     Loading all clients...
+//                   </TableCell>
+//                 </TableRow>
+//               ) : filteredClients.length === 0 ? (
+//                 <TableRow>
+//                   <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+//                     No clients found matching your filters
 //                   </TableCell>
 //                 </TableRow>
 //               ) : (
-//                 filteredClients.map((client) => (
+//                 paginatedClients.map((client) => (
 //                   <TableRow key={client.id}>
-//                     <TableCell>{client.name}</TableCell>
+//                     <TableCell className="font-medium">{client.name}</TableCell>
 //                     <TableCell>{client.phone || '--'}</TableCell>
-//                     <TableCell>{client.type}</TableCell>
-//                     <TableCell>{client.assignedKamId}</TableCell>
+//                     <TableCell>{client.division || '--'}</TableCell>
+//                     <TableCell>
+//                       <Badge
+//                         variant={
+//                           client.type === 'Active'
+//                             ? 'default'
+//                             : client.type === 'Inactive'
+//                             ? 'secondary'
+//                             : 'outline'
+//                         }
+//                       >
+//                         {client.type}
+//                       </Badge>
+//                     </TableCell>
+//                     <TableCell>{client.assignedKamId || '--'}</TableCell>
 //                   </TableRow>
 //                 ))
 //               )}
 //             </TableBody>
 //           </Table>
 
-//           {/* ===== PAGINATION WITH FIRST AND LAST ===== */}
-//           <div className="flex justify-end items-center gap-2 mt-4">
-//             {/* FIRST PAGE BUTTON */}
-//             <button
-//               onClick={() => setPage(1)}
-//               disabled={page === 1}
-//               className={`px-3 py-1 border rounded transition-colors ${
-//                 page === 1
-//                   ? 'opacity-50 cursor-not-allowed bg-gray-100'
-//                   : 'hover:bg-gray-50'
-//               }`}
-//               title="First Page"
-//             >
-//               First
-//             </button>
-
-//             {/* PREVIOUS PAGE BUTTON */}
-//             <button
-//               onClick={() => setPage(Math.max(1, page - 1))}
-//               disabled={page === 1}
-//               className={`px-3 py-1 border rounded transition-colors ${
-//                 page === 1
-//                   ? 'opacity-50 cursor-not-allowed bg-gray-100'
-//                   : 'hover:bg-gray-50'
-//               }`}
-//               title="Previous Page"
-//             >
-//               <ChevronLeft className="h-4 w-4" />
-//             </button>
-
-//             {/* FIRST ELLIPSIS */}
-//             {showFirstEllipsis && (
-//               <>
+//           {/* PAGINATION */}
+//           {!loading && filteredClients.length > 0 && totalPages > 1 && (
+//             <>
+//               <div className="flex justify-end items-center gap-2 mt-4">
+//                 {/* FIRST PAGE BUTTON */}
 //                 <button
 //                   onClick={() => setPage(1)}
-//                   className="px-3 py-1 border rounded hover:bg-gray-50"
+//                   disabled={page === 1}
+//                   className={`px-3 py-1 border rounded transition-colors ${
+//                     page === 1
+//                       ? 'opacity-50 cursor-not-allowed bg-gray-100'
+//                       : 'hover:bg-gray-50'
+//                   }`}
+//                   title="First Page"
 //                 >
-//                   1
+//                   First
 //                 </button>
-//                 <span className="px-2">...</span>
-//               </>
-//             )}
 
-//             {/* PAGE NUMBERS */}
-//             {pageNumbers.map((p) => (
-//               <button
-//                 key={p}
-//                 onClick={() => setPage(p)}
-//                 className={`px-3 py-1 border rounded transition-colors ${
-//                   p === page
-//                     ? 'bg-primary text-white font-bold'
-//                     : 'hover:bg-gray-50'
-//                 }`}
-//               >
-//                 {p}
-//               </button>
-//             ))}
-
-//             {/* LAST ELLIPSIS */}
-//             {showLastEllipsis && (
-//               <>
-//                 <span className="px-2">...</span>
+//                 {/* PREVIOUS PAGE BUTTON */}
 //                 <button
-//                   onClick={() => setPage(lastPage)}
-//                   className="px-3 py-1 border rounded hover:bg-gray-50"
+//                   onClick={() => setPage(Math.max(1, page - 1))}
+//                   disabled={page === 1}
+//                   className={`px-3 py-1 border rounded transition-colors ${
+//                     page === 1
+//                       ? 'opacity-50 cursor-not-allowed bg-gray-100'
+//                       : 'hover:bg-gray-50'
+//                   }`}
+//                   title="Previous Page"
 //                 >
-//                   {lastPage}
+//                   <ChevronLeft className="h-4 w-4" />
 //                 </button>
-//               </>
-//             )}
 
-//             {/* NEXT PAGE BUTTON */}
-//             <button
-//               onClick={() => setPage(Math.min(lastPage, page + 1))}
-//               disabled={page === lastPage}
-//               className={`px-3 py-1 border rounded transition-colors ${
-//                 page === lastPage
-//                   ? 'opacity-50 cursor-not-allowed bg-gray-100'
-//                   : 'hover:bg-gray-50'
-//               }`}
-//               title="Next Page"
-//             >
-//               <ChevronRight className="h-4 w-4" />
-//             </button>
+//                 {/* FIRST ELLIPSIS */}
+//                 {showFirstEllipsis && (
+//                   <>
+//                     <button
+//                       onClick={() => setPage(1)}
+//                       className="px-3 py-1 border rounded hover:bg-gray-50"
+//                     >
+//                       1
+//                     </button>
+//                     <span className="px-2">...</span>
+//                   </>
+//                 )}
 
-//             {/* LAST PAGE BUTTON */}
-//             <button
-//               onClick={() => setPage(lastPage)}
-//               disabled={page === lastPage}
-//               className={`px-3 py-1 border rounded transition-colors ${
-//                 page === lastPage
-//                   ? 'opacity-50 cursor-not-allowed bg-gray-100'
-//                   : 'hover:bg-gray-50'
-//               }`}
-//               title="Last Page"
-//             >
-//               Last
-//             </button>
-//           </div>
+//                 {/* PAGE NUMBERS */}
+//                 {pageNumbers.map((p) => (
+//                   <button
+//                     key={p}
+//                     onClick={() => setPage(p)}
+//                     className={`px-3 py-1 border rounded transition-colors ${
+//                       p === page
+//                         ? 'bg-primary text-white font-bold'
+//                         : 'hover:bg-gray-50'
+//                     }`}
+//                   >
+//                     {p}
+//                   </button>
+//                 ))}
 
-//           {/* PAGE INFO */}
-//           <div className="text-sm text-gray-500 mt-4 text-center">
-//             Page {page} of {lastPage}
-//           </div>
+//                 {/* LAST ELLIPSIS */}
+//                 {showLastEllipsis && (
+//                   <>
+//                     <span className="px-2">...</span>
+//                     <button
+//                       onClick={() => setPage(totalPages)}
+//                       className="px-3 py-1 border rounded hover:bg-gray-50"
+//                     >
+//                       {totalPages}
+//                     </button>
+//                   </>
+//                 )}
+
+//                 {/* NEXT PAGE BUTTON */}
+//                 <button
+//                   onClick={() => setPage(Math.min(totalPages, page + 1))}
+//                   disabled={page === totalPages}
+//                   className={`px-3 py-1 border rounded transition-colors ${
+//                     page === totalPages
+//                       ? 'opacity-50 cursor-not-allowed bg-gray-100'
+//                       : 'hover:bg-gray-50'
+//                   }`}
+//                   title="Next Page"
+//                 >
+//                   <ChevronRight className="h-4 w-4" />
+//                 </button>
+
+//                 {/* LAST PAGE BUTTON */}
+//                 <button
+//                   onClick={() => setPage(totalPages)}
+//                   disabled={page === totalPages}
+//                   className={`px-3 py-1 border rounded transition-colors ${
+//                     page === totalPages
+//                       ? 'opacity-50 cursor-not-allowed bg-gray-100'
+//                       : 'hover:bg-gray-50'
+//                   }`}
+//                   title="Last Page"
+//                 >
+//                   Last
+//                 </button>
+//               </div>
+
+//               {/* PAGE INFO */}
+//               <div className="text-sm text-gray-500 mt-4 text-center">
+//                 Page {page} of {totalPages} • Showing {startIndex + 1}-
+//                 {Math.min(endIndex, filteredClients.length)} of {filteredClients.length} results
+//               </div>
+//             </>
+//           )}
 //         </CardContent>
 //       </Card>
 //     </div>
@@ -343,8 +442,7 @@
 
 
 
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -358,7 +456,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Building2, Search, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Building2, Search, Plus, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import ClientsFilterDrawer from '@/components/filters/ClientsFilterDrawer';
 import { ClientAPI } from '@/api/clientApi';
 import { isSuperAdmin } from '@/utility/utility';
@@ -377,9 +475,12 @@ interface Client {
 export default function ClientsPage() {
   const navigate = useNavigate();
 
-  // All data from backend (fetched once)
   const [allClients, setAllClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(false);
+  
+  // ✅ Two loading states: initial (no data yet) and background (streaming more pages)
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [backgroundLoading, setBackgroundLoading] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState({ current: 0, total: 0 });
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -392,74 +493,90 @@ export default function ClientsPage() {
   const [page, setPage] = useState(1);
   const itemsPerPage = 100;
 
-  // ===== FETCH ALL DATA ONCE =====
-  useEffect(() => {
-    setLoading(true);
-    
-    // Fetch all pages at once
-    const fetchAllData = async () => {
-      try {
-        let allData: Client[] = [];
-        let currentPage = 1;
-        let hasMore = true;
+  // ✅ Ref to cancel fetch if component unmounts
+  const abortRef = useRef(false);
 
-        while (hasMore) {
+  // ===== STREAMING FETCH: Show data page-by-page as it arrives =====
+  useEffect(() => {
+    abortRef.current = false;
+    setAllClients([]);
+    setInitialLoading(true);
+    setBackgroundLoading(false);
+    setLoadingProgress({ current: 0, total: 0 });
+
+    const fetchStreaming = async () => {
+      try {
+        let currentPage = 1;
+        let isFirst = true;
+
+        while (true) {
+          if (abortRef.current) break;
+
           const res = await ClientAPI.getClients(currentPage);
-          
-          if (res.data && res.data.length > 0) {
-            const mappedClients = res.data.map((c: any, index: number) => ({
-              id: `${currentPage}-${index}`,
-              name: c.full_name || '',
-              contact: c.full_name || '',
-              phone: c.mobile || '',
-              division: c.division || '',
-              type: c.type || '',
-              businessType: c.type === 'Organization' ? 'Organization' : 'Customer',
-              assignedKamId: c.assigned_kam || '',
-            }));
-            
-            allData = [...allData, ...mappedClients];
-            
-            // Check if there are more pages
-            if (res.pagination && currentPage < res.pagination.last_page) {
-              currentPage++;
-            } else {
-              hasMore = false;
-            }
-          } else {
-            hasMore = false;
+
+          if (abortRef.current) break;
+
+          if (!res.data || res.data.length === 0) break;
+
+          const mappedClients: Client[] = res.data.map((c: any, index: number) => ({
+            id: `${currentPage}-${index}`,
+            name: c.full_name || '',
+            contact: c.full_name || '',
+            phone: c.mobile || '',
+            division: c.division || '',
+            type: c.type || '',
+            businessType: c.type === 'Organization' ? 'Organization' : 'Customer',
+            assignedKamId: c.assigned_kam || '',
+          }));
+
+          // ✅ Update total pages for progress indicator
+          const totalPages = res.pagination?.last_page ?? 1;
+          setLoadingProgress({ current: currentPage, total: totalPages });
+
+          // ✅ Append this page's data immediately — don't wait for all pages
+          setAllClients((prev) => [...prev, ...mappedClients]);
+
+          if (isFirst) {
+            // ✅ First page arrived → hide initial spinner, show table immediately
+            setInitialLoading(false);
+            setBackgroundLoading(true);
+            isFirst = false;
           }
+
+          if (currentPage >= totalPages) break;
+
+          currentPage++;
         }
-        
-        setAllClients(allData);
       } catch (error) {
         console.error('Error fetching clients:', error);
       } finally {
-        setLoading(false);
+        setInitialLoading(false);
+        setBackgroundLoading(false);
       }
     };
 
-    fetchAllData();
-  }, []); // Only fetch once on mount
+    fetchStreaming();
+
+    return () => {
+      // ✅ Cancel on unmount
+      abortRef.current = true;
+    };
+  }, []);
 
   // ===== FRONTEND FILTERING =====
   const filteredClients = allClients.filter((client) => {
-    // Search filter
     const matchesSearch =
       searchQuery === '' ||
       client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       client.contact.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.phone.toLowerCase().includes(searchQuery.toLowerCase());
+      (client.phone ?? '').toLowerCase().includes(searchQuery.toLowerCase());
 
-    // Division filter
     const matchesDivision =
       filterDivision === 'all' || client.division === filterDivision;
 
-    // KAM filter
     const matchesKam =
       filterKam === 'all' || client.assignedKamId === filterKam;
 
-    // Client Type filter
     const matchesClientType =
       filterClientType === 'all'
         ? true
@@ -474,7 +591,7 @@ export default function ClientsPage() {
     return matchesSearch && matchesDivision && matchesKam && matchesClientType;
   });
 
-  // ===== DYNAMIC COUNTS FROM FILTERED DATA =====
+  // ===== DYNAMIC COUNTS =====
   const dynamicCounts = {
     customers: filteredClients.filter((c) => c.type === 'Active').length,
     local_clients: filteredClients.filter((c) => c.type === 'Inactive').length,
@@ -483,7 +600,6 @@ export default function ClientsPage() {
     kams: new Set(filteredClients.map((c) => c.assignedKamId).filter(Boolean)).size,
   };
 
-  // ===== CHECK IF ANY FILTER IS ACTIVE =====
   const hasActiveFilters =
     filterClient !== 'all' ||
     filterDivision !== 'all' ||
@@ -494,30 +610,27 @@ export default function ClientsPage() {
   // ===== FRONTEND PAGINATION =====
   const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
   const startIndex = (page - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
+  const endIndex   = startIndex + itemsPerPage;
   const paginatedClients = filteredClients.slice(startIndex, endIndex);
 
-  // ===== PAGINATION LOGIC =====
   const getPageNumbers = () => {
     const pages = [];
     const start = Math.max(1, page - 2);
-    const end = Math.min(totalPages, start + 4);
+    const end   = Math.min(totalPages, start + 4);
     for (let i = start; i <= end; i++) pages.push(i);
     return pages;
   };
 
-  const pageNumbers = getPageNumbers();
-  const showFirstEllipsis = pageNumbers[0] > 1;
-  const showLastEllipsis = pageNumbers[pageNumbers.length - 1] < totalPages;
+  const pageNumbers        = getPageNumbers();
+  const showFirstEllipsis  = pageNumbers[0] > 1;
+  const showLastEllipsis   = pageNumbers[pageNumbers.length - 1] < totalPages;
 
-  // ===== RESET PAGE TO 1 WHEN FILTERS CHANGE =====
   useEffect(() => {
     setPage(1);
   }, [filterClient, filterDivision, filterKam, filterClientType, searchQuery]);
 
-  // ===== GET UNIQUE VALUES FOR FILTERS =====
   const uniqueDivisions = Array.from(new Set(allClients.map((c) => c.division).filter(Boolean)));
-  const uniqueKams = Array.from(new Set(allClients.map((c) => c.assignedKamId).filter(Boolean)));
+  const uniqueKams      = Array.from(new Set(allClients.map((c) => c.assignedKamId).filter(Boolean)));
 
   return (
     <div className="page-container space-y-6">
@@ -527,40 +640,54 @@ export default function ClientsPage() {
           <Building2 className="h-5 w-5 text-primary" />
         </div>
         <h1 className="text-xl md:text-2xl font-bold">Clients</h1>
+
+        {/* ✅ Background loading indicator in header */}
+        {backgroundLoading && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground ml-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {/* <span>
+              Loading more... ({loadingProgress.current}/{loadingProgress.total} pages)
+            </span> */}
+            <span>
+              Loading more... 
+            </span>
+          </div>
+        )}
       </div>
 
       {/* DYNAMIC STATS */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-        <Card>
-          <CardContent className="p-3">
-            <p className="text-sm text-muted-foreground">Prism Active Clients</p>
-            <p className="text-2xl font-bold">{dynamicCounts.customers}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3">
-            <p className="text-sm text-muted-foreground">Prism InActive Clients</p>
-            <p className="text-2xl font-bold">{dynamicCounts.local_clients}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3">
-            <p className="text-sm text-muted-foreground">Organizations</p>
-            <p className="text-2xl font-bold">{dynamicCounts.organizations}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3">
-            <p className="text-sm text-muted-foreground">Total Branch</p>
-            <p className="text-2xl font-bold">{dynamicCounts.divisions}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3">
-            <p className="text-sm text-muted-foreground">Total KAM</p>
-            <p className="text-2xl font-bold">{dynamicCounts.kams}</p>
-          </CardContent>
-        </Card>
+        {[
+          { label: 'Prism Active Clients', value: dynamicCounts.customers },
+          { label: 'Prism InActive Clients', value: dynamicCounts.local_clients },
+          { label: 'Organizations', value: dynamicCounts.organizations },
+          { label: 'Total Branch', value: dynamicCounts.divisions },
+          { label: 'Total KAM', value: dynamicCounts.kams },
+        ].map((stat) => (
+          <Card key={stat.label}>
+            <CardContent className="p-3">
+              <p className="text-sm text-muted-foreground">{stat.label}</p>
+
+              {initialLoading ? (
+                // ✅ Full skeleton while no data yet
+                <div className="mt-1 h-8 w-16 bg-gray-200 rounded animate-pulse" />
+              ) : backgroundLoading ? (
+                // ✅ Show current value + animated counting indicator
+                <div className="flex items-end gap-1.5">
+                  <p className="text-2xl font-bold">{stat.value}</p>
+                  <div className="mb-1 flex items-center gap-0.5">
+                    <span className="inline-block w-1 h-1 bg-primary rounded-full animate-bounce [animation-delay:0ms]" />
+                    <span className="inline-block w-1 h-1 bg-primary rounded-full animate-bounce [animation-delay:150ms]" />
+                    <span className="inline-block w-1 h-1 bg-primary rounded-full animate-bounce [animation-delay:300ms]" />
+                  </div>
+                </div>
+              ) : (
+                // ✅ Fully loaded
+                <p className="text-2xl font-bold">{stat.value}</p>
+              )}
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* SEARCH & FILTERS */}
@@ -604,7 +731,7 @@ export default function ClientsPage() {
             Client List
             {hasActiveFilters && (
               <span className="ml-2 text-sm font-normal text-muted-foreground">
-                ({filteredClients.length} results)
+                ({filteredClients.length}{backgroundLoading ? '+' : ''} results)
               </span>
             )}
           </CardTitle>
@@ -618,6 +745,22 @@ export default function ClientsPage() {
         </CardHeader>
 
         <CardContent>
+          {/* ✅ Progress bar while background loading */}
+          {/* {backgroundLoading && loadingProgress.total > 0 && (
+            <div className="mb-3">
+              <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                <span>Loading all clients...</span>
+                <span>{Math.round((loadingProgress.current / loadingProgress.total) * 100)}%</span>
+              </div>
+              <div className="w-full bg-gray-100 rounded-full h-1.5">
+                <div
+                  className="bg-primary h-1.5 rounded-full transition-all duration-300"
+                  style={{ width: `${(loadingProgress.current / loadingProgress.total) * 100}%` }}
+                />
+              </div>
+            </div>
+          )} */}
+
           <Table>
             <TableHeader>
               <TableRow>
@@ -630,150 +773,141 @@ export default function ClientsPage() {
             </TableHeader>
 
             <TableBody>
-              {loading ? (
+              {/* ✅ Only show full spinner if no data at all yet */}
+              {initialLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6">
-                    Loading all clients...
+                  <TableCell colSpan={5} className="text-center py-10">
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                      <span>Loading clients...</span>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : filteredClients.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                    No clients found matching your filters
+                    {backgroundLoading
+                      ? 'Loading clients, please wait...'
+                      : 'No clients found matching your filters'}
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedClients.map((client) => (
-                  <TableRow key={client.id}>
-                    <TableCell className="font-medium">{client.name}</TableCell>
-                    <TableCell>{client.phone || '--'}</TableCell>
-                    <TableCell>{client.division || '--'}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          client.type === 'Active'
-                            ? 'default'
-                            : client.type === 'Inactive'
-                            ? 'secondary'
-                            : 'outline'
-                        }
-                      >
-                        {client.type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{client.assignedKamId || '--'}</TableCell>
-                  </TableRow>
-                ))
+                <>
+                  {paginatedClients.map((client) => (
+                    <TableRow key={client.id}>
+                      <TableCell className="font-medium">{client.name}</TableCell>
+                      <TableCell>{client.phone || '--'}</TableCell>
+                      <TableCell>{client.division || '--'}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            client.type === 'Active'
+                              ? 'default'
+                              : client.type === 'Inactive'
+                              ? 'secondary'
+                              : 'outline'
+                          }
+                        >
+                          {client.type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{client.assignedKamId || '--'}</TableCell>
+                    </TableRow>
+                  ))}
+
+                  {/* ✅ Subtle loading row at bottom while more data is coming */}
+                  {backgroundLoading && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-3 text-muted-foreground text-sm">
+                        <div className="flex items-center justify-center gap-2">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <span>Loading more clients ({allClients.length} loaded so far)...</span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </>
               )}
             </TableBody>
           </Table>
 
           {/* PAGINATION */}
-          {!loading && filteredClients.length > 0 && totalPages > 1 && (
+          {!initialLoading && filteredClients.length > 0 && totalPages > 1 && (
             <>
               <div className="flex justify-end items-center gap-2 mt-4">
-                {/* FIRST PAGE BUTTON */}
                 <button
                   onClick={() => setPage(1)}
                   disabled={page === 1}
                   className={`px-3 py-1 border rounded transition-colors ${
-                    page === 1
-                      ? 'opacity-50 cursor-not-allowed bg-gray-100'
-                      : 'hover:bg-gray-50'
+                    page === 1 ? 'opacity-50 cursor-not-allowed bg-gray-100' : 'hover:bg-gray-50'
                   }`}
-                  title="First Page"
                 >
                   First
                 </button>
 
-                {/* PREVIOUS PAGE BUTTON */}
                 <button
                   onClick={() => setPage(Math.max(1, page - 1))}
                   disabled={page === 1}
                   className={`px-3 py-1 border rounded transition-colors ${
-                    page === 1
-                      ? 'opacity-50 cursor-not-allowed bg-gray-100'
-                      : 'hover:bg-gray-50'
+                    page === 1 ? 'opacity-50 cursor-not-allowed bg-gray-100' : 'hover:bg-gray-50'
                   }`}
-                  title="Previous Page"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
 
-                {/* FIRST ELLIPSIS */}
                 {showFirstEllipsis && (
                   <>
-                    <button
-                      onClick={() => setPage(1)}
-                      className="px-3 py-1 border rounded hover:bg-gray-50"
-                    >
-                      1
-                    </button>
+                    <button onClick={() => setPage(1)} className="px-3 py-1 border rounded hover:bg-gray-50">1</button>
                     <span className="px-2">...</span>
                   </>
                 )}
 
-                {/* PAGE NUMBERS */}
                 {pageNumbers.map((p) => (
                   <button
                     key={p}
                     onClick={() => setPage(p)}
                     className={`px-3 py-1 border rounded transition-colors ${
-                      p === page
-                        ? 'bg-primary text-white font-bold'
-                        : 'hover:bg-gray-50'
+                      p === page ? 'bg-primary text-white font-bold' : 'hover:bg-gray-50'
                     }`}
                   >
                     {p}
                   </button>
                 ))}
 
-                {/* LAST ELLIPSIS */}
                 {showLastEllipsis && (
                   <>
                     <span className="px-2">...</span>
-                    <button
-                      onClick={() => setPage(totalPages)}
-                      className="px-3 py-1 border rounded hover:bg-gray-50"
-                    >
+                    <button onClick={() => setPage(totalPages)} className="px-3 py-1 border rounded hover:bg-gray-50">
                       {totalPages}
                     </button>
                   </>
                 )}
 
-                {/* NEXT PAGE BUTTON */}
                 <button
                   onClick={() => setPage(Math.min(totalPages, page + 1))}
                   disabled={page === totalPages}
                   className={`px-3 py-1 border rounded transition-colors ${
-                    page === totalPages
-                      ? 'opacity-50 cursor-not-allowed bg-gray-100'
-                      : 'hover:bg-gray-50'
+                    page === totalPages ? 'opacity-50 cursor-not-allowed bg-gray-100' : 'hover:bg-gray-50'
                   }`}
-                  title="Next Page"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
 
-                {/* LAST PAGE BUTTON */}
                 <button
                   onClick={() => setPage(totalPages)}
                   disabled={page === totalPages}
                   className={`px-3 py-1 border rounded transition-colors ${
-                    page === totalPages
-                      ? 'opacity-50 cursor-not-allowed bg-gray-100'
-                      : 'hover:bg-gray-50'
+                    page === totalPages ? 'opacity-50 cursor-not-allowed bg-gray-100' : 'hover:bg-gray-50'
                   }`}
-                  title="Last Page"
                 >
                   Last
                 </button>
               </div>
 
-              {/* PAGE INFO */}
               <div className="text-sm text-gray-500 mt-4 text-center">
-                Page {page} of {totalPages} • Showing {startIndex + 1}-
-                {Math.min(endIndex, filteredClients.length)} of {filteredClients.length} results
+                Page {page} of {totalPages}{backgroundLoading ? '+' : ''} • Showing {startIndex + 1}–
+                {Math.min(endIndex, filteredClients.length)} of {filteredClients.length}
+                {backgroundLoading ? '+' : ''} results
               </div>
             </>
           )}
