@@ -850,8 +850,6 @@ export default function OrderProposalList() {
     );
   };
 
-  console.log('Approval Pipeline:', approvalPipeline);
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -940,6 +938,7 @@ export default function OrderProposalList() {
                 <TableHead>Invoice Difference</TableHead>
                 <TableHead>Item Status</TableHead>
                 <TableHead>Current Level</TableHead>
+                <TableHead>Effective Date</TableHead>
 
                 {filter === 'pending' && (
                   <>
@@ -958,7 +957,7 @@ export default function OrderProposalList() {
             <TableBody>
               {proposals.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={16} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={18} className="text-center py-8 text-gray-500">
                     No proposals found
                   </TableCell>
                 </TableRow>
@@ -1005,6 +1004,7 @@ export default function OrderProposalList() {
 
                       <TableCell>{getItemStatusBadge(item.status)}</TableCell>
                       <TableCell>{currentLevelPrint(item.current_level)}</TableCell>
+                      <TableCell>{item.effective_date}</TableCell>
 
                       {idx === 0 && filter === 'pending' && (
                         <>

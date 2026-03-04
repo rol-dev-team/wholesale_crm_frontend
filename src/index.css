@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-@import "react-datepicker/dist/react-datepicker.css";
+@import 'react-datepicker/dist/react-datepicker.css';
 @layer base {
   :root {
     --background: 220 20% 97%;
@@ -169,4 +169,13 @@
 
 .react-datepicker__input-container input {
   width: 100%;
+}
+
+/* Custom styles for react-datepicker to match the application's design */
+
+.custom-datepicker .react-datepicker__calendar-icon {
+  right: 10px !important;
+  left: auto !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
 }
