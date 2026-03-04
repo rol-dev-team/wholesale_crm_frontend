@@ -19,6 +19,7 @@ import { PrismAPI } from '@/api';
 import { ClientAPI } from '@/api/clientApi';
 import { getUserInfo } from '@/utility/utility';
 import { FloatingSingleDatePicker } from '@/components/ui/FloatingSingleDatePicker';
+import { FloatingSelect } from '@/components/ui/FloatingSelect';
 
 const UNITS = ['MB', 'GB', 'Quantity'] as const;
 
@@ -237,6 +238,7 @@ export default function CreateOrderProposal({ proposal }: Props) {
     }
   };
 
+  const isEffectiveDateValid = rows.length > 0 && rows.every((r) => r.effective_date);
   return (
     <div className="space-y-6">
       {/* STATUS RADIO BUTTONS */}
@@ -279,7 +281,7 @@ export default function CreateOrderProposal({ proposal }: Props) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FloatingSearchSelect
+        {/* <FloatingSearchSelect
           label="Client"
           value={client ?? undefined}
           onValueChange={setClient}
@@ -291,7 +293,19 @@ export default function CreateOrderProposal({ proposal }: Props) {
               {c.label}
             </SelectItem>
           ))}
-        </FloatingSearchSelect>
+        </FloatingSearchSelect> */}
+        <FloatingSelect
+          label="Client"
+          value={client ?? undefined}
+          onValueChange={setClient}
+          className={clientLoading ? 'pointer-events-none opacity-60' : ''}
+        >
+          {clients.map((c, index) => (
+            <SelectItem key={`${c.value}-${index}`} value={c.value} textValue={c.label}>
+              {c.label}
+            </SelectItem>
+          ))}
+        </FloatingSelect>
 
         <FloatingMultiSelect
           label="Products"
@@ -434,7 +448,10 @@ export default function CreateOrderProposal({ proposal }: Props) {
       </div>
 
       <div className="flex justify-end">
-        <Button onClick={submitProposal} disabled={!client || rows.length === 0}>
+        <Button
+          onClick={submitProposal}
+          disabled={!client || rows.length === 0 || !isEffectiveDateValid}
+        >
           Submit for Approval
         </Button>
       </div>

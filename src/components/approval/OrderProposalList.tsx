@@ -576,6 +576,10 @@ export default function OrderProposalList() {
       console.log('Fetched proposals:', res);
       setCurrentPage(res?.meta?.current_page || 1);
       setTotalPages(res?.meta?.last_page || 1);
+      setStatusCounts((prev) => ({
+        ...prev,
+        [payload.status]: res?.meta?.total || 0,
+      }));
     } catch (error) {
       console.error('Failed to fetch proposals:', error);
     } finally {
