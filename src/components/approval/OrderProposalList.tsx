@@ -1050,13 +1050,25 @@ export default function OrderProposalList() {
                           {canApproveOrReject(item) &&
                             (!item.status || item.status === 'pending') && (
                               <>
-                                <Button size="sm" onClick={() => handleApproveItem(p, item)}>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  // onClick={() => handleApproveItem(p, item)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleApproveItem(p, item);
+                                  }}
+                                >
                                   Approve
                                 </Button>
                                 <Button
+                                  type="button"
                                   size="sm"
                                   variant="destructive"
-                                  onClick={() => handleRejectClick(p, item)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRejectClick(p, item);
+                                  }}
                                 >
                                   Reject
                                 </Button>
@@ -1065,6 +1077,7 @@ export default function OrderProposalList() {
 
                           {item.status == 'rejected' && p.created_by == userInfo?.id && (
                             <Button
+                              type="button"
                               size="sm"
                               variant="destructive"
                               onClick={() => handleReviseClick(item)}
@@ -1076,6 +1089,7 @@ export default function OrderProposalList() {
                           {(item.status === 'pending' || item.status === 'rejected') &&
                             item.created_by === userInfo?.id && (
                               <Button
+                                type="button"
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleDeleteItem(item)}
