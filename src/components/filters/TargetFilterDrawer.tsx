@@ -231,11 +231,18 @@ export function TargetFilterDrawer({
   };
 
   const buildPayload = () => {
+    let divisionName = '';
+
+    if (filterType === 'division') {
+      const branch = branches.find((b) => String(b.id) === tempDivision);
+      divisionName = branch?.branch_name || '';
+    }
     const payload = {
       filter_type: filterType || '',
       kam_id: filterType === 'kam' ? tempKam : '',
       supervisor_id: filterType === 'supervisor' ? tempSupervisor : '',
-      division: filterType === 'division' ? tempDivision : '',
+      // division: filterType === 'division' ? tempDivision : '',
+      division: divisionName,
       from_month: '',
       to_month: '',
       quaterly_year: '',
@@ -285,10 +292,11 @@ export function TargetFilterDrawer({
         <Filter className="h-4 w-4 mr-1" /> Filters
       </Button>
 
-      <DrawerContent className="w-full sm:w-[420px]"
-      onInteractOutside={(e) => {
-        e.preventDefault();
-      }}
+      <DrawerContent
+        className="w-full sm:w-[420px]"
+        onInteractOutside={(e) => {
+          e.preventDefault();
+        }}
       >
         <DrawerHeader className="flex items-center justify-between">
           <div>

@@ -169,8 +169,6 @@ export default function TargetsPage() {
       amount: Number(payload.amount),
     };
 
-    console.log('✅ FINAL PAYLOAD TO SEND:', finalPayload);
-
     setLoading(true);
     const toastId = toast.loading(editingTarget ? 'Updating target...' : 'Saving target...');
     try {
@@ -269,7 +267,7 @@ export default function TargetsPage() {
   };
 
   // console.log('✅ filter types:', filterPayload);
-  console.log('✅ targets data:', targets);
+  // console.log('✅ targets data:', targets);
   return (
     <div className="page-container space-y-6">
       <Toaster position="top-right" reverseOrder={false} />
