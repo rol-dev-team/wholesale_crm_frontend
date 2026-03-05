@@ -854,6 +854,18 @@ export default function OrderProposalList() {
     );
   };
 
+  const handleDeleteItem = async (item: ProposalItem) => {
+    if (!confirm('Are you sure you want to delete this proposal item?')) return;
+    try {
+      await PriceProposalAPI.deleteItem(item.id);
+
+      fetchProposals(lastPayloadRef.current);
+    } catch (error) {
+      console.error('Delete failed:', error);
+      alert('Failed to delete item');
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -1050,16 +1062,28 @@ export default function OrderProposalList() {
                                 </Button>
                               </>
                             )}
+
+                          {item.status == 'rejected' && p.created_by == userInfo?.id && (
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleReviseClick(item)}
+                            >
+                              Revise
+                            </Button>
+                          )}
+
+                          {(item.status === 'pending' || item.status === 'rejected') &&
+                            item.created_by === userInfo?.id && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDeleteItem(item)}
+                              >
+                                Delete
+                              </Button>
+                            )}
                         </div>
-                        {item.status == 'rejected' && p.created_by == userInfo?.id && (
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleReviseClick(item)}
-                          >
-                            Revise
-                          </Button>
-                        )}
                       </TableCell>
                     </TableRow>
                   ))

@@ -51,6 +51,9 @@ export const PriceProposalAPI = {
   delete(id) {
     return api.delete(`/price-proposals/${id}`);
   },
+  deleteItem(id) {
+    return api.delete(`/price-proposals/delete-item/${id}`);
+  },
 
   /**
    * Approve entire proposal
