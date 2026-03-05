@@ -1,6 +1,5 @@
 
 
-
 // 'use client';
 
 // import { useState, useEffect } from 'react';
@@ -17,17 +16,6 @@
 // } from '@/components/ui/drawer';
 // import { FloatingSelect } from '@/components/ui/FloatingSelect';
 // import { SelectItem } from '@/components/ui/select';
-// import { ClientAPI } from '@/api/clientApi';
-
-// interface Kam {
-//   id: string;
-//   name: string;
-// }
-
-// interface ClientOption {
-//   id: string;
-//   name: string;
-// }
 
 // interface ClientsFilterDrawerProps {
 //   currentClient: string;
@@ -36,11 +24,15 @@
 //   setDivision: (val: string) => void;
 //   currentKam: string;
 //   setKam: (val: string) => void;
-//   currentClientType: string;  // NEW
-//   setClientType: (val: string) => void;  // NEW
+//   currentClientType: string;
+//   setClientType: (val: string) => void;
 //   onApply: () => void;
 //   hasActiveFilters: boolean;
 //   onClear: () => void;
+  
+//   // NEW: Accept filter options from parent
+//   divisions?: string[];
+//   kams?: string[];
 // }
 
 // export default function ClientsFilterDrawer({
@@ -50,25 +42,21 @@
 //   setDivision,
 //   currentKam,
 //   setKam,
-//   currentClientType,  // NEW
-//   setClientType,  // NEW
+//   currentClientType,
+//   setClientType,
 //   onApply,
 //   hasActiveFilters,
 //   onClear,
+//   divisions = [],
+//   kams = [],
 // }: ClientsFilterDrawerProps) {
 //   const [clientLocal, setClientLocal] = useState(currentClient);
 //   const [divisionLocal, setDivisionLocal] = useState(currentDivision);
 //   const [kamLocal, setKamLocal] = useState(currentKam);
-//   const [clientTypeLocal, setClientTypeLocal] = useState(currentClientType);  // NEW
+//   const [clientTypeLocal, setClientTypeLocal] = useState(currentClientType);
 //   const [open, setOpen] = useState(false);
 
-//   // Dynamic data states
-//   const [clients, setClients] = useState<ClientOption[]>([]);
-//   const [divisions, setDivisions] = useState<string[]>([]);
-//   const [kams, setKams] = useState<Kam[]>([]);
-//   const [loading, setLoading] = useState(false);
-
-//   // Client type options (hardcoded as per requirements)
+//   // Client type options
 //   const clientTypeOptions = [
 //     { id: 'active', label: 'Prism Active Clients' },
 //     { id: 'inactive', label: 'Prism InActive Clients' },
@@ -79,59 +67,14 @@
 //   useEffect(() => setClientLocal(currentClient), [currentClient]);
 //   useEffect(() => setDivisionLocal(currentDivision), [currentDivision]);
 //   useEffect(() => setKamLocal(currentKam), [currentKam]);
-//   useEffect(() => setClientTypeLocal(currentClientType), [currentClientType]);  // NEW
-
-//   // Fetch filter data when drawer opens
-//   useEffect(() => {
-//     if (open && clients.length === 0) {
-//       loadFilterData();
-//     }
-//   }, [open]);
-
-//   // Load dynamic filter data from backend
-//   const loadFilterData = async () => {
-//     setLoading(true);
-//     try {
-//       const response = await ClientAPI.getClients();
-      
-//       if (response.data) {
-//         // Extract unique clients
-//         const uniqueClients = response.data.map((c: any, index: number) => ({
-//           id: String(index + 1),
-//           name: c.full_name,
-//         }));
-//         setClients(uniqueClients);
-
-//         // Extract unique divisions
-//         const uniqueDivisions = [
-//           ...new Set(response.data.map((c: any) => c.division).filter(Boolean)),
-//         ] as string[];
-//         setDivisions(uniqueDivisions);
-
-//         // Extract unique KAMs
-//         const kamMap = new Map();
-//         response.data.forEach((c: any) => {
-//           if (c.assigned_kam && !kamMap.has(c.assigned_kam)) {
-//             kamMap.set(c.assigned_kam, {
-//               id: c.assigned_kam,
-//               name: c.assigned_kam,
-//             });
-//           }
-//         });
-//         setKams(Array.from(kamMap.values()));
-//       }
-//     } catch (error) {
-//       console.error('Error loading filter data:', error);
-//     }
-//     setLoading(false);
-//   };
+//   useEffect(() => setClientTypeLocal(currentClientType), [currentClientType]);
 
 //   // Apply filters
 //   const handleApply = () => {
 //     setClient(clientLocal);
 //     setDivision(divisionLocal);
 //     setKam(kamLocal);
-//     setClientType(clientTypeLocal);  // NEW
+//     setClientType(clientTypeLocal);
 //     onApply();
 //     setOpen(false);
 //   };
@@ -141,25 +84,25 @@
 //     setClientLocal('all');
 //     setDivisionLocal('all');
 //     setKamLocal('all');
-//     setClientTypeLocal('all');  // NEW
+//     setClientTypeLocal('all');
 
 //     setClient('all');
 //     setDivision('all');
 //     setKam('all');
-//     setClientType('all');  // NEW
+//     setClientType('all');
 
 //     onClear();
 //   };
 
-//   // ✅ Show placeholder by default
+//   // Show placeholder by default
 //   const getDisplayValue = (val: string) => (val === 'all' ? '' : val);
 
 //   // Compute local active filters for showing Clear button
-//   const hasLocalFilters = 
-//     clientLocal !== 'all' || 
-//     divisionLocal !== 'all' || 
+//   const hasLocalFilters =
+//     clientLocal !== 'all' ||
+//     divisionLocal !== 'all' ||
 //     kamLocal !== 'all' ||
-//     clientTypeLocal !== 'all';  // NEW
+//     clientTypeLocal !== 'all';
 
 //   return (
 //     <>
@@ -192,7 +135,7 @@
 //           </DrawerHeader>
 
 //           <div className="p-4 space-y-4">
-//             {/* CLIENT TYPE FILTER (NEW) */}
+//             {/* CLIENT TYPE FILTER */}
 //             <FloatingSelect
 //               label="Client Type"
 //               value={getDisplayValue(clientTypeLocal)}
@@ -206,64 +149,32 @@
 //               ))}
 //             </FloatingSelect>
 
-//             {/* CLIENT FILTER */}
-//             <FloatingSelect
-//               label="All Client"
-//               value={getDisplayValue(clientLocal)}
-//               onValueChange={setClientLocal}
-//             >
-//               <SelectItem value="all">All Clients</SelectItem>
-//               {loading ? (
-//                 <SelectItem value="loading" disabled>
-//                   Loading Clients...
-//                 </SelectItem>
-//               ) : (
-//                 clients.map((client) => (
-//                   <SelectItem key={client.id} value={client.id}>
-//                     {client.name}
-//                   </SelectItem>
-//                 ))
-//               )}
-//             </FloatingSelect>
-
 //             {/* DIVISION FILTER */}
 //             <FloatingSelect
-//               label="All Division"
+//               label="Division"
 //               value={getDisplayValue(divisionLocal)}
 //               onValueChange={setDivisionLocal}
 //             >
 //               <SelectItem value="all">All Divisions</SelectItem>
-//               {loading ? (
-//                 <SelectItem value="loading" disabled>
-//                   Loading Divisions...
+//               {divisions.map((division) => (
+//                 <SelectItem key={division} value={division}>
+//                   {division}
 //                 </SelectItem>
-//               ) : (
-//                 divisions.map((division) => (
-//                   <SelectItem key={division} value={division}>
-//                     {division}
-//                   </SelectItem>
-//                 ))
-//               )}
+//               ))}
 //             </FloatingSelect>
 
 //             {/* KAM FILTER */}
 //             <FloatingSelect
-//               label="All KAM"
+//               label="KAM"
 //               value={getDisplayValue(kamLocal)}
 //               onValueChange={setKamLocal}
 //             >
 //               <SelectItem value="all">All KAMs</SelectItem>
-//               {loading ? (
-//                 <SelectItem value="loading" disabled>
-//                   Loading KAMs...
+//               {kams.map((kam) => (
+//                 <SelectItem key={kam} value={kam}>
+//                   {kam}
 //                 </SelectItem>
-//               ) : (
-//                 kams.map((kam) => (
-//                   <SelectItem key={kam.id} value={kam.id}>
-//                     {kam.name}
-//                   </SelectItem>
-//                 ))
-//               )}
+//               ))}
 //             </FloatingSelect>
 
 //             {/* Clear Filters */}
@@ -291,8 +202,6 @@
 
 
 
-
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -309,6 +218,7 @@ import {
 } from '@/components/ui/drawer';
 import { FloatingSelect } from '@/components/ui/FloatingSelect';
 import { SelectItem } from '@/components/ui/select';
+import { CATEGORY_OPTIONS } from '@/pages/ClientsPage'; // re-use the single source of truth
 
 interface ClientsFilterDrawerProps {
   currentClient: string;
@@ -319,11 +229,11 @@ interface ClientsFilterDrawerProps {
   setKam: (val: string) => void;
   currentClientType: string;
   setClientType: (val: string) => void;
+  currentCategory: string;           // NEW
+  setCategory: (val: string) => void; // NEW
   onApply: () => void;
   hasActiveFilters: boolean;
   onClear: () => void;
-  
-  // NEW: Accept filter options from parent
   divisions?: string[];
   kams?: string[];
 }
@@ -337,65 +247,68 @@ export default function ClientsFilterDrawer({
   setKam,
   currentClientType,
   setClientType,
+  currentCategory,    // NEW
+  setCategory,        // NEW
   onApply,
   hasActiveFilters,
   onClear,
   divisions = [],
   kams = [],
 }: ClientsFilterDrawerProps) {
-  const [clientLocal, setClientLocal] = useState(currentClient);
-  const [divisionLocal, setDivisionLocal] = useState(currentDivision);
-  const [kamLocal, setKamLocal] = useState(currentKam);
+  const [clientLocal,     setClientLocal]     = useState(currentClient);
+  const [divisionLocal,   setDivisionLocal]   = useState(currentDivision);
+  const [kamLocal,        setKamLocal]        = useState(currentKam);
   const [clientTypeLocal, setClientTypeLocal] = useState(currentClientType);
+  const [categoryLocal,   setCategoryLocal]   = useState(currentCategory); // NEW
   const [open, setOpen] = useState(false);
 
-  // Client type options
   const clientTypeOptions = [
-    { id: 'active', label: 'Prism Active Clients' },
-    { id: 'inactive', label: 'Prism InActive Clients' },
+    { id: 'active',       label: 'Prism Active Clients' },
+    { id: 'inactive',     label: 'Prism InActive Clients' },
     { id: 'organization', label: 'Organizations' },
   ];
 
   // Sync local state with parent props
-  useEffect(() => setClientLocal(currentClient), [currentClient]);
-  useEffect(() => setDivisionLocal(currentDivision), [currentDivision]);
-  useEffect(() => setKamLocal(currentKam), [currentKam]);
+  useEffect(() => setClientLocal(currentClient),         [currentClient]);
+  useEffect(() => setDivisionLocal(currentDivision),     [currentDivision]);
+  useEffect(() => setKamLocal(currentKam),               [currentKam]);
   useEffect(() => setClientTypeLocal(currentClientType), [currentClientType]);
+  useEffect(() => setCategoryLocal(currentCategory),     [currentCategory]); // NEW
 
-  // Apply filters
   const handleApply = () => {
     setClient(clientLocal);
     setDivision(divisionLocal);
     setKam(kamLocal);
     setClientType(clientTypeLocal);
+    setCategory(categoryLocal);  // NEW
     onApply();
     setOpen(false);
   };
 
-  // Clear filters (local + parent)
   const handleClear = () => {
     setClientLocal('all');
     setDivisionLocal('all');
     setKamLocal('all');
     setClientTypeLocal('all');
+    setCategoryLocal('all');   // NEW
 
     setClient('all');
     setDivision('all');
     setKam('all');
     setClientType('all');
+    setCategory('all');        // NEW
 
     onClear();
   };
 
-  // Show placeholder by default
   const getDisplayValue = (val: string) => (val === 'all' ? '' : val);
 
-  // Compute local active filters for showing Clear button
   const hasLocalFilters =
-    clientLocal !== 'all' ||
-    divisionLocal !== 'all' ||
-    kamLocal !== 'all' ||
-    clientTypeLocal !== 'all';
+    clientLocal     !== 'all' ||
+    divisionLocal   !== 'all' ||
+    kamLocal        !== 'all' ||
+    clientTypeLocal !== 'all' ||
+    categoryLocal   !== 'all'; // NEW
 
   return (
     <>
@@ -428,6 +341,7 @@ export default function ClientsFilterDrawer({
           </DrawerHeader>
 
           <div className="p-4 space-y-4">
+
             {/* CLIENT TYPE FILTER */}
             <FloatingSelect
               label="Client Type"
@@ -438,6 +352,20 @@ export default function ClientsFilterDrawer({
               {clientTypeOptions.map((type) => (
                 <SelectItem key={type.id} value={type.id}>
                   {type.label}
+                </SelectItem>
+              ))}
+            </FloatingSelect>
+
+            {/* CATEGORY FILTER — NEW */}
+            <FloatingSelect
+              label="Category"
+              value={getDisplayValue(categoryLocal)}
+              onValueChange={setCategoryLocal}
+            >
+              <SelectItem value="all">All Categories</SelectItem>
+              {CATEGORY_OPTIONS.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  {cat.label}
                 </SelectItem>
               ))}
             </FloatingSelect>
