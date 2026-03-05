@@ -697,12 +697,12 @@ export default function ClientsPage() {
       </div>
 
       {/* DYNAMIC STATS */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         {[
           { label: 'Prism Active Clients',   value: dynamicCounts.customers },
           { label: 'Prism InActive Clients', value: dynamicCounts.local_clients },
           { label: 'Organizations',          value: dynamicCounts.organizations },
-          { label: 'Total Branch',           value: dynamicCounts.divisions },
+          // { label: 'Total Branch',           value: dynamicCounts.divisions },
           { label: 'Total KAM',              value: dynamicCounts.kams },
         ].map((stat) => (
           <Card key={stat.label}>
