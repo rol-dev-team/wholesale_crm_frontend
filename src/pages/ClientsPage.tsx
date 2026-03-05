@@ -1,6 +1,3 @@
-
-
-
 // import { useState, useEffect, useRef } from 'react';
 // import { useNavigate } from 'react-router-dom';
 // import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,7 +32,7 @@
 //   const navigate = useNavigate();
 
 //   const [allClients, setAllClients] = useState<Client[]>([]);
-  
+
 //   // ✅ Two loading states: initial (no data yet) and background (streaming more pages)
 //   const [initialLoading, setInitialLoading] = useState(true);
 //   const [backgroundLoading, setBackgroundLoading] = useState(false);
@@ -208,7 +205,7 @@
 //               Loading more... ({loadingProgress.current}/{loadingProgress.total} pages)
 //             </span> */}
 //             <span>
-//               Loading more... 
+//               Loading more...
 //             </span>
 //           </div>
 //         )}
@@ -476,7 +473,6 @@
 //   );
 // }
 
-
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -498,14 +494,14 @@ import { isSuperAdmin } from '@/utility/utility';
 
 // ── Category options (matches backend customer_categories) ──────────────────
 export const CATEGORY_OPTIONS = [
-  { id: 'Dhaka City',   label: 'Dhaka City' },
-  { id: 'Others City',  label: 'Others City' },
-  { id: 'Inter Company',label: 'Inter Company' },
-  { id: 'Prepaid',      label: 'Prepaid' },
-  { id: 'ISP',          label: 'ISP' },
-  { id: 'LSP',          label: 'LSP' },
-  { id: 'Foreign',      label: 'Foreign' },
-  { id: 'NON License',  label: 'NON License' },
+  { id: 'Dhaka City', label: 'Dhaka City' },
+  { id: 'Others City', label: 'Others City' },
+  { id: 'Inter Company', label: 'Inter Company' },
+  { id: 'Prepaid', label: 'Prepaid' },
+  { id: 'ISP', label: 'ISP' },
+  { id: 'LSP', label: 'LSP' },
+  { id: 'Foreign', label: 'Foreign' },
+  { id: 'NON License', label: 'NON License' },
 ];
 
 interface Client {
@@ -525,21 +521,21 @@ export default function ClientsPage() {
 
   const [allClients, setAllClients] = useState<Client[]>([]);
 
-  const [initialLoading, setInitialLoading]   = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [backgroundLoading, setBackgroundLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState({ current: 0, total: 0 });
 
   // Filter states
-  const [searchQuery, setSearchQuery]         = useState('');
-  const [filterClient, setFilterClient]       = useState('all');
-  const [filterDivision, setFilterDivision]   = useState('all');
-  const [filterKam, setFilterKam]             = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterClient, setFilterClient] = useState('all');
+  const [filterDivision, setFilterDivision] = useState('all');
+  const [filterKam, setFilterKam] = useState('all');
   const [filterClientType, setFilterClientType] = useState('all');
-  const [filterCategory, setFilterCategory]   = useState('all'); // NEW
+  const [filterCategory, setFilterCategory] = useState('all'); // NEW
 
   // Pagination
-  const [page, setPage]     = useState(1);
-  const itemsPerPage        = 100;
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 100;
 
   const abortRef = useRef(false);
 
@@ -554,7 +550,7 @@ export default function ClientsPage() {
     const fetchStreaming = async () => {
       try {
         let currentPage = 1;
-        let isFirst     = true;
+        let isFirst = true;
 
         while (true) {
           if (abortRef.current) break;
@@ -565,15 +561,15 @@ export default function ClientsPage() {
           if (!res.data || res.data.length === 0) break;
 
           const mappedClients: Client[] = res.data.map((c: any, index: number) => ({
-            id:           `${currentPage}-${index}`,
-            name:         c.full_name     || '',
-            contact:      c.full_name     || '',
-            phone:        c.mobile        || '',
-            division:     c.division      || '',
-            type:         c.type          || '',
+            id: `${currentPage}-${index}`,
+            name: c.full_name || '',
+            contact: c.full_name || '',
+            phone: c.mobile || '',
+            division: c.division || '',
+            type: c.type || '',
             businessType: c.type === 'Organization' ? 'Organization' : 'Customer',
-            assignedKamId:c.assigned_kam  || '',
-            category:     c.category      || '',  // NEW — maps from cc.type_name
+            assignedKamId: c.assigned_kam || '',
+            category: c.category || '', // NEW — maps from cc.type_name
           }));
 
           const totalPages = res.pagination?.last_page ?? 1;
@@ -613,71 +609,68 @@ export default function ClientsPage() {
       client.contact.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (client.phone ?? '').toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesDivision =
-      filterDivision === 'all' || client.division === filterDivision;
+    const matchesDivision = filterDivision === 'all' || client.division === filterDivision;
 
-    const matchesKam =
-      filterKam === 'all' || client.assignedKamId === filterKam;
+    const matchesKam = filterKam === 'all' || client.assignedKamId === filterKam;
 
     const matchesClientType =
       filterClientType === 'all'
         ? true
         : filterClientType === 'active'
-        ? client.type === 'Active'
-        : filterClientType === 'inactive'
-        ? client.type === 'Inactive'
-        : filterClientType === 'organization'
-        ? client.type === 'Organization'
-        : true;
+          ? client.type === 'Active'
+          : filterClientType === 'inactive'
+            ? client.type === 'Inactive'
+            : filterClientType === 'organization'
+              ? client.type === 'Organization'
+              : true;
 
     // NEW: category filter — skip for organizations (they have no category)
-    const matchesCategory =
-      filterCategory === 'all' || client.category === filterCategory;
+    const matchesCategory = filterCategory === 'all' || client.category === filterCategory;
 
     return matchesSearch && matchesDivision && matchesKam && matchesClientType && matchesCategory;
   });
 
   // ===== DYNAMIC COUNTS =====
   const dynamicCounts = {
-    customers:    filteredClients.filter((c) => c.type === 'Active').length,
-    local_clients:filteredClients.filter((c) => c.type === 'Inactive').length,
-    organizations:filteredClients.filter((c) => c.type === 'Organization').length,
-    divisions:    new Set(filteredClients.map((c) => c.division).filter(Boolean)).size,
-    kams:         new Set(filteredClients.map((c) => c.assignedKamId).filter(Boolean)).size,
+    customers: filteredClients.filter((c) => c.type === 'Active').length,
+    local_clients: filteredClients.filter((c) => c.type === 'Inactive').length,
+    organizations: filteredClients.filter((c) => c.type === 'Organization').length,
+    divisions: new Set(filteredClients.map((c) => c.division).filter(Boolean)).size,
+    kams: new Set(filteredClients.map((c) => c.assignedKamId).filter(Boolean)).size,
   };
 
   const hasActiveFilters =
-    filterClient     !== 'all' ||
-    filterDivision   !== 'all' ||
-    filterKam        !== 'all' ||
+    filterClient !== 'all' ||
+    filterDivision !== 'all' ||
+    filterKam !== 'all' ||
     filterClientType !== 'all' ||
-    filterCategory   !== 'all' ||   // NEW
-    searchQuery      !== '';
+    filterCategory !== 'all' || // NEW
+    searchQuery !== '';
 
   // ===== FRONTEND PAGINATION =====
-  const totalPages       = Math.ceil(filteredClients.length / itemsPerPage);
-  const startIndex       = (page - 1) * itemsPerPage;
-  const endIndex         = startIndex + itemsPerPage;
+  const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
+  const startIndex = (page - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
   const paginatedClients = filteredClients.slice(startIndex, endIndex);
 
   const getPageNumbers = () => {
     const pages = [];
     const start = Math.max(1, page - 2);
-    const end   = Math.min(totalPages, start + 4);
+    const end = Math.min(totalPages, start + 4);
     for (let i = start; i <= end; i++) pages.push(i);
     return pages;
   };
 
-  const pageNumbers       = getPageNumbers();
+  const pageNumbers = getPageNumbers();
   const showFirstEllipsis = pageNumbers[0] > 1;
-  const showLastEllipsis  = pageNumbers[pageNumbers.length - 1] < totalPages;
+  const showLastEllipsis = pageNumbers[pageNumbers.length - 1] < totalPages;
 
   useEffect(() => {
     setPage(1);
   }, [filterClient, filterDivision, filterKam, filterClientType, filterCategory, searchQuery]);
 
   const uniqueDivisions = Array.from(new Set(allClients.map((c) => c.division).filter(Boolean)));
-  const uniqueKams      = Array.from(new Set(allClients.map((c) => c.assignedKamId).filter(Boolean)));
+  const uniqueKams = Array.from(new Set(allClients.map((c) => c.assignedKamId).filter(Boolean)));
 
   return (
     <div className="page-container space-y-6">
@@ -697,13 +690,13 @@ export default function ClientsPage() {
       </div>
 
       {/* DYNAMIC STATS */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         {[
-          { label: 'Prism Active Clients',   value: dynamicCounts.customers },
+          { label: 'Prism Active Clients', value: dynamicCounts.customers },
           { label: 'Prism InActive Clients', value: dynamicCounts.local_clients },
-          { label: 'Organizations',          value: dynamicCounts.organizations },
-          { label: 'Total Branch',           value: dynamicCounts.divisions },
-          { label: 'Total KAM',              value: dynamicCounts.kams },
+          { label: 'Organizations', value: dynamicCounts.organizations },
+          // { label: 'Total Branch',           value: dynamicCounts.divisions },
+          { label: 'Total KAM', value: dynamicCounts.kams },
         ].map((stat) => (
           <Card key={stat.label}>
             <CardContent className="p-3">
@@ -747,8 +740,8 @@ export default function ClientsPage() {
           setKam={setFilterKam}
           currentClientType={filterClientType}
           setClientType={setFilterClientType}
-          currentCategory={filterCategory}       // NEW
-          setCategory={setFilterCategory}        // NEW
+          currentCategory={filterCategory} // NEW
+          setCategory={setFilterCategory} // NEW
           hasActiveFilters={hasActiveFilters}
           onApply={() => {}}
           onClear={() => {
@@ -757,7 +750,7 @@ export default function ClientsPage() {
             setFilterDivision('all');
             setFilterKam('all');
             setFilterClientType('all');
-            setFilterCategory('all');            // NEW
+            setFilterCategory('all'); // NEW
           }}
           divisions={uniqueDivisions}
           kams={uniqueKams}
@@ -771,7 +764,8 @@ export default function ClientsPage() {
             Client List
             {hasActiveFilters && (
               <span className="ml-2 text-sm font-normal text-muted-foreground">
-                ({filteredClients.length}{backgroundLoading ? '+' : ''} results)
+                ({filteredClients.length}
+                {backgroundLoading ? '+' : ''} results)
               </span>
             )}
           </CardTitle>
@@ -790,8 +784,8 @@ export default function ClientsPage() {
               <TableRow>
                 <TableHead>Client</TableHead>
                 <TableHead>Contact</TableHead>
-                <TableHead>Division</TableHead>
-                <TableHead>Category</TableHead>   {/* NEW */}
+                {/* <TableHead>Division</TableHead> */}
+                <TableHead>Category</TableHead> {/* NEW */}
                 <TableHead>Type</TableHead>
                 <TableHead>Assigned KAM</TableHead>
               </TableRow>
@@ -821,7 +815,7 @@ export default function ClientsPage() {
                     <TableRow key={client.id}>
                       <TableCell className="font-medium">{client.name}</TableCell>
                       <TableCell>{client.phone || '--'}</TableCell>
-                      <TableCell>{client.division || '--'}</TableCell>
+                      {/* <TableCell>{client.division || '--'}</TableCell> */}
 
                       {/* NEW: Category cell */}
                       <TableCell>
@@ -840,8 +834,8 @@ export default function ClientsPage() {
                             client.type === 'Active'
                               ? 'default'
                               : client.type === 'Inactive'
-                              ? 'secondary'
-                              : 'outline'
+                                ? 'secondary'
+                                : 'outline'
                           }
                         >
                           {client.type}
@@ -853,7 +847,10 @@ export default function ClientsPage() {
 
                   {backgroundLoading && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-3 text-muted-foreground text-sm">
+                      <TableCell
+                        colSpan={6}
+                        className="text-center py-3 text-muted-foreground text-sm"
+                      >
                         <div className="flex items-center justify-center gap-2">
                           <Loader2 className="h-3 w-3 animate-spin" />
                           <span>Loading more clients ({allClients.length} loaded so far)...</span>
@@ -892,7 +889,12 @@ export default function ClientsPage() {
 
                 {showFirstEllipsis && (
                   <>
-                    <button onClick={() => setPage(1)} className="px-3 py-1 border rounded hover:bg-gray-50">1</button>
+                    <button
+                      onClick={() => setPage(1)}
+                      className="px-3 py-1 border rounded hover:bg-gray-50"
+                    >
+                      1
+                    </button>
                     <span className="px-2">...</span>
                   </>
                 )}
@@ -912,7 +914,10 @@ export default function ClientsPage() {
                 {showLastEllipsis && (
                   <>
                     <span className="px-2">...</span>
-                    <button onClick={() => setPage(totalPages)} className="px-3 py-1 border rounded hover:bg-gray-50">
+                    <button
+                      onClick={() => setPage(totalPages)}
+                      className="px-3 py-1 border rounded hover:bg-gray-50"
+                    >
                       {totalPages}
                     </button>
                   </>
@@ -922,7 +927,9 @@ export default function ClientsPage() {
                   onClick={() => setPage(Math.min(totalPages, page + 1))}
                   disabled={page === totalPages}
                   className={`px-3 py-1 border rounded transition-colors ${
-                    page === totalPages ? 'opacity-50 cursor-not-allowed bg-gray-100' : 'hover:bg-gray-50'
+                    page === totalPages
+                      ? 'opacity-50 cursor-not-allowed bg-gray-100'
+                      : 'hover:bg-gray-50'
                   }`}
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -932,7 +939,9 @@ export default function ClientsPage() {
                   onClick={() => setPage(totalPages)}
                   disabled={page === totalPages}
                   className={`px-3 py-1 border rounded transition-colors ${
-                    page === totalPages ? 'opacity-50 cursor-not-allowed bg-gray-100' : 'hover:bg-gray-50'
+                    page === totalPages
+                      ? 'opacity-50 cursor-not-allowed bg-gray-100'
+                      : 'hover:bg-gray-50'
                   }`}
                 >
                   Last
@@ -940,7 +949,8 @@ export default function ClientsPage() {
               </div>
 
               <div className="text-sm text-gray-500 mt-4 text-center">
-                Page {page} of {totalPages}{backgroundLoading ? '+' : ''} • Showing {startIndex + 1}–
+                Page {page} of {totalPages}
+                {backgroundLoading ? '+' : ''} • Showing {startIndex + 1}–
                 {Math.min(endIndex, filteredClients.length)} of {filteredClients.length}
                 {backgroundLoading ? '+' : ''} results
               </div>
