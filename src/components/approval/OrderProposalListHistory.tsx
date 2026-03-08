@@ -1,714 +1,3 @@
-
-
-// 'use client';
-// import React from 'react';
-// import { useMemo, useState, useEffect, useRef } from 'react';
-// import { Button } from '@/components/ui/button';
-// import { PriceProposalHistoryAPI } from '@/api/priceProposalHistoryApi.js';
-// import { PrismAPI } from '@/api/prismAPI';
-
-// import {
-//   Table,
-//   TableBody,
-//   TableCell,
-//   TableHead,
-//   TableHeader,
-//   TableRow,
-// } from '@/components/ui/table';
-// import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-// import { useAuth } from '@/contexts/AuthContext';
-// import { FloatingInput } from '@/components/ui/FloatingInput';
-// import { isSuperAdmin, isManagement, isKAM, isSupervisor, getUserInfo } from '@/utility/utility';
-
-// // ---- proposal data model ----
-// interface ProposalItem {
-//   id: number;
-//   product_id: number;
-//   product_name?: string;
-//   current_price: string;
-//   proposed_price: string;
-//   unit: string;
-//   volume: string;
-//   total_amount: number;
-//   status?: 'pending' | 'approved' | 'rejected';
-//   rejected_note?: string;
-//   suggested_price?: number;
-//   suggested_volume?: number;
-//   rejected_by?: number;
-//   action_by?: number;
-//   action_by_name?: string;
-//   current_unit_cost?: string | number;
-//   current_quantity?: string | number;
-//   current_total?: string | number;
-//   rejected_by_user?: {
-//     id: number;
-//     name: string;
-//   };
-// }
-
-// interface Proposal {
-//   id: number;
-//   client_id: number;
-//   client_name?: string; // This will be populated from PRISM API
-//   kam_name?: string;
-//   status: 'pending' | 'approved' | 'rejected';
-//   rejected_note?: string;
-//   created_by: number;
-//   current_owner_id: number;
-//   action_by_name: string;
-//   created_by_user?: {
-//     id: number;
-//     name: string;
-//     role: string;
-//   };
-//   current_owner?: {
-//     id: number;
-//     name: string;
-//   };
-
-//   items: ProposalItem[];
-// }
-
-// export default function OrderProposalListHistory() {
-//   const { currentUser, hasPermission } = useAuth();
-//   const userInfo = getUserInfo();
-
-//   const [approvalPipeline, setApprovalPipeline] = useState([]);
-//   const [filter, setFilter] = useState<'pending' | 'approved' | 'rejected'>('pending');
-//   const [proposals, setProposals] = useState<Proposal[]>([]);
-//   const [loading, setLoading] = useState(false);
-//   const [clients, setClients] = useState<Record<number, string>>({}); // Cache for client names
-
-//   // pagination states
-//   const ITEMS_PER_PAGE = 10;
-//   const lastPayloadRef = React.useRef<any>(null);
-//   const [currentPage, setCurrentPage] = useState(1);
-//   const [totalPages, setTotalPages] = useState(1);
-
-//   const [rejectingItem, setRejectingItem] = useState<{
-//     proposal: Proposal;
-//     item: ProposalItem;
-//   } | null>(null);
-
-//   const [rejectData, setRejectData] = useState({
-//     status: 'rejected',
-//     rejected_note: '',
-//     suggested_price: '',
-//     suggested_volume: '',
-//   });
-
-//   const [revisingItem, setRevisingItem] = useState(null);
-//   const [reviseData, setReviseData] = useState({
-//     proposed_price: '',
-//     unit: '',
-//     volume: '',
-//     proposed_amount: '',
-//   });
-
-//   //count
-//   const [statusCounts, setStatusCounts] = useState({
-//     pending: 0,
-//     approved: 0,
-//     rejected: 0,
-//   });
-
-//   const fetchProposals = async (payload: any) => {
-//     lastPayloadRef.current = payload;
-//     setLoading(true);
-
-//     try {
-//       const res = await PriceProposalHistoryAPI.getAll(payload);
-//       setProposals(res.data || []);
-//       setApprovalPipeline(res.user_level_info || []);
-//       console.log('Fetched proposals:', res);
-//       setCurrentPage(res?.meta?.current_page || 1);
-//       setTotalPages(res?.meta?.last_page || 1);
-//       setStatusCounts((prev) => ({
-//         ...prev,
-//         [payload.status]: res?.meta?.total || 0,
-//       }));
-//     } catch (error) {
-//       console.error('Failed to fetch proposals:', error);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   useEffect(() => {
-//     fetchProposals({
-//       page: 1,
-//       per_page: ITEMS_PER_PAGE,
-//       status: filter,
-//     });
-//   }, [filter]);
-
-//   const handleApproveItem = async (proposal: Proposal, item: ProposalItem) => {
-//     if (!confirm(`Are you sure you want to approve this item?`)) {
-//       return;
-//     }
-
-//     if (item.status === 'approved') {
-//       alert('This item is already approved.');
-//       return;
-//     }
-
-//     try {
-//       await PriceProposalHistoryAPI.approveItem(item.id, item);
-//       fetchProposals(lastPayloadRef.current);
-//     } catch (error) {
-//       console.error('Failed to approve item:', error);
-//     }
-//   };
-
-//   const handleRejectClick = (proposal: Proposal, item: ProposalItem) => {
-//     setRejectingItem({ proposal, item });
-//     setRejectData({
-//       status: 'rejected',
-//       rejected_note: '',
-//       suggested_price: item.proposed_price,
-//       suggested_volume: item.volume,
-//     });
-//   };
-
-//   const submitReject = async () => {
-//     if (!rejectingItem) return;
-
-//     if (!rejectData.rejected_note.trim()) {
-//       alert('Rejection reason is required');
-//       return;
-//     }
-
-//     try {
-//       const payload = {
-//         status: rejectData.status,
-//         rejected_note: rejectData.rejected_note,
-//         suggested_price: rejectData.suggested_price
-//           ? Number(rejectData.suggested_price)
-//           : undefined,
-//         suggested_volume: rejectData.suggested_volume
-//           ? Number(rejectData.suggested_volume)
-//           : undefined,
-//       };
-
-//       await PriceProposalHistoryAPI.rejectItem(rejectingItem.item.id, payload);
-
-//       setRejectingItem(null);
-//       setRejectData({
-//         status: 'rejected',
-//         rejected_note: '',
-//         suggested_price: '',
-//         suggested_volume: '',
-//       });
-
-//       fetchProposals(lastPayloadRef.current);
-//     } catch (error: any) {
-//       console.error('Rejection failed:', error);
-//       alert(error.response?.data?.message || 'Failed to reject item');
-//     }
-//   };
-
-//   // Revise
-//   const handleReviseClick = (item: ProposalItem) => {
-//     setRevisingItem(item);
-//     setReviseData({
-//       proposed_price: item.proposed_price,
-//       unit: item.unit,
-//       volume: item.volume,
-//       proposed_amount: item.total_amount.toString(),
-//     });
-//   };
-
-//   const submitRevise = async () => {
-//     if (!revisingItem) return;
-
-//     try {
-//       await PriceProposalHistoryAPI.reviseItem(revisingItem.id, {
-//         proposed_price: Number(reviseData.proposed_price),
-//         unit: reviseData.unit,
-//         volume: Number(reviseData.volume),
-//         proposed_amount: Number(reviseData.proposed_amount),
-//       });
-
-//       setRevisingItem(null);
-//       fetchProposals(lastPayloadRef.current);
-//     } catch (err) {
-//       console.error('Failed to revise proposal:', err);
-//       alert('Failed to revise proposal');
-//     }
-//   };
-
-
-//   const canApproveOrReject = (item: Proposal) => {
-//     const user = getUserInfo();
-//     if (!user) return false;
-
-//     if (!Array.isArray(approvalPipeline) || approvalPipeline.length === 0) {
-//       return false;
-//     }
-
-//     const isDirectApprover = approvalPipeline.some(
-//       (step: any) =>
-//         Number(step.user_id) === Number(user.id) &&
-//         Number(step.level_id) === Number(item.current_level)
-//     );
-
-//     // ✅ RULE 1: direct approver → always allow (ignore creator check)
-//     if (isDirectApprover) {
-//       return true;
-//     }
-
-//     // 🔒 RULE 0:
-//     // Either same supervisor OR privileged role
-//     const hasSupervisorMatch =
-//       user.default_kam_id && Number(user.default_kam_id) === Number(item.created_by_supervisor_id);
-//     console.log('hasSupervisorMatch', hasSupervisorMatch);
-//     // 🔐 RULE 1: privileged role (any one is enough)
-//     const hasPrivilegedRole = isSupervisor() || isSuperAdmin() || isManagement();
-//     console.log('hasPrivilegedRole', {
-//       hasPrivilegedRole,
-//       isSupervisor,
-//       isSuperAdmin,
-//       isManagement,
-//     });
-//     // ❌ MUST satisfy BOTH
-//     if (!hasSupervisorMatch || !hasPrivilegedRole) {
-//       console.log('Access denied: missing supervisor match or privileged role');
-//       return false;
-//     }
-//     const isCreatedBySupervisor = isSupervisor() && Number(user.id) === Number(item.created_by);
-
-//     // 🚫 RULE 2: supervisor cannot approve own created item (if not direct approver)
-//     if (isCreatedBySupervisor) {
-//       return false;
-//     }
-
-//     const hasSupervisorFallback =
-//       approvalPipeline.some(
-//         (step: any) =>
-//           Number(step.user_id) === 9001 && Number(step.level_id) === Number(item.current_level)
-//       ) &&
-//       (isManagement() || isSupervisor() || isSuperAdmin());
-
-//     return hasSupervisorFallback;
-//   };
-
-//   const currentLevelPrint = (itemLevel: number) => {
-//     const step = approvalPipeline.find((s: any) => Number(s.level_id) === Number(itemLevel));
-
-//     if (!step) {
-//       return <span className="text-gray-400">N/A</span>;
-//     }
-
-//     return (
-//       <span
-//         className="inline-flex items-center px-2 py-0.5 rounded-full
-//                  text-xs font-semibold bg-blue-100 text-blue-800"
-//       >
-//         {`L-${step.level_id} (${step.fullname})`}
-//       </span>
-//     );
-//   };
-
-//   const getItemStatusBadge = (status?: string) => {
-//     if (!status || status === 'pending') {
-//       return (
-//         <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-//           Pending
-//         </span>
-//       );
-//     }
-//     if (status === 'approved') {
-//       return (
-//         <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-//           Approved
-//         </span>
-//       );
-//     }
-//     if (status === 'rejected') {
-//       return (
-//         <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-//           Rejected
-//         </span>
-//       );
-//     }
-//     return null;
-//   };
-
-//   const formatPrice = (value?: string | number) => {
-//     if (value === undefined || value === null) return 'N/A';
-//     const num = typeof value === 'string' ? parseFloat(value) : value;
-//     return isNaN(num) ? 'N/A' : num.toFixed(2);
-//   };
-
-//   const formatQuantity = (value?: string | number) => {
-//     if (value === undefined || value === null) return 'N/A';
-//     const num = typeof value === 'string' ? parseFloat(value) : value;
-//     return isNaN(num) ? 'N/A' : num.toLocaleString();
-//   };
-
-//   const getInvoiceDifference = (totalAmount?: number, currentTotal?: string | number) => {
-//     if (totalAmount === undefined || currentTotal === undefined || currentTotal === null) {
-//       return null;
-//     }
-
-//     const total = typeof totalAmount === 'number' ? totalAmount : parseFloat(String(totalAmount));
-//     const current =
-//       typeof currentTotal === 'number' ? currentTotal : parseFloat(String(currentTotal));
-
-//     if (isNaN(total) || isNaN(current)) {
-//       return null;
-//     }
-
-//     return total - current;
-//   };
-
-//   const renderInvoiceDifference = (totalAmount?: number, currentTotal?: string | number) => {
-//     const difference = getInvoiceDifference(totalAmount, currentTotal);
-
-//     if (difference === null) {
-//       return <span className="text-gray-400">N/A</span>;
-//     }
-
-//     const isPositive = difference >= 0;
-//     const color = isPositive ? 'text-green-600' : 'text-red-600';
-
-//     return (
-//       <span className={`font-semibold ${color}`}>
-//         {isPositive ? '+' : ''}
-//         {difference.toFixed(2)}
-//       </span>
-//     );
-//   };
-
-//   return (
-//     <div className="space-y-4">
-//       <div className="flex items-center justify-between">
-//         {/* STATUS TOGGLE */}
-//         <div className="flex gap-2">
-//           {(['pending', 'approved', 'rejected'] as const).map((s) => (
-//             <Button
-//               key={s}
-//               onClick={() => setFilter(s)}
-//               className={`
-//     relative overflow-visible
-//     rounded-md px-4 py-1
-//     ${
-//       filter === s
-//         ? s === 'pending'
-//           ? 'bg-yellow-400 text-white hover:bg-yellow-500'
-//           : s === 'approved'
-//             ? 'bg-green-500 text-white hover:bg-green-600'
-//             : 'bg-red-500 text-white hover:bg-red-600'
-//         : s === 'pending'
-//           ? 'bg-white text-gray-700 border border-gray-300 hover:bg-yellow-100'
-//           : s === 'approved'
-//             ? 'bg-white text-gray-700 border border-gray-300 hover:bg-green-100'
-//             : 'bg-white text-gray-700 border border-gray-300 hover:bg-red-100'
-//     }
-//   `}
-//             >
-//               {s.charAt(0).toUpperCase() + s.slice(1)}
-
-//               {/* COUNT BADGE */}
-//               {statusCounts[s] > 0 && (
-//                 <span
-//                   className={`absolute -top-2 -right-2 min-w-[20px] h-5 px-1
-//         flex items-center justify-center rounded-full text-xs font-bold text-white
-//         ${s === 'pending' ? 'bg-yellow-400' : s === 'approved' ? 'bg-green-500' : 'bg-red-500'}`}
-//                 >
-//                   {statusCounts[s]}
-//                 </span>
-//               )}
-//             </Button>
-//           ))}
-//         </div>
-
-//         {/* STATIC PIPELINE */}
-//         {approvalPipeline.length > 0 && (
-//           <div className="flex items-center gap-2 flex-wrap">
-//             {approvalPipeline.map((step: any, index: number) => {
-//               const isSupervisorStep = Number(step.user_id) === 9001;
-//               const isLast = index === approvalPipeline.length - 1;
-//               const capitalizeFirst = (text?: string) =>
-//                 text ? text.charAt(0).toUpperCase() + text.slice(1) : '';
-
-//               return (
-//                 <React.Fragment key={`${step.level_id}-${step.user_id}`}>
-//                   <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
-//                     {isSupervisorStep
-//                       ? `${capitalizeFirst(step.fullname)}`
-//                       : `${capitalizeFirst(step.fullname)}`}
-//                   </span>
-
-//                   {!isLast && <span className="text-gray-400">→</span>}
-//                 </React.Fragment>
-//               );
-//             })}
-//           </div>
-//         )}
-//       </div>
-
-//       {loading ? (
-//         <div className="text-center py-8">Loading...</div>
-//       ) : (
-//         <div className="border rounded-xl overflow-x-auto">
-//           <Table>
-//             <TableHeader>
-//               <TableRow>
-//                 <TableHead>KAM</TableHead>
-//                 <TableHead>Client</TableHead>
-//                 <TableHead>Product</TableHead>
-//                 <TableHead>Current Rate</TableHead>
-//                 <TableHead>Proposed Unit Price</TableHead>
-//                 <TableHead>Proposed Volume</TableHead>
-//                 <TableHead>Proposed Amount</TableHead>
-//                 <TableHead>Current Unit Cost</TableHead>
-//                 <TableHead>Current Quantity</TableHead>
-//                 <TableHead>Current Invoice</TableHead>
-//                 <TableHead>Invoice Difference</TableHead>
-//                 <TableHead>Item Status</TableHead>
-//                 <TableHead>Current Level</TableHead>
-//                 <TableHead>Effective Date</TableHead>
-
-//                 {filter === 'pending' && (
-//                   <>
-//                     <TableHead>Requested By</TableHead>{' '}
-//                   </>
-//                 )}
-//                 {filter === 'rejected' && <TableHead>Rejected By</TableHead>}
-//                 {filter === 'rejected' && <TableHead>Rejection Note</TableHead>}
-//                 {filter === 'rejected' && <TableHead>Suggested Price</TableHead>}
-//                 {filter === 'rejected' && <TableHead>Suggested Volume</TableHead>}
-
-//                 {/* <TableHead>Actions</TableHead> */}
-//               </TableRow>
-//             </TableHeader>
-
-//             <TableBody>
-//               {proposals.length === 0 ? (
-//                 <TableRow>
-//                   <TableCell colSpan={18} className="text-center py-8 text-gray-500">
-//                     No proposals found
-//                   </TableCell>
-//                 </TableRow>
-//               ) : (
-//                 proposals.map((p) =>
-//                   p.items.map((item, idx) => (
-//                     <TableRow key={`${p.id}-${item.id}`}>
-//                       {idx === 0 && (
-//                         <>
-//                           <TableCell rowSpan={p.items.length}>
-//                             {p.kam_name || p.created_by_user?.name || 'N/A'}
-//                           </TableCell>
-//                           <TableCell rowSpan={p.items.length}>
-//                             {p.client_name || clients[p.client_id] || `Client #${p.client_id}`}
-//                           </TableCell>
-//                         </>
-//                       )}
-
-//                       <TableCell>{item.product_name || `Product #${item.product_id}`}</TableCell>
-//                       <TableCell>{item.current_price}</TableCell>
-//                       <TableCell>
-//                         {item.proposed_price}/{item.unit}
-//                       </TableCell>
-//                       <TableCell>{item.volume}</TableCell>
-//                       <TableCell className="font-semibold">
-//                         {item.total_amount.toLocaleString()}
-//                       </TableCell>
-
-//                       {/* NEW COLUMNS - Unit Cost, Quantity, Total Invoice */}
-//                       <TableCell className="font-medium">
-//                         {formatPrice(item.current_unit_cost)}
-//                       </TableCell>
-//                       <TableCell className="font-medium">
-//                         {formatQuantity(item.current_quantity)}
-//                       </TableCell>
-//                       <TableCell className="font-medium text-blue-600">
-//                         {formatPrice(item.current_total)}
-//                       </TableCell>
-
-//                       {/* Invoice Difference Column */}
-//                       <TableCell>
-//                         {renderInvoiceDifference(item.total_amount, item.current_total)}
-//                       </TableCell>
-
-//                       <TableCell>{getItemStatusBadge(item.status)}</TableCell>
-//                       <TableCell>{currentLevelPrint(item.current_level)}</TableCell>
-//                       <TableCell>{item.effective_date}</TableCell>
-
-//                       {idx === 0 && filter === 'pending' && (
-//                         <>
-//                           <TableCell rowSpan={p.items.length}>
-//                             {p.created_by_name || 'N/A'}
-//                           </TableCell>
-//                         </>
-//                       )}
-
-//                       {filter === 'rejected' && (
-//                         <>
-//                           <TableCell>{item.action_by_name || 'N/A'}</TableCell>
-//                           <TableCell>{item.rejected_note || 'N/A'}</TableCell>
-//                           <TableCell>
-//                             {item.suggested_price ? `${item.suggested_price}/${item.unit}` : 'N/A'}
-//                           </TableCell>
-//                           <TableCell>
-//                             {item.suggested_volume
-//                               ? `${item.suggested_volume}/${item.unit}`
-//                               : 'N/A'}
-//                           </TableCell>
-//                         </>
-//                       )}
-
-//                       {/* <TableCell>
-//                         <div className="flex gap-2">
-//                           {canApproveOrReject(item) &&
-//                             (!item.status || item.status === 'pending') && (
-//                               <>
-//                                 <Button size="sm" onClick={() => handleApproveItem(p, item)}>
-//                                   Approve
-//                                 </Button>
-//                                 <Button
-//                                   size="sm"
-//                                   variant="destructive"
-//                                   onClick={() => handleRejectClick(p, item)}
-//                                 >
-//                                   Reject
-//                                 </Button>
-//                               </>
-//                             )}
-//                         </div>
-//                         {item.status == 'rejected' && p.created_by == userInfo?.id && (
-//                           <Button
-//                             size="sm"
-//                             variant="destructive"
-//                             onClick={() => handleReviseClick(item)}
-//                           >
-//                             Revise
-//                           </Button>
-//                         )}
-//                       </TableCell> */}
-//                     </TableRow>
-//                   ))
-//                 )
-//               )}
-//             </TableBody>
-//           </Table>
-//         </div>
-//       )}
-
-//       {/* Reject Item Dialog */}
-//       <Dialog open={!!rejectingItem} onOpenChange={() => setRejectingItem(null)}>
-//         <DialogContent className="max-w-md">
-//           <DialogHeader>
-//             <DialogTitle>Reject Item</DialogTitle>
-//           </DialogHeader>
-
-//           <div className="space-y-4">
-//             <p className="text-sm text-gray-600">
-//               Rejecting:{' '}
-//               <strong>
-//                 {rejectingItem?.item.product_name || `Product #${rejectingItem?.item.product_id}`}
-//               </strong>
-//             </p>
-
-//             <FloatingInput
-//               label="Rejection Reason *"
-//               value={rejectData.rejected_note}
-//               onChange={(e) =>
-//                 setRejectData((prev) => ({ ...prev, rejected_note: e.target.value }))
-//               }
-//             />
-
-//             <div className="border-t pt-4">
-//               <div className="grid grid-cols-2 gap-4">
-//                 <FloatingInput
-//                   label="Recommended Price"
-//                   type="number"
-//                   step="0.01"
-//                   value={rejectData.suggested_price}
-//                   onChange={(e) =>
-//                     setRejectData((prev) => ({ ...prev, suggested_price: e.target.value }))
-//                   }
-//                 />
-
-//                 <FloatingInput
-//                   label="Recommended Volume"
-//                   type="number"
-//                   value={rejectData.suggested_volume}
-//                   onChange={(e) =>
-//                     setRejectData((prev) => ({ ...prev, suggested_volume: e.target.value }))
-//                   }
-//                 />
-//               </div>
-//             </div>
-//           </div>
-
-//           <div className="flex gap-2 mt-4">
-//             <Button variant="outline" className="flex-1" onClick={() => setRejectingItem(null)}>
-//               Cancel
-//             </Button>
-//             <Button variant="destructive" className="flex-1" onClick={submitReject}>
-//               Confirm Reject
-//             </Button>
-//           </div>
-//         </DialogContent>
-//       </Dialog>
-
-//       {/* Revise Item Dialog */}
-//       <Dialog open={!!revisingItem} onOpenChange={() => setRevisingItem(null)}>
-//         <DialogContent className="max-w-md">
-//           <DialogHeader>
-//             <DialogTitle>Revise Proposal</DialogTitle>
-//           </DialogHeader>
-
-//           <div className="space-y-4">
-//             <FloatingInput
-//               label="Proposed Price"
-//               type="number"
-//               value={reviseData.proposed_price}
-//               onChange={(e) => setReviseData((p) => ({ ...p, proposed_price: e.target.value }))}
-//             />
-
-//             <select
-//               className="w-full border rounded-md px-3 py-2"
-//               value={reviseData.unit}
-//               onChange={(e) => setReviseData((p) => ({ ...p, unit: e.target.value }))}
-//             >
-//               <option value="">Select Unit</option>
-//               <option value="MB">MB</option>
-//               <option value="GB">GB</option>
-//               <option value="Quantity">Quantity</option>
-//             </select>
-
-//             <FloatingInput
-//               label="Volume"
-//               type="number"
-//               value={reviseData.volume}
-//               onChange={(e) => setReviseData((p) => ({ ...p, volume: e.target.value }))}
-//             />
-
-//             <FloatingInput
-//               label="Proposed Amount"
-//               type="number"
-//               value={reviseData.proposed_amount}
-//               onChange={(e) => setReviseData((p) => ({ ...p, proposed_amount: e.target.value }))}
-//             />
-//           </div>
-
-//           <div className="flex gap-2 mt-4">
-//             <Button variant="outline" className="flex-1" onClick={() => setRevisingItem(null)}>
-//               Cancel
-//             </Button>
-//             <Button className="flex-1" onClick={submitRevise}>
-//               Submit Revision
-//             </Button>
-//           </div>
-//         </DialogContent>
-//       </Dialog>
-//     </div>
-//   );
-// }
-
 // import type { ProposalFilters } from '@/components/filters/Proposalfilterdrawer';
 
 'use client';
@@ -726,11 +15,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { AppPagination } from '@/components/common/AppPagination';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { FloatingInput } from '@/components/ui/FloatingInput';
 import { isSuperAdmin, isManagement, isKAM, isSupervisor, getUserInfo } from '@/utility/utility';
-import type { ProposalFilters } from '@/components/filters/ProposalFilterDrawer';
+import type { ProposalFilters } from '@/components/filters/Proposalfilterdrawer';
 
 // ---- proposal data model ----
 interface ProposalItem {
@@ -773,10 +63,6 @@ interface Proposal {
   items: ProposalItem[];
 }
 
-/* ------------------------------------------------------------------ */
-/* PROPS                                                                 */
-/* ------------------------------------------------------------------ */
-
 interface OrderProposalListHistoryProps {
   filters?: ProposalFilters;
 }
@@ -786,7 +72,6 @@ export default function OrderProposalListHistory({ filters }: OrderProposalListH
   const userInfo = getUserInfo();
 
   const [approvalPipeline, setApprovalPipeline] = useState([]);
-  const [filter, setFilter] = useState<'pending' | 'approved' | 'rejected'>('pending');
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(false);
   const [clients, setClients] = useState<Record<number, string>>({});
@@ -794,7 +79,13 @@ export default function OrderProposalListHistory({ filters }: OrderProposalListH
   const ITEMS_PER_PAGE = 10;
   const lastPayloadRef = React.useRef<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages]   = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+
+  const handlePageChange = (page: number) => {
+    if (page < 1 || page > totalPages) return;
+    fetchProposals(page);
+  };
 
   const [rejectingItem, setRejectingItem] = useState<{
     proposal: Proposal;
@@ -816,23 +107,41 @@ export default function OrderProposalListHistory({ filters }: OrderProposalListH
     proposed_amount: '',
   });
 
-  const [statusCounts, setStatusCounts] = useState({ pending: 0, approved: 0, rejected: 0 });
+  /* ── Fetch approved + rejected proposals in parallel ──────────── */
+  const fetchProposals = async (page = 1) => {
+    // build base payload, include any active filters so pagination reflects server state
+    const basePayload: any = { page, per_page: ITEMS_PER_PAGE };
+    if (filters) {
+      if (filters.kam && filters.kam !== 'all') basePayload.kam = filters.kam;
+      if (filters.division && filters.division !== 'all') basePayload.branch_id = filters.division;
+      if (filters.supervisor && filters.supervisor !== 'all')
+        basePayload.supervisor_id = filters.supervisor;
+      if (filters.client && filters.client !== 'all') basePayload.client_id = filters.client;
+    }
 
-  /* ── Fetch ALL proposals (no filter params sent to API) ──────────── */
-  const fetchProposals = async (status: string, page = 1) => {
-    const payload = { page, per_page: ITEMS_PER_PAGE, status };
-    lastPayloadRef.current = payload;
+    const payloadApproved = { ...basePayload, status: 'approved' };
+    const payloadRejected = { ...basePayload, status: 'rejected' };
+    lastPayloadRef.current = basePayload;
     setLoading(true);
     try {
-      const res = await PriceProposalHistoryAPI.getAll(payload);
-      setProposals(res.data || []);
-      setApprovalPipeline(res.user_level_info || []);
-      setCurrentPage(res?.meta?.current_page || 1);
-      setTotalPages(res?.meta?.last_page || 1);
-      setStatusCounts((prev) => ({
-        ...prev,
-        [status]: res?.meta?.total || 0,
-      }));
+      const [approvedRes, rejectedRes] = await Promise.all([
+        PriceProposalHistoryAPI.getAll(payloadApproved),
+        PriceProposalHistoryAPI.getAll(payloadRejected),
+      ]);
+
+      const combined = [...(approvedRes.data || []), ...(rejectedRes.data || [])];
+      setProposals(combined);
+      setApprovalPipeline(approvedRes.user_level_info || rejectedRes.user_level_info || []);
+      setCurrentPage(page);
+      // calculate combined pagination metrics
+      const approvedTotal = approvedRes?.meta?.total || 0;
+      const rejectedTotal = rejectedRes?.meta?.total || 0;
+      const combinedTotal = approvedTotal + rejectedTotal;
+      const combinedLastPage = Math.ceil(combinedTotal / ITEMS_PER_PAGE) || 1;
+      setTotalPages(combinedLastPage);
+      setTotalItems(combinedTotal);
+      // you could also keep raw totals if needed later
+      // setTotalCount(combinedTotal);
     } catch (error) {
       console.error('Failed to fetch proposals:', error);
     } finally {
@@ -840,50 +149,39 @@ export default function OrderProposalListHistory({ filters }: OrderProposalListH
     }
   };
 
-  // Re-fetch only when the status tab changes
   useEffect(() => {
-    fetchProposals(filter, 1);
-  }, [filter]);
+    fetchProposals(1);
+  }, []);
 
-  /* ── Frontend filtering driven purely by drawer filter values ────── */
+  // when filters change, reset to first page and re-fetch
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+    fetchProposals(1);
+  }, [filters]);
+
+  /* ── Frontend filtering ────────────────────────────────────────── */
   const filteredProposals = useMemo(() => {
     if (!filters) return proposals;
 
     return proposals.filter((p) => {
-      // ── KAM filter ────────────────────────────────────────────────
-      // filters.kam can be a single kam_id OR comma-separated list (supervisor → all KAMs)
       if (filters.kam && filters.kam !== 'all') {
         const allowedIds = filters.kam.split(',').map((id) => String(id).trim());
         const proposalKamId = String(p.kam_id ?? '');
         if (!allowedIds.includes(proposalKamId)) return false;
       }
-
-      // ── Branch / Division filter ──────────────────────────────────
       if (filters.division && filters.division !== 'all') {
         if (String(p.branch_id ?? '') !== String(filters.division)) return false;
       }
-
-      // ── Supervisor filter ─────────────────────────────────────────
       if (filters.supervisor && filters.supervisor !== 'all') {
         if (String(p.supervisor_id ?? '') !== String(filters.supervisor)) return false;
       }
-
       return true;
     });
   }, [proposals, filters]);
 
-  /* ── Actions ────────────────────────────────────────────────────── */
-  const handleApproveItem = async (proposal: Proposal, item: ProposalItem) => {
-    if (!confirm('Are you sure you want to approve this item?')) return;
-    if (item.status === 'approved') { alert('This item is already approved.'); return; }
-    try {
-      await PriceProposalHistoryAPI.approveItem(item.id, item);
-      fetchProposals(lastPayloadRef.current.status);
-    } catch (error) {
-      console.error('Failed to approve item:', error);
-    }
-  };
-
+  /* ── Actions ─────────────────────────────────────────────────── */
   const handleRejectClick = (proposal: Proposal, item: ProposalItem) => {
     setRejectingItem({ proposal, item });
     setRejectData({
@@ -896,18 +194,30 @@ export default function OrderProposalListHistory({ filters }: OrderProposalListH
 
   const submitReject = async () => {
     if (!rejectingItem) return;
-    if (!rejectData.rejected_note.trim()) { alert('Rejection reason is required'); return; }
+    if (!rejectData.rejected_note.trim()) {
+      alert('Rejection reason is required');
+      return;
+    }
     try {
       const payload = {
         status: rejectData.status,
         rejected_note: rejectData.rejected_note,
-        suggested_price:  rejectData.suggested_price  ? Number(rejectData.suggested_price)  : undefined,
-        suggested_volume: rejectData.suggested_volume ? Number(rejectData.suggested_volume) : undefined,
+        suggested_price: rejectData.suggested_price
+          ? Number(rejectData.suggested_price)
+          : undefined,
+        suggested_volume: rejectData.suggested_volume
+          ? Number(rejectData.suggested_volume)
+          : undefined,
       };
       await PriceProposalHistoryAPI.rejectItem(rejectingItem.item.id, payload);
       setRejectingItem(null);
-      setRejectData({ status: 'rejected', rejected_note: '', suggested_price: '', suggested_volume: '' });
-      fetchProposals(lastPayloadRef.current.status);
+      setRejectData({
+        status: 'rejected',
+        rejected_note: '',
+        suggested_price: '',
+        suggested_volume: '',
+      });
+      fetchProposals(lastPayloadRef.current?.page || 1);
     } catch (error: any) {
       console.error('Rejection failed:', error);
       alert(error.response?.data?.message || 'Failed to reject item');
@@ -917,9 +227,9 @@ export default function OrderProposalListHistory({ filters }: OrderProposalListH
   const handleReviseClick = (item: ProposalItem) => {
     setRevisingItem(item);
     setReviseData({
-      proposed_price:  item.proposed_price,
-      unit:            item.unit,
-      volume:          item.volume,
+      proposed_price: item.proposed_price,
+      unit: item.unit,
+      volume: item.volume,
       proposed_amount: item.total_amount.toString(),
     });
   };
@@ -928,40 +238,34 @@ export default function OrderProposalListHistory({ filters }: OrderProposalListH
     if (!revisingItem) return;
     try {
       await PriceProposalHistoryAPI.reviseItem(revisingItem.id, {
-        proposed_price:  Number(reviseData.proposed_price),
-        unit:            reviseData.unit,
-        volume:          Number(reviseData.volume),
+        proposed_price: Number(reviseData.proposed_price),
+        unit: reviseData.unit,
+        volume: Number(reviseData.volume),
         proposed_amount: Number(reviseData.proposed_amount),
       });
       setRevisingItem(null);
-      fetchProposals(lastPayloadRef.current.status);
+      fetchProposals(lastPayloadRef.current?.page || 1);
     } catch (err) {
       console.error('Failed to revise proposal:', err);
       alert('Failed to revise proposal');
     }
   };
 
-  /* ── Helpers ────────────────────────────────────────────────────── */
-  const canApproveOrReject = (item: Proposal) => {
-    const user = getUserInfo();
-    if (!user) return false;
-    if (!Array.isArray(approvalPipeline) || approvalPipeline.length === 0) return false;
-    const isDirectApprover = approvalPipeline.some(
-      (step: any) =>
-        Number(step.user_id) === Number(user.id) &&
-        Number(step.level_id) === Number(item.current_level)
-    );
-    if (isDirectApprover) return true;
-    const hasSupervisorMatch =
-      user.default_kam_id && Number(user.default_kam_id) === Number(item.created_by_supervisor_id);
-    const hasPrivilegedRole = isSupervisor() || isSuperAdmin() || isManagement();
-    if (!hasSupervisorMatch || !hasPrivilegedRole) return false;
-    const isCreatedBySupervisor = isSupervisor() && Number(user.id) === Number(item.created_by);
-    if (isCreatedBySupervisor) return false;
-    return approvalPipeline.some(
-      (step: any) =>
-        Number(step.user_id) === 9001 && Number(step.level_id) === Number(item.current_level)
-    ) && (isManagement() || isSupervisor() || isSuperAdmin());
+  /* ── Helpers ─────────────────────────────────────────────────── */
+  const getItemStatusBadge = (status?: string) => {
+    if (status === 'approved')
+      return (
+        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          Approved
+        </span>
+      );
+    if (status === 'rejected')
+      return (
+        <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+          Rejected
+        </span>
+      );
+    return null;
   };
 
   const currentLevelPrint = (itemLevel: number) => {
@@ -974,90 +278,69 @@ export default function OrderProposalListHistory({ filters }: OrderProposalListH
     );
   };
 
-  const getItemStatusBadge = (status?: string) => {
-    if (!status || status === 'pending')
-      return <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Pending</span>;
-    if (status === 'approved')
-      return <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Approved</span>;
-    if (status === 'rejected')
-      return <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Rejected</span>;
-    return null;
+  const formatPrice = (v?: string | number) => {
+    if (v == null) return 'N/A';
+    const n = Number(v);
+    return isNaN(n) ? 'N/A' : n.toFixed(2);
   };
 
-  const formatPrice    = (v?: string | number) => { if (v == null) return 'N/A'; const n = Number(v); return isNaN(n) ? 'N/A' : n.toFixed(2); };
-  const formatQuantity = (v?: string | number) => { if (v == null) return 'N/A'; const n = Number(v); return isNaN(n) ? 'N/A' : n.toLocaleString(); };
+  const formatQuantity = (v?: string | number) => {
+    if (v == null) return 'N/A';
+    const n = Number(v);
+    return isNaN(n) ? 'N/A' : n.toLocaleString();
+  };
 
   const renderInvoiceDifference = (totalAmount?: number, currentTotal?: string | number) => {
-    if (totalAmount == null || currentTotal == null) return <span className="text-gray-400">N/A</span>;
+    if (totalAmount == null || currentTotal == null)
+      return <span className="text-gray-400">N/A</span>;
     const diff = Number(totalAmount) - Number(currentTotal);
     if (isNaN(diff)) return <span className="text-gray-400">N/A</span>;
     return (
       <span className={`font-semibold ${diff >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-        {diff >= 0 ? '+' : ''}{diff.toFixed(2)}
+        {diff >= 0 ? '+' : ''}
+        {diff.toFixed(2)}
       </span>
     );
   };
 
   const hasActiveFilters =
     !!filters &&
-    (
-      (filters.kam       && filters.kam       !== 'all') ||
-      (filters.division  && filters.division  !== 'all') ||
-      (filters.supervisor && filters.supervisor !== 'all')
-    );
+    ((filters.kam && filters.kam !== 'all') ||
+      (filters.division && filters.division !== 'all') ||
+      (filters.supervisor && filters.supervisor !== 'all'));
 
-  /* ── Render ─────────────────────────────────────────────────────── */
+  /* ── Render ──────────────────────────────────────────────────── */
   return (
     <div className="space-y-4">
-
-      {/* Status toggles + approval pipeline */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex gap-2">
-          {(['pending', 'approved', 'rejected'] as const).map((s) => (
-            <Button
-              key={s}
-              onClick={() => setFilter(s)}
-              className={`relative overflow-visible rounded-md px-4 py-1 ${
-                filter === s
-                  ? s === 'pending'  ? 'bg-yellow-400 text-white hover:bg-yellow-500'
-                  : s === 'approved' ? 'bg-green-500  text-white hover:bg-green-600'
-                  :                   'bg-red-500     text-white hover:bg-red-600'
-                  : s === 'pending'  ? 'bg-white text-gray-700 border border-gray-300 hover:bg-yellow-100'
-                  : s === 'approved' ? 'bg-white text-gray-700 border border-gray-300 hover:bg-green-100'
-                  :                   'bg-white text-gray-700 border border-gray-300 hover:bg-red-100'
-              }`}
-            >
-              {s.charAt(0).toUpperCase() + s.slice(1)}
-              {statusCounts[s] > 0 && (
-                <span className={`absolute -top-2 -right-2 min-w-[20px] h-5 px-1 flex items-center justify-center rounded-full text-xs font-bold text-white ${
-                  s === 'pending' ? 'bg-yellow-400' : s === 'approved' ? 'bg-green-500' : 'bg-red-500'
-                }`}>
-                  {statusCounts[s]}
-                </span>
-              )}
-            </Button>
+      {/* Approval pipeline display */}
+      {approvalPipeline.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {approvalPipeline.map((step: any, index: number) => (
+            <React.Fragment key={`${step.level_id}-${step.user_id}`}>
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                {step.fullname?.charAt(0).toUpperCase() + step.fullname?.slice(1)}
+              </span>
+              {index < approvalPipeline.length - 1 && <span className="text-gray-400">→</span>}
+            </React.Fragment>
           ))}
         </div>
+      )}
 
-        {approvalPipeline.length > 0 && (
-          <div className="flex items-center gap-2 flex-wrap">
-            {approvalPipeline.map((step: any, index: number) => (
-              <React.Fragment key={`${step.level_id}-${step.user_id}`}>
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
-                  {step.fullname?.charAt(0).toUpperCase() + step.fullname?.slice(1)}
-                </span>
-                {index < approvalPipeline.length - 1 && <span className="text-gray-400">→</span>}
-              </React.Fragment>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Active filter summary pill — shown when drawer filters are applied */}
+      {/* Active filter summary */}
       {hasActiveFilters && (
         <p className="text-sm text-muted-foreground">
-          Showing <span className="font-semibold text-foreground">{filteredProposals.length}</span> of{' '}
-          <span className="font-semibold text-foreground">{proposals.length}</span> proposals
+          Showing <span className="font-semibold text-foreground">{filteredProposals.length}</span>{' '}
+          of <span className="font-semibold text-foreground">{proposals.length}</span> proposals
+        </p>
+      )}
+
+      {/* Server-side counts */}
+      {!loading && totalItems > 0 && (
+        <p className="text-sm text-muted-foreground">
+          Server total: <span className="font-semibold text-foreground">{totalItems}</span>{' '}
+          proposals <span className="mx-2">|</span> Page{' '}
+          <span className="font-semibold">{currentPage}</span> of{' '}
+          <span className="font-semibold">{totalPages}</span>
         </p>
       )}
 
@@ -1065,97 +348,126 @@ export default function OrderProposalListHistory({ filters }: OrderProposalListH
       {loading ? (
         <div className="text-center py-8">Loading...</div>
       ) : (
-        <div className="border rounded-xl overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>KAM</TableHead>
-                <TableHead>Client</TableHead>
-                <TableHead>Product</TableHead>
-                <TableHead>Current Rate</TableHead>
-                <TableHead>Proposed Unit Price</TableHead>
-                <TableHead>Proposed Volume</TableHead>
-                <TableHead>Proposed Amount</TableHead>
-                <TableHead>Current Unit Cost</TableHead>
-                <TableHead>Current Quantity</TableHead>
-                <TableHead>Current Invoice</TableHead>
-                <TableHead>Invoice Difference</TableHead>
-                <TableHead>Item Status</TableHead>
-                <TableHead>Current Level</TableHead>
-                <TableHead>Effective Date</TableHead>
-                {filter === 'pending'  && <TableHead>Requested By</TableHead>}
-                {filter === 'rejected' && <TableHead>Rejected By</TableHead>}
-                {filter === 'rejected' && <TableHead>Rejection Note</TableHead>}
-                {filter === 'rejected' && <TableHead>Suggested Price</TableHead>}
-                {filter === 'rejected' && <TableHead>Suggested Volume</TableHead>}
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {filteredProposals.length === 0 ? (
+        <>
+          <div className="border rounded-xl overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={18} className="text-center py-8 text-gray-500">
-                    {hasActiveFilters
-                      ? 'No proposals match the selected filters'
-                      : 'No proposals found'}
-                  </TableCell>
+                  <TableHead>KAM</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Product</TableHead>
+                  <TableHead>Current Rate</TableHead>
+                  <TableHead>Proposed Unit Price</TableHead>
+                  <TableHead>Proposed Volume</TableHead>
+                  <TableHead>Proposed Amount</TableHead>
+                  <TableHead>Current Unit Cost</TableHead>
+                  <TableHead>Current Quantity</TableHead>
+                  <TableHead>Current Invoice</TableHead>
+                  <TableHead>Invoice Difference</TableHead>
+                  <TableHead>Item Status</TableHead>
+                  <TableHead>Current Level</TableHead>
+                  <TableHead>Effective Date</TableHead>
+                  <TableHead>Rejected By</TableHead>
+                  <TableHead>Rejection Note</TableHead>
+                  <TableHead>Suggested Price</TableHead>
+                  <TableHead>Suggested Volume</TableHead>
                 </TableRow>
-              ) : (
-                filteredProposals.map((p) =>
-                  p.items.map((item, idx) => (
-                    <TableRow key={`${p.id}-${item.id}`}>
-                      {idx === 0 && (
-                        <>
-                          <TableCell rowSpan={p.items.length}>
-                            {p.kam_name || p.created_by_user?.name || 'N/A'}
-                          </TableCell>
-                          <TableCell rowSpan={p.items.length}>
-                            {p.client_name || clients[p.client_id] || `Client #${p.client_id}`}
-                          </TableCell>
-                        </>
-                      )}
-                      <TableCell>{item.product_name || `Product #${item.product_id}`}</TableCell>
-                      <TableCell>{item.current_price}</TableCell>
-                      <TableCell>{item.proposed_price}/{item.unit}</TableCell>
-                      <TableCell>{item.volume}</TableCell>
-                      <TableCell className="font-semibold">{item.total_amount.toLocaleString()}</TableCell>
-                      <TableCell className="font-medium">{formatPrice(item.current_unit_cost)}</TableCell>
-                      <TableCell className="font-medium">{formatQuantity(item.current_quantity)}</TableCell>
-                      <TableCell className="font-medium text-blue-600">{formatPrice(item.current_total)}</TableCell>
-                      <TableCell>{renderInvoiceDifference(item.total_amount, item.current_total)}</TableCell>
-                      <TableCell>{getItemStatusBadge(item.status)}</TableCell>
-                      <TableCell>{currentLevelPrint(item.current_level)}</TableCell>
-                      <TableCell>{item.effective_date}</TableCell>
+              </TableHeader>
 
-                      {idx === 0 && filter === 'pending' && (
-                        <TableCell rowSpan={p.items.length}>
-                          {p.created_by_name || 'N/A'}
+              <TableBody>
+                {filteredProposals.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={18} className="text-center py-8 text-gray-500">
+                      {hasActiveFilters
+                        ? 'No proposals match the selected filters'
+                        : 'No proposals found'}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredProposals.map((p) =>
+                    p.items.map((item, idx) => (
+                      <TableRow
+                        key={`${p.id}-${item.id}`}
+                        className={
+                          item.status === 'approved'
+                            ? 'bg-green-50/40'
+                            : item.status === 'rejected'
+                              ? 'bg-red-50/40'
+                              : ''
+                        }
+                      >
+                        {idx === 0 && (
+                          <>
+                            <TableCell rowSpan={p.items.length}>
+                              {p.kam_name || p.created_by_user?.name || 'N/A'}
+                            </TableCell>
+                            <TableCell rowSpan={p.items.length}>
+                              {p.client_name || clients[p.client_id] || `Client #${p.client_id}`}
+                            </TableCell>
+                          </>
+                        )}
+                        <TableCell>{item.product_name || `Product #${item.product_id}`}</TableCell>
+                        <TableCell>{item.current_price}</TableCell>
+                        <TableCell>
+                          {item.proposed_price}/{item.unit}
                         </TableCell>
-                      )}
-                      {filter === 'rejected' && (
-                        <>
-                          <TableCell>{item.action_by_name || 'N/A'}</TableCell>
-                          <TableCell>{item.rejected_note || 'N/A'}</TableCell>
-                          <TableCell>{item.suggested_price  ? `${item.suggested_price}/${item.unit}`  : 'N/A'}</TableCell>
-                          <TableCell>{item.suggested_volume ? `${item.suggested_volume}/${item.unit}` : 'N/A'}</TableCell>
-                        </>
-                      )}
-                    </TableRow>
-                  ))
-                )
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                        <TableCell>{item.volume}</TableCell>
+                        <TableCell className="font-semibold">
+                          {item.total_amount.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {formatPrice(item.current_unit_cost)}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {formatQuantity(item.current_quantity)}
+                        </TableCell>
+                        <TableCell className="font-medium text-blue-600">
+                          {formatPrice(item.current_total)}
+                        </TableCell>
+                        <TableCell>
+                          {renderInvoiceDifference(item.total_amount, item.current_total)}
+                        </TableCell>
+                        <TableCell>{getItemStatusBadge(item.status)}</TableCell>
+                        <TableCell>{currentLevelPrint(item.current_level)}</TableCell>
+                        <TableCell>{item.effective_date}</TableCell>
+                        {/* Rejection columns — always visible */}
+                        <TableCell>{item.action_by_name || 'N/A'}</TableCell>
+                        <TableCell>{item.rejected_note || 'N/A'}</TableCell>
+                        <TableCell>
+                          {item.suggested_price ? `${item.suggested_price}/${item.unit}` : 'N/A'}
+                        </TableCell>
+                        <TableCell>
+                          {item.suggested_volume ? `${item.suggested_volume}/${item.unit}` : 'N/A'}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* pagination controls */}
+          <AppPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        </>
       )}
 
       {/* Reject Dialog */}
       <Dialog open={!!rejectingItem} onOpenChange={() => setRejectingItem(null)}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Reject Item</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Reject Item</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-gray-600">
-              Rejecting: <strong>{rejectingItem?.item.product_name || `Product #${rejectingItem?.item.product_id}`}</strong>
+              Rejecting:{' '}
+              <strong>
+                {rejectingItem?.item.product_name || `Product #${rejectingItem?.item.product_id}`}
+              </strong>
             </p>
             <FloatingInput
               label="Rejection Reason *"
@@ -1164,16 +476,33 @@ export default function OrderProposalListHistory({ filters }: OrderProposalListH
             />
             <div className="border-t pt-4">
               <div className="grid grid-cols-2 gap-4">
-                <FloatingInput label="Recommended Price"  type="number" step="0.01" value={rejectData.suggested_price}
-                  onChange={(e) => setRejectData((p) => ({ ...p, suggested_price: e.target.value }))} />
-                <FloatingInput label="Recommended Volume" type="number" value={rejectData.suggested_volume}
-                  onChange={(e) => setRejectData((p) => ({ ...p, suggested_volume: e.target.value }))} />
+                <FloatingInput
+                  label="Recommended Price"
+                  type="number"
+                  step="0.01"
+                  value={rejectData.suggested_price}
+                  onChange={(e) =>
+                    setRejectData((p) => ({ ...p, suggested_price: e.target.value }))
+                  }
+                />
+                <FloatingInput
+                  label="Recommended Volume"
+                  type="number"
+                  value={rejectData.suggested_volume}
+                  onChange={(e) =>
+                    setRejectData((p) => ({ ...p, suggested_volume: e.target.value }))
+                  }
+                />
               </div>
             </div>
           </div>
           <div className="flex gap-2 mt-4">
-            <Button variant="outline" className="flex-1" onClick={() => setRejectingItem(null)}>Cancel</Button>
-            <Button variant="destructive" className="flex-1" onClick={submitReject}>Confirm Reject</Button>
+            <Button variant="outline" className="flex-1" onClick={() => setRejectingItem(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" className="flex-1" onClick={submitReject}>
+              Confirm Reject
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1181,25 +510,46 @@ export default function OrderProposalListHistory({ filters }: OrderProposalListH
       {/* Revise Dialog */}
       <Dialog open={!!revisingItem} onOpenChange={() => setRevisingItem(null)}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Revise Proposal</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Revise Proposal</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4">
-            <FloatingInput label="Proposed Price" type="number" value={reviseData.proposed_price}
-              onChange={(e) => setReviseData((p) => ({ ...p, proposed_price: e.target.value }))} />
-            <select className="w-full border rounded-md px-3 py-2" value={reviseData.unit}
-              onChange={(e) => setReviseData((p) => ({ ...p, unit: e.target.value }))}>
+            <FloatingInput
+              label="Proposed Price"
+              type="number"
+              value={reviseData.proposed_price}
+              onChange={(e) => setReviseData((p) => ({ ...p, proposed_price: e.target.value }))}
+            />
+            <select
+              className="w-full border rounded-md px-3 py-2"
+              value={reviseData.unit}
+              onChange={(e) => setReviseData((p) => ({ ...p, unit: e.target.value }))}
+            >
               <option value="">Select Unit</option>
               <option value="MB">MB</option>
               <option value="GB">GB</option>
               <option value="Quantity">Quantity</option>
             </select>
-            <FloatingInput label="Volume" type="number" value={reviseData.volume}
-              onChange={(e) => setReviseData((p) => ({ ...p, volume: e.target.value }))} />
-            <FloatingInput label="Proposed Amount" type="number" value={reviseData.proposed_amount}
-              onChange={(e) => setReviseData((p) => ({ ...p, proposed_amount: e.target.value }))} />
+            <FloatingInput
+              label="Volume"
+              type="number"
+              value={reviseData.volume}
+              onChange={(e) => setReviseData((p) => ({ ...p, volume: e.target.value }))}
+            />
+            <FloatingInput
+              label="Proposed Amount"
+              type="number"
+              value={reviseData.proposed_amount}
+              onChange={(e) => setReviseData((p) => ({ ...p, proposed_amount: e.target.value }))}
+            />
           </div>
           <div className="flex gap-2 mt-4">
-            <Button variant="outline" className="flex-1" onClick={() => setRevisingItem(null)}>Cancel</Button>
-            <Button className="flex-1" onClick={submitRevise}>Submit Revision</Button>
+            <Button variant="outline" className="flex-1" onClick={() => setRevisingItem(null)}>
+              Cancel
+            </Button>
+            <Button className="flex-1" onClick={submitRevise}>
+              Submit Revision
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

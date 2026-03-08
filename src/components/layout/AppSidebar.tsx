@@ -73,7 +73,7 @@ const allNavItems = [
     roles: ['kam', 'super_admin', 'supervisor', 'management'],
   },
   {
-    title: 'Approval Requests History',
+    title: 'Price History',
     url: '/order-proposal-list/history',
     icon: ListCheck,
     roles: ['kam', 'super_admin', 'supervisor', 'management'],
