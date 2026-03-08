@@ -790,7 +790,7 @@ export default function ClientsPage() {
               <TableRow>
                 <TableHead>Client</TableHead>
                 <TableHead>Contact</TableHead>
-                <TableHead>Division</TableHead>
+                {/* <TableHead>Division</TableHead> */}
                 <TableHead>Category</TableHead>   {/* NEW */}
                 <TableHead>Type</TableHead>
                 <TableHead>Assigned KAM</TableHead>
@@ -821,7 +821,7 @@ export default function ClientsPage() {
                     <TableRow key={client.id}>
                       <TableCell className="font-medium">{client.name}</TableCell>
                       <TableCell>{client.phone || '--'}</TableCell>
-                      <TableCell>{client.division || '--'}</TableCell>
+                      {/* <TableCell>{client.division || '--'}</TableCell> */}
 
                       {/* NEW: Category cell */}
                       <TableCell>
