@@ -459,6 +459,7 @@ import { useMemo, useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { PriceProposalAPI } from '@/api/priceProposalApi.js';
 import { PrismAPI } from '@/api/prismAPI';
+import { AppPagination } from '@/components/common/AppPagination';
 
 import {
   Table,
@@ -533,7 +534,7 @@ export default function OrderProposalList() {
   const [clients, setClients] = useState<Record<number, string>>({}); // Cache for client names
 
   // pagination states
-  const ITEMS_PER_PAGE = 10;
+  const ITEMS_PER_PAGE = 4;
   const lastPayloadRef = React.useRef<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -1105,6 +1106,21 @@ export default function OrderProposalList() {
               )}
             </TableBody>
           </Table>
+
+          {totalPages > 1 && (
+            <div className="flex justify-end mt-4">
+              <AppPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={(page) =>
+                  fetchProposals({
+                    ...lastPayloadRef.current,
+                    page,
+                  })
+                }
+              />
+            </div>
+          )}
         </div>
       )}
 

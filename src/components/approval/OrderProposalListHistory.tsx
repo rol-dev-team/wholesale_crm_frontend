@@ -76,7 +76,7 @@ export default function OrderProposalListHistory({ filters }: OrderProposalListH
   const [loading, setLoading] = useState(false);
   const [clients, setClients] = useState<Record<number, string>>({});
 
-  const ITEMS_PER_PAGE = 10;
+  const ITEMS_PER_PAGE = 4;
   const lastPayloadRef = React.useRef<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -109,19 +109,20 @@ export default function OrderProposalListHistory({ filters }: OrderProposalListH
 
   /* ── Fetch approved + rejected proposals in parallel ──────────── */
   const fetchProposals = async (page = 1) => {
-    // build base payload, include any active filters so pagination reflects server state
     const basePayload: any = { page, per_page: ITEMS_PER_PAGE };
     if (filters) {
-      if (filters.kam && filters.kam !== 'all') basePayload.kam = filters.kam;
+      if (filters.kam && filters.kam !== 'all') basePayload.kam_id = filters.kam;
       if (filters.division && filters.division !== 'all') basePayload.branch_id = filters.division;
       if (filters.supervisor && filters.supervisor !== 'all')
         basePayload.supervisor_id = filters.supervisor;
       if (filters.client && filters.client !== 'all') basePayload.client_id = filters.client;
+      if (filters.product && filters.product !== 'all') basePayload.product_id = filters.product;
     }
 
     const payloadApproved = { ...basePayload, status: 'approved' };
     const payloadRejected = { ...basePayload, status: 'rejected' };
-    lastPayloadRef.current = basePayload;
+    lastPayloadRef.current = { ...basePayload, page };
+
     setLoading(true);
     try {
       const [approvedRes, rejectedRes] = await Promise.all([
@@ -129,19 +130,44 @@ export default function OrderProposalListHistory({ filters }: OrderProposalListH
         PriceProposalHistoryAPI.getAll(payloadRejected),
       ]);
 
-      const combined = [...(approvedRes.data || []), ...(rejectedRes.data || [])];
+      // ✅ axios wraps response in .data, then your API has its own .data array
+      const approvedData = approvedRes?.data?.data ?? approvedRes?.data ?? [];
+      const rejectedData = rejectedRes?.data?.data ?? rejectedRes?.data ?? [];
+
+      // console.log('API Response Debug:', {
+      //   approvedRes: approvedRes?.data,
+      //   rejectedRes: rejectedRes?.data,
+      //   approvedDataLength: approvedData.length,
+      //   rejectedDataLength: rejectedData.length
+      // });
+
+      const combined = [...approvedData, ...rejectedData];
       setProposals(combined);
-      setApprovalPipeline(approvedRes.user_level_info || rejectedRes.user_level_info || []);
+
+      // ✅ user_level_info is also nested under .data
+      setApprovalPipeline(
+        approvedRes?.data?.user_level_info || rejectedRes?.data?.user_level_info || []
+      );
+
       setCurrentPage(page);
-      // calculate combined pagination metrics
-      const approvedTotal = approvedRes?.meta?.total || 0;
-      const rejectedTotal = rejectedRes?.meta?.total || 0;
+
+      const approvedTotal =
+        approvedRes?.data?.meta?.total || approvedRes?.data?.total || approvedData.length || 0;
+      const rejectedTotal =
+        rejectedRes?.data?.meta?.total || rejectedRes?.data?.total || rejectedData.length || 0;
       const combinedTotal = approvedTotal + rejectedTotal;
       const combinedLastPage = Math.ceil(combinedTotal / ITEMS_PER_PAGE) || 1;
       setTotalPages(combinedLastPage);
       setTotalItems(combinedTotal);
-      // you could also keep raw totals if needed later
-      // setTotalCount(combinedTotal);
+
+      // console.log('Pagination Debug:', {
+      //   approvedTotal,
+      //   rejectedTotal,
+      //   combinedTotal,
+      //   ITEMS_PER_PAGE,
+      //   combinedLastPage,
+      //   currentPage: page
+      // });
     } catch (error) {
       console.error('Failed to fetch proposals:', error);
     } finally {
@@ -168,14 +194,20 @@ export default function OrderProposalListHistory({ filters }: OrderProposalListH
     return proposals.filter((p) => {
       if (filters.kam && filters.kam !== 'all') {
         const allowedIds = filters.kam.split(',').map((id) => String(id).trim());
-        const proposalKamId = String(p.kam_id ?? '');
-        if (!allowedIds.includes(proposalKamId)) return false;
+        if (!allowedIds.includes(String(p.kam_id ?? ''))) return false;
       }
       if (filters.division && filters.division !== 'all') {
         if (String(p.branch_id ?? '') !== String(filters.division)) return false;
       }
       if (filters.supervisor && filters.supervisor !== 'all') {
         if (String(p.supervisor_id ?? '') !== String(filters.supervisor)) return false;
+      }
+      // ✅ product_id is on items[], not on the proposal
+      if (filters.product && filters.product !== 'all') {
+        const hasProduct = p.items.some(
+          (item) => String(item.product_id) === String(filters.product)
+        );
+        if (!hasProduct) return false;
       }
       return true;
     });
@@ -367,7 +399,7 @@ export default function OrderProposalListHistory({ filters }: OrderProposalListH
                   <TableHead>Item Status</TableHead>
                   <TableHead>Current Level</TableHead>
                   <TableHead>Effective Date</TableHead>
-                  <TableHead>Rejected By</TableHead>
+                  <TableHead>Action By</TableHead>
                   <TableHead>Rejection Note</TableHead>
                   <TableHead>Suggested Price</TableHead>
                   <TableHead>Suggested Volume</TableHead>
@@ -448,9 +480,13 @@ export default function OrderProposalListHistory({ filters }: OrderProposalListH
           </div>
 
           {/* pagination controls */}
+          {/* <div className="bg-yellow-100 p-4 my-4 rounded border">
+            DEBUG: currentPage={currentPage}, totalPages={totalPages}, totalItems={totalItems}, proposals={proposals.length}
+          </div> */}
           <AppPagination
             currentPage={currentPage}
             totalPages={totalPages}
+            totalItems={totalItems || proposals.length}
             onPageChange={handlePageChange}
           />
         </>

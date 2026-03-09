@@ -41,6 +41,10 @@ interface Client {
   id: string | number;
   full_name: string;
 }
+interface Product {
+  product_id: string | number;
+  product_name: string;
+}
 
 export interface ProposalFilters {
   filterType: 'kam' | 'branch' | 'supervisor';
@@ -49,6 +53,7 @@ export interface ProposalFilters {
   supervisor: string;
   client: string;
   status: 'all' | 'approved' | 'rejected'; // ← NEW
+  product: string; // ← NEW
 }
 
 interface ProposalFilterDrawerProps {
@@ -64,6 +69,7 @@ export const DEFAULT_PROPOSAL_FILTERS: ProposalFilters = {
   supervisor: 'all',
   client: 'all',
   status: 'all', // ← NEW
+  product: 'all', // ← NEW
 };
 
 /* ------------------------------------------------------------------ */
@@ -84,6 +90,8 @@ export function ProposalFilterDrawer({ filters, onApply, onClear }: ProposalFilt
   const [supervisorKamsLoading, setSupervisorKamsLoading] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
   const [clientsLoading, setClientsLoading] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]); // ← NEW
+  const [productsLoading, setProductsLoading] = useState(false); // ← NEW
 
   // ── Temp state ────────────────────────────────────────────────────
   const [tempFilterType, setTempFilterType] = useState<ProposalFilters['filterType']>(
@@ -94,6 +102,7 @@ export function ProposalFilterDrawer({ filters, onApply, onClear }: ProposalFilt
   const [tempSupervisor, setTempSupervisor] = useState(filters.supervisor);
   const [tempClient, setTempClient] = useState(filters.client);
   const [tempStatus, setTempStatus] = useState<ProposalFilters['status']>(filters.status); // ← NEW
+  const [tempProduct, setTempProduct] = useState(filters.product); // ← NEW
 
   // ── Role flags ────────────────────────────────────────────────────
   const userIsKam = isKAM();
@@ -108,19 +117,21 @@ export function ProposalFilterDrawer({ filters, onApply, onClear }: ProposalFilt
       setTempSupervisor(filters.supervisor);
       setTempClient(filters.client);
       setTempStatus(filters.status);
+      setTempProduct(filters.product); // ← NEW
     }
   }, [isOpen, filters]);
 
   /* ── Load on open ───────────────────────────────────────────────── */
   useEffect(() => {
     if (!isOpen) return;
+    if (products.length === 0) loadProducts(); // always fetch products
     if (userIsKam) {
       loadClientsByKam('self');
-      return;
+    } else {
+      if (kams.length === 0) loadKams();
+      if (branches.length === 0) loadBranches();
+      if (supervisors.length === 0) loadSupervisors();
     }
-    if (kams.length === 0) loadKams();
-    if (branches.length === 0) loadBranches();
-    if (supervisors.length === 0) loadSupervisors();
   }, [isOpen]);
 
   /* ── Supervisor KAMs ────────────────────────────────────────────── */
@@ -204,6 +215,18 @@ export function ProposalFilterDrawer({ filters, onApply, onClear }: ProposalFilt
     setSupervisorKamsLoading(false);
   };
 
+  const loadProducts = async () => {
+    setProductsLoading(true);
+    try {
+      const res = await PrismAPI.getProductList();
+      const data = res?.data?.data ?? res?.data ?? [];
+      setProducts(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+    }
+    setProductsLoading(false);
+  };
+
   const loadClientsByKam = async (kamId: string) => {
     setClientsLoading(true);
     setTempClient('all');
@@ -235,6 +258,7 @@ export function ProposalFilterDrawer({ filters, onApply, onClear }: ProposalFilt
       supervisor: tempSupervisor,
       client: tempClient,
       status: tempStatus, // ← NEW
+      product: tempProduct, // ← NEW
     });
     setIsOpen(false);
   };
@@ -247,8 +271,10 @@ export function ProposalFilterDrawer({ filters, onApply, onClear }: ProposalFilt
     setTempSupervisor('all');
     setTempClient('all');
     setTempStatus('all'); // ← NEW
+    setTempProduct('all'); // ← NEW
     setSupervisorKams([]);
     setClients([]);
+    setProducts([]); // clear products if desired
   };
 
   const handleClear = () => {
@@ -257,6 +283,11 @@ export function ProposalFilterDrawer({ filters, onApply, onClear }: ProposalFilt
     setIsOpen(false);
   };
 
+  /* ── Client picker visibility ────────────────────────────────────── */
+  const showClientPicker = userIsKam
+    ? clients.length > 0 || clientsLoading
+    : tempKam && tempKam !== 'all' && !tempKam.includes(',');
+
   /* ── Badge count ────────────────────────────────────────────────── */
   const activeCount = [
     filters.kam !== 'all',
@@ -264,14 +295,12 @@ export function ProposalFilterDrawer({ filters, onApply, onClear }: ProposalFilt
     filters.supervisor !== 'all',
     filters.client !== 'all',
     filters.status !== 'all', // ← NEW
+    filters.product !== 'all', // ← NEW
   ].filter(Boolean).length;
-
-  const showClientPicker = userIsKam
-    ? clients.length > 0 || clientsLoading
-    : tempKam && tempKam !== 'all' && !tempKam.includes(',');
 
   /* ── Filter rows ────────────────────────────────────────────────── */
   const filterConfigs = useMemo(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rows: any[] = [];
 
     // ── Status dropdown (always first) ── NEW
@@ -284,6 +313,22 @@ export function ProposalFilterDrawer({ filters, onApply, onClear }: ProposalFilt
         { value: 'all', label: 'All Types' },
         { value: 'approved', label: 'Approved' },
         { value: 'rejected', label: 'Rejected' },
+      ],
+    });
+
+    // ── Product dropdown ─────────────────────────────────────────
+    rows.push({
+      type: 'search-select',
+      label: 'Product',
+      value: tempProduct,
+      setter: setTempProduct,
+      loading: productsLoading,
+      options: [
+        { label: 'All Products', value: 'all' },
+        ...products.map((p) => ({
+          label: String(p.product_name || ''),
+          value: String(p.product_id),
+        })),
       ],
     });
 
@@ -402,7 +447,8 @@ export function ProposalFilterDrawer({ filters, onApply, onClear }: ProposalFilt
     tempDivision !== 'all' ||
     tempSupervisor !== 'all' ||
     tempClient !== 'all' ||
-    tempStatus !== 'all';
+    tempStatus !== 'all' ||
+    tempProduct !== 'all';
 
   /* ── Render ─────────────────────────────────────────────────────── */
   return (
@@ -443,7 +489,7 @@ export function ProposalFilterDrawer({ filters, onApply, onClear }: ProposalFilt
                             Loading...
                           </SelectItem>
                         ) : (
-                          f.options.map((o: any) => (
+                          f.options.map((o) => (
                             <SelectItem key={o.value} value={o.value} textValue={o.label}>
                               {o.label}
                             </SelectItem>
@@ -464,7 +510,8 @@ export function ProposalFilterDrawer({ filters, onApply, onClear }: ProposalFilt
                             Loading...
                           </SelectItem>
                         ) : (
-                          f.options.map((o: any) => (
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          f.options.map((o) => (
                             <SelectItem key={o.value} value={o.value}>
                               {o.label}
                             </SelectItem>
@@ -484,7 +531,7 @@ export function ProposalFilterDrawer({ filters, onApply, onClear }: ProposalFilt
                     value={f.value}
                     onValueChange={f.setter}
                   >
-                    {f.options.map((o: any) => (
+                    {f.options.map((o) => (
                       <SelectItem key={o.value} value={o.value}>
                         {o.label}
                       </SelectItem>
