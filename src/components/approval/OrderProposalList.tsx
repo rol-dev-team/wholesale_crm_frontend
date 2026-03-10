@@ -1017,14 +1017,16 @@ export default function OrderProposalList() {
   };
 
   // ─────────────────────────────────────────────
-  // POST TO ERP  (approved → erp)
-  // Passes proposal.id to storeStatusTrack
+  // POST TO ERP  (approved → erp)  ✅ individual item
   // ─────────────────────────────────────────────
-  const handlePostToErp = async (proposal: Proposal) => {
-    if (!confirm('Are you sure you want to post this to ERP?')) return;
+  const handlePostToErp = async (proposal: Proposal, item: ProposalItem) => {
+    if (!confirm('Are you sure you want to post this item to ERP?')) return;
     try {
       await PriceProposalAPI.storeStatusTrack(proposal.id, {
-        status: { status: 'erp' },
+        status: {
+          status: 'erp',
+          item_id: item.id, // ← send item_id for individual update
+        },
       });
       fetchProposals(lastPayloadRef.current);
     } catch (error: any) {
@@ -1034,14 +1036,16 @@ export default function OrderProposalList() {
   };
 
   // ─────────────────────────────────────────────
-  // UNPOST FROM ERP  (erp → approved)
-  // Passes proposal.id to storeStatusTrack
+  // UNPOST FROM ERP  (erp → approved)  ✅ individual item
   // ─────────────────────────────────────────────
-  const handleUnpostFromErp = async (proposal: Proposal) => {
-    if (!confirm('Are you sure you want to unpost this from ERP?')) return;
+  const handleUnpostFromErp = async (proposal: Proposal, item: ProposalItem) => {
+    if (!confirm('Are you sure you want to unpost this item from ERP?')) return;
     try {
       await PriceProposalAPI.storeStatusTrack(proposal.id, {
-        status: { status: 'approved' },
+        status: {
+          status: 'approved',
+          item_id: item.id, // ← send item_id for individual update
+        },
       });
       fetchProposals(lastPayloadRef.current);
     } catch (error: any) {
@@ -1342,7 +1346,7 @@ export default function OrderProposalList() {
 
                       {/* ── ACTIONS ── */}
                       <TableCell>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
                           {/* Approve / Reject — pending tab only */}
                           {canApproveOrReject(item) &&
                             (!item.status || item.status === 'pending') && (
@@ -1371,7 +1375,7 @@ export default function OrderProposalList() {
                               </>
                             )}
 
-                          {/* ✅ Posted in ERP — approved tab, shown on EVERY item row */}
+                          {/* ✅ Post to ERP — approved tab, individual item */}
                           {filter === 'approved' &&
                             item.status === 'approved' &&
                             canPostToErp() && (
@@ -1381,14 +1385,14 @@ export default function OrderProposalList() {
                                 className="bg-purple-600 hover:bg-purple-700 text-white"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handlePostToErp(p);
+                                  handlePostToErp(p, item);
                                 }}
                               >
                                 Posted in ERP
                               </Button>
                             )}
 
-                          {/* ✅ Unposted in ERP — erp tab, shown on EVERY item row */}
+                          {/* ✅ Unpost from ERP — erp tab, individual item */}
                           {filter === 'erp' && item.status === 'erp' && canPostToErp() && (
                             <Button
                               type="button"
@@ -1397,7 +1401,7 @@ export default function OrderProposalList() {
                               className="border-purple-500 text-purple-700 hover:bg-purple-50"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleUnpostFromErp(p);
+                                handleUnpostFromErp(p, item);
                               }}
                             >
                               Unposted in ERP
