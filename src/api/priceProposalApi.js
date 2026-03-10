@@ -89,4 +89,8 @@ export const PriceProposalAPI = {
   getAllPriceByFilter(params = {}) {
     return api.get('/price-proposals/items-filtered', { params });
   },
+
+  storeStatusTrack(proposalId, payload) {
+    return api.post(`/price-proposals/${proposalId}/status-track`, payload);
+  },
 };
