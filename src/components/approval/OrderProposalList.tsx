@@ -1187,7 +1187,7 @@ export default function OrderProposalList() {
     },
     {
       key: 'erp' as const,
-      label: 'ERP',
+      label: 'Posted in ERP',
       activeClass: 'bg-purple-500 text-white hover:bg-purple-600',
       inactiveClass: 'bg-white text-gray-700 border border-gray-300 hover:bg-purple-100',
       badgeClass: 'bg-purple-500',
