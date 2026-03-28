@@ -1,8 +1,3 @@
-
-
-
-
-
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -30,7 +25,7 @@ import { SelectItem } from '@/components/ui/select';
 import { divisions } from '@/data/mockData';
 import { KamPerformanceApi } from '@/api/kamPerformanceApi';
 import { PrismAPI } from '@/api/prismAPI';
-import { isSupervisor } from '@/utility/utility';
+import { isSupervisor, isKAM } from '@/utility/utility';
 
 /* ------------------------------------------------------------------ */
 /* TYPES */
@@ -162,7 +157,9 @@ export function KAMFilterDrawer({
 
   const [isOpen, setIsOpen] = useState(false);
 
-  const [internalFilterType, setInternalFilterType] = useState<'kam' | 'branch' | 'supervisor'>('kam');
+  const [internalFilterType, setInternalFilterType] = useState<'kam' | 'branch' | 'supervisor'>(
+    'kam'
+  );
   const currentFilterType = externalFilterType ?? internalFilterType;
   const setCurrentFilterType = setExternalFilterType ?? setInternalFilterType;
 
@@ -177,7 +174,9 @@ export function KAMFilterDrawer({
   const [supervisorKams, setSupervisorKams] = useState<KAM[]>([]);
   const [supervisorKamsLoading, setSupervisorKamsLoading] = useState(false);
 
-  const [tempFilterType, setTempFilterType] = useState<'kam' | 'branch' | 'supervisor'>(currentFilterType);
+  const [tempFilterType, setTempFilterType] = useState<'kam' | 'branch' | 'supervisor'>(
+    currentFilterType
+  );
   const [tempDivision, setTempDivision] = useState(division || 'all');
   const [tempKam, setTempKam] = useState(kam || 'all');
   const [tempSupervisor, setTempSupervisor] = useState(supervisor || 'all');
@@ -339,16 +338,16 @@ export function KAMFilterDrawer({
 
   const handleApply = () => {
     let finalKam = tempKam;
-    
+
     // ✅ FIXED: When supervisor is selected and "All KAMs" is chosen,
     // send comma-separated list of ALL KAM IDs (including supervisor)
     if (tempFilterType === 'supervisor' && tempSupervisor !== 'all' && tempKam === 'all') {
       // ✅ Include ALL KAMs (including supervisor) in the list
       const kamIds = supervisorKams.map((k) => String(k.kam_id));
-      
+
       // Join all KAM IDs with comma
       finalKam = kamIds.length > 0 ? kamIds.join(',') : 'all';
-      
+
       console.log('✅ All KAMs selected for supervisor:', finalKam);
     }
 
@@ -399,18 +398,26 @@ export function KAMFilterDrawer({
   const filterConfigs = useMemo(() => {
     const filters: any[] = [];
 
-    if (!isKamRole) {
-      // ✅ FIXED: Supervisors should only see KAM option
-      const typeOptions = [
-        { value: 'kam', label: 'KAM' },
-      ];
-      
-      // ✅ Only add Branch and Supervisor for non-supervisor roles
+    // if (!isKamRole) {
+    //   // ✅ FIXED: Supervisors should only see KAM option
+    //   const typeOptions = [
+    //     { value: 'kam', label: 'KAM' },
+    //   ];
+
+    //   // ✅ Only add Branch and Supervisor for non-supervisor roles
+    //   if (!isSupervisor()) {
+    //     typeOptions.push(
+    //       { value: 'branch', label: 'Branch' },
+    //       { value: 'supervisor', label: 'Supervisor' }
+    //     );
+    //   }
+
+    if (!isKAM()) {
+      const typeOptions = [{ value: 'kam', label: 'KAM' }];
+
       if (!isSupervisor()) {
-        typeOptions.push(
-          { value: 'branch', label: 'Branch' },
-          { value: 'supervisor', label: 'Supervisor' }
-        );
+        typeOptions.push({ value: 'branch', label: 'Branch' });
+        typeOptions.push({ value: 'supervisor', label: 'Supervisor' });
       }
 
       filters.push({
@@ -566,48 +573,48 @@ export function KAMFilterDrawer({
               if (filter.type === 'search-select') {
                 return (
                   <>
-                  <div key={idx} className="block sm:hidden"> 
-                    <FloatingSelect
-                      label={filter.label}
-                      value={filter.value}
-                      onValueChange={filter.setter}
-                    >
-                      {filter.loading ? (
-                        <SelectItem value="loading" disabled textValue="Loading...">
-                          Loading...
-                        </SelectItem>
-                      ) : (
-                        (filter.options || []).map((o: any) => (
-                          <SelectItem key={o.value} value={o.value} textValue={o.label}>
-                            {o.label}
+                    <div key={idx} className="block sm:hidden">
+                      <FloatingSelect
+                        label={filter.label}
+                        value={filter.value}
+                        onValueChange={filter.setter}
+                      >
+                        {filter.loading ? (
+                          <SelectItem value="loading" disabled textValue="Loading...">
+                            Loading...
                           </SelectItem>
-                        ))
-                      )}
-                    </FloatingSelect>
-                  </div>
-                  
-                  <div className="hidden sm:block">
-                    <FloatingSearchSelect
-                      key={idx}
-                      label={filter.label}
-                      value={filter.value}
-                      searchable
-                      onValueChange={filter.setter}
-                      disabled={filter.loading}
-                    >
-                      {filter.loading ? (
-                        <SelectItem value="loading" disabled>
-                          Loading...
-                        </SelectItem>
-                      ) : (
-                        (filter.options || []).map((o: any) => (
-                          <SelectItem key={o.value} value={o.value}>
-                            {o.label}
+                        ) : (
+                          (filter.options || []).map((o: any) => (
+                            <SelectItem key={o.value} value={o.value} textValue={o.label}>
+                              {o.label}
+                            </SelectItem>
+                          ))
+                        )}
+                      </FloatingSelect>
+                    </div>
+
+                    <div className="hidden sm:block">
+                      <FloatingSearchSelect
+                        key={idx}
+                        label={filter.label}
+                        value={filter.value}
+                        searchable
+                        onValueChange={filter.setter}
+                        disabled={filter.loading}
+                      >
+                        {filter.loading ? (
+                          <SelectItem value="loading" disabled>
+                            Loading...
                           </SelectItem>
-                        ))
-                      )}
-                    </FloatingSearchSelect>
-                  </div>
+                        ) : (
+                          (filter.options || []).map((o: any) => (
+                            <SelectItem key={o.value} value={o.value}>
+                              {o.label}
+                            </SelectItem>
+                          ))
+                        )}
+                      </FloatingSearchSelect>
+                    </div>
                   </>
                 );
               }

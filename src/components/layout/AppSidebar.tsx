@@ -45,7 +45,7 @@ const allNavItems = [
     title: 'KAM Performance',
     url: '/kam-performance',
     icon: Trophy,
-    roles: ['supervisor', 'management', 'super_admin'],
+    roles: ['kam', 'supervisor', 'management', 'super_admin'],
   },
   {
     title: 'Activities',
