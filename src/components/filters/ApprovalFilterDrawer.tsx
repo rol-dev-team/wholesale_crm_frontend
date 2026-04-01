@@ -1,0 +1,1234 @@
+// 'use client';
+
+// import React, { useState, useEffect, useMemo } from 'react';
+// import {
+//   Drawer,
+//   DrawerContent,
+//   DrawerHeader,
+//   DrawerFooter,
+//   DrawerTitle,
+//   DrawerClose,
+// } from '@/components/ui/drawer';
+// import { Button } from '@/components/ui/button';
+// import { ScrollArea } from '@/components/ui/scroll-area';
+// import { X, RotateCcw, Calendar as CalendarIcon, Filter, Check } from 'lucide-react';
+// import { Label } from '@/components/ui/label';
+// import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+// import DatePicker from 'react-datepicker';
+// import 'react-datepicker/dist/react-datepicker.css';
+
+// import { FloatingSearchSelect } from '@/components/ui/FloatingSearchSelect';
+// import { FloatingSelect } from '@/components/ui/FloatingSelect';
+// import { FloatingDatePickerInput } from '@/components/ui/FloatingDatePickerInput';
+// import { SelectItem } from '@/components/ui/select';
+
+// import { divisions } from '@/data/mockData';
+// import { KamPerformanceApi } from '@/api/kamPerformanceApi';
+// import { PrismAPI } from '@/api/prismAPI';
+// import { isSupervisor, isKAM } from '@/utility/utility';
+
+// /* ------------------------------------------------------------------ */
+// /* TYPES */
+// /* ------------------------------------------------------------------ */
+
+// interface KAM {
+//   kam_id: string | number;
+//   kam_name: string;
+//   kam_type?: string;
+// }
+
+// interface Branch {
+//   id: string | number;
+//   branch_name: string;
+// }
+
+// interface Supervisor {
+//   supervisor_id: string | number;
+//   supervisor: string;
+//   employment_branch_id?: string | number;
+//   branch_name?: string;
+// }
+
+// interface KAMFilterDrawerProps {
+//   filterType?: 'kam' | 'branch' | 'supervisor';
+//   setFilterType?: (val: 'kam' | 'branch' | 'supervisor') => void;
+
+//   division: string;
+//   setDivision: (val: string) => void;
+//   kam: string;
+//   setKam: (val: string) => void;
+//   supervisor?: string;
+//   setSupervisor?: (val: string) => void;
+
+//   clientType: string;
+//   setClientType: (val: string) => void;
+//   kams: KAM[];
+//   setKams: (val: KAM[]) => void;
+//   viewMode: 'monthly' | 'yearly' | 'quarterly';
+//   setViewMode: (val: 'monthly' | 'yearly' | 'quarterly') => void;
+//   startMonth?: string;
+//   setStartMonth?: (val: string) => void;
+//   endMonth?: string;
+//   setEndMonth?: (val: string) => void;
+//   startYear: string;
+//   setStartYear: (val: string) => void;
+//   endYear: string;
+//   setEndYear: (val: string) => void;
+
+//   quarters?: number[];
+//   setQuarters?: (val: number[]) => void;
+//   quarterYear?: string;
+//   setQuarterYear?: (val: string) => void;
+
+//   onFilterChange: () => void;
+//   userRole?: string;
+// }
+
+// export function ApprovalFilterDrawer({
+//   filterType: externalFilterType,
+//   setFilterType: setExternalFilterType,
+//   division,
+//   setDivision,
+//   kam,
+//   setKam,
+//   supervisor = 'all',
+//   setSupervisor,
+//   clientType,
+//   setClientType,
+//   kams,
+//   setKams,
+//   viewMode,
+//   setViewMode,
+//   startMonth,
+//   setStartMonth,
+//   endMonth,
+//   setEndMonth,
+//   startYear,
+//   setStartYear,
+//   endYear,
+//   setEndYear,
+//   quarters = [1],
+//   setQuarters,
+//   quarterYear,
+//   setQuarterYear,
+//   onFilterChange,
+//   userRole = 'super_admin',
+// }: KAMFilterDrawerProps) {
+//   const MONTHS_LIST = [
+//     'January',
+//     'February',
+//     'March',
+//     'April',
+//     'May',
+//     'June',
+//     'July',
+//     'August',
+//     'September',
+//     'October',
+//     'November',
+//     'December',
+//   ];
+
+//   const getCurrentMonthDefaults = () => {
+//     const now = new Date();
+//     return {
+//       monthName: MONTHS_LIST[now.getMonth()],
+//       year: now.getFullYear().toString(),
+//     };
+//   };
+
+//   const getCurrentQuarterDefaults = () => {
+//     const now = new Date();
+//     const q = Math.floor(now.getMonth() / 3) + 1;
+//     return {
+//       quarter: q,
+//       year: now.getFullYear().toString(),
+//     };
+//   };
+
+//   const { monthName: defaultMonth, year: defaultYear } = getCurrentMonthDefaults();
+//   const { quarter: defaultQuarter, year: defaultQuarterYear } = getCurrentQuarterDefaults();
+//   const currentYear = new Date().getFullYear();
+//   const years = Array.from({ length: 10 }, (_, i) => (currentYear - i).toString());
+
+//   /* ------------------------------------------------------------------ */
+//   /* STATES */
+//   /* ------------------------------------------------------------------ */
+
+//   const [isOpen, setIsOpen] = useState(false);
+
+//   const [internalFilterType, setInternalFilterType] = useState<'kam' | 'branch' | 'supervisor'>(
+//     'kam'
+//   );
+//   const currentFilterType = externalFilterType ?? internalFilterType;
+//   const setCurrentFilterType = setExternalFilterType ?? setInternalFilterType;
+
+//   const [kamsLoading, setKamsLoading] = useState(false);
+
+//   const [branches, setBranches] = useState<Branch[]>([]);
+//   const [branchesLoading, setBranchesLoading] = useState(false);
+
+//   const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
+//   const [supervisorsLoading, setSupervisorsLoading] = useState(false);
+
+//   const [supervisorKams, setSupervisorKams] = useState<KAM[]>([]);
+//   const [supervisorKamsLoading, setSupervisorKamsLoading] = useState(false);
+
+//   const [tempFilterType, setTempFilterType] = useState<'kam' | 'branch' | 'supervisor'>(
+//     currentFilterType
+//   );
+//   const [tempDivision, setTempDivision] = useState(division || 'all');
+//   const [tempKam, setTempKam] = useState(kam || 'all');
+//   const [tempSupervisor, setTempSupervisor] = useState(supervisor || 'all');
+//   const [tempClientType, setTempClientType] = useState(clientType || 'All Client');
+//   const [tempViewMode, setTempViewMode] = useState(viewMode);
+
+//   const [tempStartMonth, setTempStartMonth] = useState(startMonth || defaultMonth);
+//   const [tempEndMonth, setTempEndMonth] = useState(endMonth || defaultMonth);
+//   const [tempStartYear, setTempStartYear] = useState(startYear || defaultYear);
+//   const [tempEndYear, setTempEndYear] = useState(endYear || defaultYear);
+
+//   const [tempQuarters, setTempQuarters] = useState<number[]>(quarters || [defaultQuarter]);
+//   const [tempQuarterYear, setTempQuarterYear] = useState<string>(quarterYear || defaultQuarterYear);
+
+//   const isKamRole = userRole === 'kam';
+//   const showKamSelector = !isKamRole;
+
+//   /* ------------------------------------------------------------------ */
+//   /* LOAD KAMS, BRANCHES & SUPERVISORS */
+//   /* ------------------------------------------------------------------ */
+
+//   useEffect(() => {
+//     if (isOpen && kams.length === 0) loadKams();
+//     if (isOpen && branches.length === 0) loadBranches();
+//     if (isOpen && supervisors.length === 0) loadSupervisors();
+//   }, [isOpen]);
+
+//   useEffect(() => {
+//     if (tempFilterType === 'supervisor' && tempSupervisor && tempSupervisor !== 'all') {
+//       loadSupervisorKams(tempSupervisor);
+//     } else {
+//       setSupervisorKams([]);
+//       setTempKam('all');
+//     }
+//   }, [tempFilterType, tempSupervisor]);
+
+//   useEffect(() => {
+//     if (isOpen) {
+//       setTempFilterType(currentFilterType);
+//       setTempDivision(division);
+//       setTempKam(kam);
+//       setTempSupervisor(supervisor);
+//       setTempClientType(clientType);
+//       setTempViewMode(viewMode);
+//       setTempStartMonth(startMonth || defaultMonth);
+//       setTempEndMonth(endMonth || defaultMonth);
+//       setTempStartYear(startYear);
+//       setTempEndYear(endYear);
+//       setTempQuarters(quarters);
+//       setTempQuarterYear(quarterYear || defaultQuarterYear);
+//     }
+//   }, [
+//     isOpen,
+//     currentFilterType,
+//     division,
+//     kam,
+//     supervisor,
+//     clientType,
+//     viewMode,
+//     startMonth,
+//     endMonth,
+//     startYear,
+//     endYear,
+//     quarters,
+//     quarterYear,
+//   ]);
+
+//   const loadKams = async () => {
+//     setKamsLoading(true);
+//     try {
+//       const res = await KamPerformanceApi.getKams();
+//       console.log('KAM API Response:', res);
+
+//       if (res?.data?.status && res?.data?.data) {
+//         console.log('KAMs loaded:', res.data.data);
+//         setKams(res.data.data);
+//       } else if (res?.data) {
+//         console.log('Direct data:', res.data);
+//         setKams(res.data);
+//       }
+//     } catch (err) {
+//       console.error('Error loading KAMs:', err);
+//     }
+//     setKamsLoading(false);
+//   };
+
+//   const loadBranches = async () => {
+//     setBranchesLoading(true);
+//     try {
+//       const res = await PrismAPI.getBranchList();
+//       console.log('Branch API Response:', res);
+
+//       if (res?.data?.status && res?.data?.data) {
+//         console.log('Branches loaded:', res.data.data);
+//         setBranches(res.data.data);
+//       } else if (res?.data) {
+//         console.log('Direct data:', res.data);
+//         setBranches(res.data);
+//       }
+//     } catch (err) {
+//       console.error('Error loading branches:', err);
+//     }
+//     setBranchesLoading(false);
+//   };
+
+//   const loadSupervisors = async () => {
+//     setSupervisorsLoading(true);
+//     try {
+//       const res = await PrismAPI.getSupervisors();
+//       console.log('Supervisors API Response:', res);
+
+//       if (res?.data?.status && res?.data?.data) {
+//         console.log('Supervisors loaded:', res.data.data);
+//         setSupervisors(res.data.data);
+//       } else if (res?.data) {
+//         console.log('Direct data:', res.data);
+//         setSupervisors(res.data);
+//       }
+//     } catch (err) {
+//       console.error('Error loading supervisors:', err);
+//     }
+//     setSupervisorsLoading(false);
+//   };
+
+//   const loadSupervisorKams = async (supervisorId: string) => {
+//     setSupervisorKamsLoading(true);
+//     try {
+//       const res = await KamPerformanceApi.getSupervisorWiseKAMList(supervisorId);
+//       console.log('Supervisor KAMs API Response:', res);
+
+//       if (res?.data?.status && res?.data?.data) {
+//         console.log('Supervisor KAMs loaded:', res.data.data);
+//         setSupervisorKams(res.data.data);
+//       } else if (res?.data) {
+//         console.log('Direct data:', res.data);
+//         setSupervisorKams(res.data);
+//       }
+//     } catch (err) {
+//       console.error('Error loading supervisor KAMs:', err);
+//       setSupervisorKams([]);
+//     }
+//     setSupervisorKamsLoading(false);
+//   };
+
+//   /* ------------------------------------------------------------------ */
+//   /* DATE HELPERS */
+//   /* ------------------------------------------------------------------ */
+
+//   const getPickerDate = (m: string, y: string) => {
+//     const idx = MONTHS_LIST.indexOf(m);
+//     return new Date(parseInt(y), idx >= 0 ? idx : 0);
+//   };
+
+//   const toggleQuarter = (q: number) => {
+//     setTempQuarters((prev) => {
+//       if (prev.includes(q)) {
+//         return prev.filter((quarter) => quarter !== q);
+//       } else {
+//         return [...prev, q].sort((a, b) => a - b);
+//       }
+//     });
+//   };
+
+//   /* ------------------------------------------------------------------ */
+//   /* APPLY & RESET */
+//   /* ------------------------------------------------------------------ */
+
+//   const handleApply = () => {
+//     let finalKam = tempKam;
+
+//     // ✅ FIXED: When supervisor is selected and "All KAMs" is chosen,
+//     // send comma-separated list of ALL KAM IDs (including supervisor)
+//     if (tempFilterType === 'supervisor' && tempSupervisor !== 'all' && tempKam === 'all') {
+//       // ✅ Include ALL KAMs (including supervisor) in the list
+//       const kamIds = supervisorKams.map((k) => String(k.kam_id));
+
+//       // Join all KAM IDs with comma
+//       finalKam = kamIds.length > 0 ? kamIds.join(',') : 'all';
+
+//       console.log('✅ All KAMs selected for supervisor:', finalKam);
+//     }
+
+//     setCurrentFilterType(tempFilterType);
+//     setDivision(tempDivision);
+//     setKam(finalKam);
+//     if (setSupervisor) setSupervisor(tempSupervisor);
+//     setClientType(tempClientType);
+//     setViewMode(tempViewMode);
+
+//     if (tempViewMode === 'monthly') {
+//       if (setStartMonth) setStartMonth(tempStartMonth);
+//       if (setEndMonth) setEndMonth(tempEndMonth);
+//       setStartYear(tempStartYear);
+//       setEndYear(tempEndYear);
+//     } else if (tempViewMode === 'quarterly') {
+//       if (setQuarters) setQuarters(tempQuarters);
+//       if (setQuarterYear) setQuarterYear(tempQuarterYear);
+//     } else {
+//       setStartYear(tempStartYear);
+//       setEndYear(tempEndYear);
+//     }
+
+//     onFilterChange();
+//     setIsOpen(false);
+//   };
+
+//   const handleReset = () => {
+//     setTempFilterType('kam');
+//     setTempDivision('all');
+//     setTempKam('all');
+//     setTempSupervisor('all');
+//     setTempClientType('All Client');
+//     setTempViewMode('monthly');
+//     setTempStartMonth(defaultMonth);
+//     setTempEndMonth(defaultMonth);
+//     setTempStartYear(defaultYear);
+//     setTempEndYear(defaultYear);
+//     setTempQuarters([defaultQuarter]);
+//     setTempQuarterYear(defaultQuarterYear);
+//     setSupervisorKams([]);
+//   };
+
+//   /* ------------------------------------------------------------------ */
+//   /* FILTER CONFIG */
+//   /* ------------------------------------------------------------------ */
+
+//   const filterConfigs = useMemo(() => {
+//     const filters: any[] = [];
+
+   
+
+//     // if (!isKAM()) {
+//     //   const typeOptions = [{ value: 'kam', label: 'KAM' }];
+
+//     //   if (!isSupervisor()) {
+//     //     typeOptions.push({ value: 'branch', label: 'Branch' });
+//     //     typeOptions.push({ value: 'supervisor', label: 'Supervisor' });
+//     //   }
+
+//     //   filters.push({
+//     //     type: 'select',
+//     //     label: 'Type',
+//     //     value: tempFilterType,
+//     //     setter: setTempFilterType,
+//     //     options: typeOptions,
+//     //   });
+//     // }
+
+//     if (tempFilterType === 'kam' && showKamSelector) {
+//       filters.push({
+//         type: 'search-select',
+//         label: 'KAM',
+//         value: tempKam,
+//         setter: setTempKam,
+//         options: [
+//           { label: 'All', value: 'all' },
+//           ...kams.map((k) => ({
+//             label: k.kam_name,
+//             value: String(k.kam_id),
+//           })),
+//         ],
+//         loading: kamsLoading,
+//       });
+//     }
+
+//     if (tempFilterType === 'branch') {
+//       console.log('Building division filter, branches:', branches);
+
+//       const branchOptions = [
+//         { label: 'All Branches', value: 'all' },
+//         ...branches.map((b) => ({
+//           label: b.branch_name,
+//           value: String(b.id),
+//         })),
+//       ];
+
+//       console.log('Branch options:', branchOptions);
+
+//       filters.push({
+//         type: 'search-select',
+//         label: 'Branch',
+//         value: tempDivision,
+//         setter: setTempDivision,
+//         options: branchOptions,
+//         loading: branchesLoading,
+//       });
+//     }
+
+//     // ✅ SUPERVISOR Filter
+//     if (tempFilterType === 'supervisor') {
+//       console.log('Building supervisor filter, supervisors:', supervisors);
+
+//       const supervisorOptions = [
+//         { label: 'All Supervisors', value: 'all' },
+//         ...supervisors.map((s) => ({
+//           label: s.supervisor,
+//           value: String(s.supervisor_id),
+//         })),
+//       ];
+
+//       console.log('Supervisor options:', supervisorOptions);
+
+//       filters.push({
+//         type: 'search-select',
+//         label: 'Supervisor',
+//         value: tempSupervisor,
+//         setter: setTempSupervisor,
+//         options: supervisorOptions,
+//         loading: supervisorsLoading,
+//       });
+
+//       // ✅ FIXED: Show ALL KAMs (including supervisor) in the dropdown
+//       if (tempSupervisor && tempSupervisor !== 'all') {
+//         filters.push({
+//           type: 'search-select',
+//           label: 'KAM',
+//           value: tempKam,
+//           setter: setTempKam,
+//           options: [
+//             { label: 'All KAMs', value: 'all' },
+//             ...supervisorKams.map((k) => ({
+//               label: k.kam_name,
+//               value: String(k.kam_id),
+//             })),
+//           ],
+//           loading: supervisorKamsLoading,
+//         });
+//       }
+//     }
+
+//     // ✅ CLIENT CATEGORY
+//     // if (userRole !== 'kam') {
+//     //   filters.push({
+//     //     type: 'select',
+//     //     label: 'Client Category',
+//     //     value: tempClientType,
+//     //     setter: setTempClientType,
+//     //     options: [
+//     //       { value: 'All Client', label: 'All Client' },
+//     //       { value: 'Self Client', label: 'Self Client' },
+//     //       { value: 'Transferred Client', label: 'Transferred Client' },
+//     //     ],
+//     //   });
+//     // }
+
+//     return filters;
+//   }, [
+//     tempFilterType,
+//     tempKam,
+//     tempDivision,
+//     tempSupervisor,
+//     tempClientType,
+//     kams,
+//     branches,
+//     supervisors,
+//     supervisorKams,
+//     branchesLoading,
+//     kamsLoading,
+//     supervisorsLoading,
+//     supervisorKamsLoading,
+//     isKamRole,
+//     showKamSelector,
+//     userRole,
+//   ]);
+
+//   /* ------------------------------------------------------------------ */
+//   /* RENDER */
+//   /* ------------------------------------------------------------------ */
+
+//   return (
+//     <Drawer clssName="sm:z-[60]" direction="right" open={isOpen} onOpenChange={setIsOpen}>
+//       <Button variant="outline" onClick={() => setIsOpen(true)}>
+//         <Filter className="h-4 w-4" /> Filters
+//       </Button>
+
+//       <DrawerContent className="w-full sm:w-[420px]">
+//         <DrawerHeader className="flex items-center justify-between">
+//           <DrawerTitle>Filters</DrawerTitle>
+//           <DrawerClose asChild>
+//             <Button variant="ghost" size="icon">
+//               <X className="h-4 w-4" />
+//             </Button>
+//           </DrawerClose>
+//         </DrawerHeader>
+
+//         <ScrollArea className="flex-1 px-4">
+//           <div className="space-y-5 py-2">
+//             {/* Dynamic Filters */}
+//             {filterConfigs.map((filter, idx) => {
+//               if (filter.type === 'search-select') {
+//                 return (
+//                   <>
+//                     <div key={idx} className="block sm:hidden">
+//                       <FloatingSelect
+//                         label={filter.label}
+//                         value={filter.value}
+//                         onValueChange={filter.setter}
+//                       >
+//                         {filter.loading ? (
+//                           <SelectItem value="loading" disabled textValue="Loading...">
+//                             Loading...
+//                           </SelectItem>
+//                         ) : (
+//                           (filter.options || []).map((o: any) => (
+//                             <SelectItem key={o.value} value={o.value} textValue={o.label}>
+//                               {o.label}
+//                             </SelectItem>
+//                           ))
+//                         )}
+//                       </FloatingSelect>
+//                     </div>
+
+//                     <div className="hidden sm:block">
+//                       <FloatingSearchSelect
+//                         key={idx}
+//                         label={filter.label}
+//                         value={filter.value}
+//                         searchable
+//                         onValueChange={filter.setter}
+//                         disabled={filter.loading}
+//                       >
+//                         {filter.loading ? (
+//                           <SelectItem value="loading" disabled>
+//                             Loading...
+//                           </SelectItem>
+//                         ) : (
+//                           (filter.options || []).map((o: any) => (
+//                             <SelectItem key={o.value} value={o.value}>
+//                               {o.label}
+//                             </SelectItem>
+//                           ))
+//                         )}
+//                       </FloatingSearchSelect>
+//                     </div>
+//                   </>
+//                 );
+//               }
+
+//               if (filter.type === 'select') {
+//                 return (
+//                   <FloatingSelect
+//                     key={idx}
+//                     label={filter.label}
+//                     value={filter.value}
+//                     onValueChange={filter.setter}
+//                   >
+//                     {filter.options.map((o: any) => (
+//                       <SelectItem key={o.value} value={o.value}>
+//                         {o.label}
+//                       </SelectItem>
+//                     ))}
+//                   </FloatingSelect>
+//                 );
+//               }
+
+//               return null;
+//             })}
+
+          
+
+            
+//             {tempViewMode === 'quarterly' && (
+//               <div className="space-y-4">
+//                 {/* Year Picker */}
+//                 <FloatingSelect
+//                   label="Year"
+//                   value={tempQuarterYear}
+//                   onValueChange={setTempQuarterYear}
+//                 >
+//                   {years.map((y) => (
+//                     <SelectItem key={y} value={y}>
+//                       {y}
+//                     </SelectItem>
+//                   ))}
+//                 </FloatingSelect>
+
+               
+//                 <div className="space-y-2">
+//                   <Label className="text-xs font-bold uppercase text-muted-foreground">
+//                     Select Quarters
+//                   </Label>
+//                   <div className="grid grid-cols-4 gap-2">
+//                     {[1, 2, 3, 4].map((q) => (
+//                       <Button
+//                         key={q}
+//                         onClick={() => toggleQuarter(q)}
+//                         variant={tempQuarters.includes(q) ? 'default' : 'outline'}
+//                         className={`w-full font-semibold ${
+//                           tempQuarters.includes(q)
+//                             ? 'bg-blue-600 text-white hover:bg-blue-700'
+//                             : 'border-slate-300 text-slate-700 hover:bg-slate-50'
+//                         }`}
+//                       >
+//                         <div className="flex items-center justify-center gap-1">
+//                           {tempQuarters.includes(q) && <Check className="h-4 w-4" />}Q{q}
+//                         </div>
+//                       </Button>
+//                     ))}
+//                   </div>
+//                   <p className="text-xs text-muted-foreground mt-2">
+//                     Selected:{' '}
+//                     {tempQuarters.length > 0 ? tempQuarters.map((q) => `Q${q}`).join(', ') : 'None'}
+//                   </p>
+//                 </div>
+//               </div>
+//             )}
+
+//             {/* Reset */}
+//             <Button
+//               variant="ghost"
+//               className="w-full text-destructive flex gap-2 py-4"
+//               onClick={handleReset}
+//             >
+//               <RotateCcw className="h-4 w-4" /> Clear All Filters
+//             </Button>
+//           </div>
+//         </ScrollArea>
+
+//         <DrawerFooter>
+//           <Button onClick={handleApply} className="w-full">
+//             Apply Filters
+//           </Button>
+//         </DrawerFooter>
+//       </DrawerContent>
+//     </Drawer>
+//   );
+// }
+
+
+
+
+'use client';
+
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerFooter,
+  DrawerTitle,
+  DrawerClose,
+} from '@/components/ui/drawer';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { X, RotateCcw, Filter, Check } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+
+import { FloatingSearchSelect } from '@/components/ui/FloatingSearchSelect';
+import { FloatingSelect } from '@/components/ui/FloatingSelect';
+import { SelectItem } from '@/components/ui/select';
+
+import { KamPerformanceApi } from '@/api/kamPerformanceApi';
+import { PrismAPI } from '@/api/prismAPI';
+
+interface KAM {
+  kam_id: string | number;
+  kam_name: string;
+  kam_type?: string;
+}
+
+interface Branch {
+  id: string | number;
+  branch_name: string;
+}
+
+interface Supervisor {
+  supervisor_id: string | number;
+  supervisor: string;
+  employment_branch_id?: string | number;
+  branch_name?: string;
+}
+
+interface KAMFilterDrawerProps {
+  filterType?: 'kam' | 'branch' | 'supervisor';
+  setFilterType?: (val: 'kam' | 'branch' | 'supervisor') => void;
+  division: string;
+  setDivision: (val: string) => void;
+  kam: string;
+  setKam: (val: string) => void;
+  supervisor?: string;
+  setSupervisor?: (val: string) => void;
+  clientType: string;
+  setClientType: (val: string) => void;
+  kams: KAM[];
+  setKams: (val: KAM[]) => void;
+  viewMode: 'monthly' | 'yearly' | 'quarterly';
+  setViewMode: (val: 'monthly' | 'yearly' | 'quarterly') => void;
+  startMonth?: string;
+  setStartMonth?: (val: string) => void;
+  endMonth?: string;
+  setEndMonth?: (val: string) => void;
+  startYear: string;
+  setStartYear: (val: string) => void;
+  endYear: string;
+  setEndYear: (val: string) => void;
+  quarters?: number[];
+  setQuarters?: (val: number[]) => void;
+  quarterYear?: string;
+  setQuarterYear?: (val: string) => void;
+  // ✅ now receives the resolved finalKam directly
+  onFilterChange: (newKam: string) => void;
+  userRole?: string;
+}
+
+export function ApprovalFilterDrawer({
+  filterType: externalFilterType,
+  setFilterType: setExternalFilterType,
+  division,
+  setDivision,
+  kam,
+  setKam,
+  supervisor = 'all',
+  setSupervisor,
+  clientType,
+  setClientType,
+  kams,
+  setKams,
+  viewMode,
+  setViewMode,
+  startMonth,
+  setStartMonth,
+  endMonth,
+  setEndMonth,
+  startYear,
+  setStartYear,
+  endYear,
+  setEndYear,
+  quarters = [1],
+  setQuarters,
+  quarterYear,
+  setQuarterYear,
+  onFilterChange,
+  userRole = 'super_admin',
+}: KAMFilterDrawerProps) {
+  const MONTHS_LIST = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ];
+
+  const getCurrentMonthDefaults = () => {
+    const now = new Date();
+    return {
+      monthName: MONTHS_LIST[now.getMonth()],
+      year: now.getFullYear().toString(),
+    };
+  };
+
+  const getCurrentQuarterDefaults = () => {
+    const now = new Date();
+    const q = Math.floor(now.getMonth() / 3) + 1;
+    return { quarter: q, year: now.getFullYear().toString() };
+  };
+
+  const { monthName: defaultMonth, year: defaultYear } = getCurrentMonthDefaults();
+  const { quarter: defaultQuarter, year: defaultQuarterYear } = getCurrentQuarterDefaults();
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 10 }, (_, i) => (currentYear - i).toString());
+
+  const [isOpen, setIsOpen] = useState(false);
+
+  const [internalFilterType, setInternalFilterType] = useState<'kam' | 'branch' | 'supervisor'>('kam');
+  const currentFilterType = externalFilterType ?? internalFilterType;
+  const setCurrentFilterType = setExternalFilterType ?? setInternalFilterType;
+
+  const [kamsLoading, setKamsLoading] = useState(false);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [branchesLoading, setBranchesLoading] = useState(false);
+  const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
+  const [supervisorsLoading, setSupervisorsLoading] = useState(false);
+  const [supervisorKams, setSupervisorKams] = useState<KAM[]>([]);
+  const [supervisorKamsLoading, setSupervisorKamsLoading] = useState(false);
+
+  const [tempFilterType, setTempFilterType] = useState<'kam' | 'branch' | 'supervisor'>(currentFilterType);
+  const [tempDivision, setTempDivision] = useState(division || 'all');
+  const [tempKam, setTempKam] = useState(kam || 'all');
+  const [tempSupervisor, setTempSupervisor] = useState(supervisor || 'all');
+  const [tempClientType, setTempClientType] = useState(clientType || 'All Client');
+  const [tempViewMode, setTempViewMode] = useState(viewMode);
+  const [tempStartMonth, setTempStartMonth] = useState(startMonth || defaultMonth);
+  const [tempEndMonth, setTempEndMonth] = useState(endMonth || defaultMonth);
+  const [tempStartYear, setTempStartYear] = useState(startYear || defaultYear);
+  const [tempEndYear, setTempEndYear] = useState(endYear || defaultYear);
+  const [tempQuarters, setTempQuarters] = useState<number[]>(quarters || [defaultQuarter]);
+  const [tempQuarterYear, setTempQuarterYear] = useState<string>(quarterYear || defaultQuarterYear);
+
+  const isKamRole = userRole === 'kam';
+  const showKamSelector = !isKamRole;
+
+  // ─── Load on open ───
+  useEffect(() => {
+    if (isOpen && kams.length === 0) loadKams();
+    if (isOpen && branches.length === 0) loadBranches();
+    if (isOpen && supervisors.length === 0) loadSupervisors();
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (tempFilterType === 'supervisor' && tempSupervisor && tempSupervisor !== 'all') {
+      loadSupervisorKams(tempSupervisor);
+    } else {
+      setSupervisorKams([]);
+      setTempKam('all');
+    }
+  }, [tempFilterType, tempSupervisor]);
+
+  // Sync temp state when drawer opens
+  useEffect(() => {
+    if (isOpen) {
+      setTempFilterType(currentFilterType);
+      setTempDivision(division);
+      setTempKam(kam);
+      setTempSupervisor(supervisor);
+      setTempClientType(clientType);
+      setTempViewMode(viewMode);
+      setTempStartMonth(startMonth || defaultMonth);
+      setTempEndMonth(endMonth || defaultMonth);
+      setTempStartYear(startYear);
+      setTempEndYear(endYear);
+      setTempQuarters(quarters);
+      setTempQuarterYear(quarterYear || defaultQuarterYear);
+    }
+  }, [isOpen]);
+
+  const loadKams = async () => {
+    setKamsLoading(true);
+    try {
+      const res = await KamPerformanceApi.getKams();
+      if (res?.data?.status && res?.data?.data) setKams(res.data.data);
+      else if (res?.data) setKams(res.data);
+    } catch (err) {
+      console.error('Error loading KAMs:', err);
+    }
+    setKamsLoading(false);
+  };
+
+  const loadBranches = async () => {
+    setBranchesLoading(true);
+    try {
+      const res = await PrismAPI.getBranchList();
+      if (res?.data?.status && res?.data?.data) setBranches(res.data.data);
+      else if (res?.data) setBranches(res.data);
+    } catch (err) {
+      console.error('Error loading branches:', err);
+    }
+    setBranchesLoading(false);
+  };
+
+  const loadSupervisors = async () => {
+    setSupervisorsLoading(true);
+    try {
+      const res = await PrismAPI.getSupervisors();
+      if (res?.data?.status && res?.data?.data) setSupervisors(res.data.data);
+      else if (res?.data) setSupervisors(res.data);
+    } catch (err) {
+      console.error('Error loading supervisors:', err);
+    }
+    setSupervisorsLoading(false);
+  };
+
+  const loadSupervisorKams = async (supervisorId: string) => {
+    setSupervisorKamsLoading(true);
+    try {
+      const res = await KamPerformanceApi.getSupervisorWiseKAMList(supervisorId);
+      if (res?.data?.status && res?.data?.data) setSupervisorKams(res.data.data);
+      else if (res?.data) setSupervisorKams(res.data);
+    } catch (err) {
+      console.error('Error loading supervisor KAMs:', err);
+      setSupervisorKams([]);
+    }
+    setSupervisorKamsLoading(false);
+  };
+
+  const toggleQuarter = (q: number) => {
+    setTempQuarters((prev) =>
+      prev.includes(q)
+        ? prev.filter((quarter) => quarter !== q)
+        : [...prev, q].sort((a, b) => a - b)
+    );
+  };
+
+  // ─────────────────────────────────────────────
+  // ✅ APPLY
+  //    1. Resolve finalKam
+  //    2. Update all parent state setters
+  //    3. Call onFilterChange(finalKam) — passes the NEW value directly
+  //       so the parent can build & fire the API call immediately
+  //       without any stale closure risk
+  // ─────────────────────────────────────────────
+  const handleApply = () => {
+    let finalKam = tempKam;
+
+    if (tempFilterType === 'supervisor' && tempSupervisor !== 'all' && tempKam === 'all') {
+      const kamIds = supervisorKams.map((k) => String(k.kam_id));
+      finalKam = kamIds.length > 0 ? kamIds.join(',') : 'all';
+    }
+
+    // Update parent state
+    setCurrentFilterType(tempFilterType);
+    setDivision(tempDivision);
+    setKam(finalKam);
+    if (setSupervisor) setSupervisor(tempSupervisor);
+    setClientType(tempClientType);
+    setViewMode(tempViewMode);
+
+    if (tempViewMode === 'monthly') {
+      if (setStartMonth) setStartMonth(tempStartMonth);
+      if (setEndMonth) setEndMonth(tempEndMonth);
+      setStartYear(tempStartYear);
+      setEndYear(tempEndYear);
+    } else if (tempViewMode === 'quarterly') {
+      if (setQuarters) setQuarters(tempQuarters);
+      if (setQuarterYear) setQuarterYear(tempQuarterYear);
+    } else {
+      setStartYear(tempStartYear);
+      setEndYear(tempEndYear);
+    }
+
+    // ✅ Pass finalKam directly — parent receives fresh value, no stale closure
+    onFilterChange(finalKam);
+
+    setIsOpen(false);
+  };
+
+  const handleReset = () => {
+    setTempFilterType('kam');
+    setTempDivision('all');
+    setTempKam('all');
+    setTempSupervisor('all');
+    setTempClientType('All Client');
+    setTempViewMode('monthly');
+    setTempStartMonth(defaultMonth);
+    setTempEndMonth(defaultMonth);
+    setTempStartYear(defaultYear);
+    setTempEndYear(defaultYear);
+    setTempQuarters([defaultQuarter]);
+    setTempQuarterYear(defaultQuarterYear);
+    setSupervisorKams([]);
+
+    // ✅ Also fire fetch immediately on reset with 'all'
+    onFilterChange('all');
+    setIsOpen(false);
+  };
+
+  const filterConfigs = useMemo(() => {
+    const filters: any[] = [];
+
+    if (tempFilterType === 'kam' && showKamSelector) {
+      filters.push({
+        type: 'search-select',
+        label: 'KAM',
+        value: tempKam,
+        setter: setTempKam,
+        options: [
+          { label: 'All', value: 'all' },
+          ...kams.map((k) => ({ label: k.kam_name, value: String(k.kam_id) })),
+        ],
+        loading: kamsLoading,
+      });
+    }
+
+    if (tempFilterType === 'branch') {
+      filters.push({
+        type: 'search-select',
+        label: 'Branch',
+        value: tempDivision,
+        setter: setTempDivision,
+        options: [
+          { label: 'All Branches', value: 'all' },
+          ...branches.map((b) => ({ label: b.branch_name, value: String(b.id) })),
+        ],
+        loading: branchesLoading,
+      });
+    }
+
+    if (tempFilterType === 'supervisor') {
+      filters.push({
+        type: 'search-select',
+        label: 'Supervisor',
+        value: tempSupervisor,
+        setter: setTempSupervisor,
+        options: [
+          { label: 'All Supervisors', value: 'all' },
+          ...supervisors.map((s) => ({ label: s.supervisor, value: String(s.supervisor_id) })),
+        ],
+        loading: supervisorsLoading,
+      });
+
+      if (tempSupervisor && tempSupervisor !== 'all') {
+        filters.push({
+          type: 'search-select',
+          label: 'KAM',
+          value: tempKam,
+          setter: setTempKam,
+          options: [
+            { label: 'All KAMs', value: 'all' },
+            ...supervisorKams.map((k) => ({ label: k.kam_name, value: String(k.kam_id) })),
+          ],
+          loading: supervisorKamsLoading,
+        });
+      }
+    }
+
+    return filters;
+  }, [
+    tempFilterType, tempKam, tempDivision, tempSupervisor, tempClientType,
+    kams, branches, supervisors, supervisorKams,
+    branchesLoading, kamsLoading, supervisorsLoading, supervisorKamsLoading,
+    isKamRole, showKamSelector,
+  ]);
+
+  return (
+    <Drawer direction="right" open={isOpen} onOpenChange={setIsOpen}>
+      <Button variant="outline" onClick={() => setIsOpen(true)}>
+        <Filter className="h-4 w-4 mr-1" /> Filters
+      </Button>
+
+      <DrawerContent className="w-full sm:w-[420px]">
+        <DrawerHeader className="flex items-center justify-between">
+          <DrawerTitle>Filters</DrawerTitle>
+          <DrawerClose asChild>
+            <Button variant="ghost" size="icon">
+              <X className="h-4 w-4" />
+            </Button>
+          </DrawerClose>
+        </DrawerHeader>
+
+        <ScrollArea className="flex-1 px-4">
+          <div className="space-y-5 py-2">
+            {filterConfigs.map((filter, idx) => {
+              if (filter.type === 'search-select') {
+                return (
+                  <React.Fragment key={idx}>
+                    <div className="block sm:hidden">
+                      <FloatingSelect
+                        label={filter.label}
+                        value={filter.value}
+                        onValueChange={filter.setter}
+                      >
+                        {filter.loading ? (
+                          <SelectItem value="loading" disabled textValue="Loading...">
+                            Loading...
+                          </SelectItem>
+                        ) : (
+                          (filter.options || []).map((o: any) => (
+                            <SelectItem key={o.value} value={o.value} textValue={o.label}>
+                              {o.label}
+                            </SelectItem>
+                          ))
+                        )}
+                      </FloatingSelect>
+                    </div>
+                    <div className="hidden sm:block">
+                      <FloatingSearchSelect
+                        label={filter.label}
+                        value={filter.value}
+                        searchable
+                        onValueChange={filter.setter}
+                        disabled={filter.loading}
+                      >
+                        {filter.loading ? (
+                          <SelectItem value="loading" disabled>
+                            Loading...
+                          </SelectItem>
+                        ) : (
+                          (filter.options || []).map((o: any) => (
+                            <SelectItem key={o.value} value={o.value}>
+                              {o.label}
+                            </SelectItem>
+                          ))
+                        )}
+                      </FloatingSearchSelect>
+                    </div>
+                  </React.Fragment>
+                );
+              }
+
+              if (filter.type === 'select') {
+                return (
+                  <FloatingSelect
+                    key={idx}
+                    label={filter.label}
+                    value={filter.value}
+                    onValueChange={filter.setter}
+                  >
+                    {filter.options.map((o: any) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </FloatingSelect>
+                );
+              }
+
+              return null;
+            })}
+
+            {tempViewMode === 'quarterly' && (
+              <div className="space-y-4">
+                <FloatingSelect
+                  label="Year"
+                  value={tempQuarterYear}
+                  onValueChange={setTempQuarterYear}
+                >
+                  {years.map((y) => (
+                    <SelectItem key={y} value={y}>{y}</SelectItem>
+                  ))}
+                </FloatingSelect>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold uppercase text-muted-foreground">
+                    Select Quarters
+                  </Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[1, 2, 3, 4].map((q) => (
+                      <Button
+                        key={q}
+                        onClick={() => toggleQuarter(q)}
+                        variant={tempQuarters.includes(q) ? 'default' : 'outline'}
+                        className={`w-full font-semibold ${
+                          tempQuarters.includes(q)
+                            ? 'bg-blue-600 text-white hover:bg-blue-700'
+                            : 'border-slate-300 text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-center gap-1">
+                          {tempQuarters.includes(q) && <Check className="h-4 w-4" />}Q{q}
+                        </div>
+                      </Button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Selected:{' '}
+                    {tempQuarters.length > 0 ? tempQuarters.map((q) => `Q${q}`).join(', ') : 'None'}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <Button
+              variant="ghost"
+              className="w-full text-destructive flex gap-2 py-4"
+              onClick={handleReset}
+            >
+              <RotateCcw className="h-4 w-4" /> Clear All Filters
+            </Button>
+          </div>
+        </ScrollArea>
+
+        <DrawerFooter>
+          <Button onClick={handleApply} className="w-full">
+            Apply Filters
+          </Button>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
+  );
+}
