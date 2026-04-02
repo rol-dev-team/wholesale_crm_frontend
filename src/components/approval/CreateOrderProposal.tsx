@@ -32,6 +32,7 @@ interface Props {
 }
 
 interface RowItem {
+  id: string;
   product: string;
   price: string;
   unit: string;
@@ -44,6 +45,7 @@ interface RowItem {
   current_invoice?: string | number;
   invoice_difference?: number;
   effective_date?: string;
+  service_uid?: string;
 }
 
 interface Option {
@@ -109,72 +111,69 @@ export default function CreateOrderProposal({ proposal }: Props) {
 
   /* ================= UPDATE ROWS ================= */
   useEffect(() => {
-    setRows((prev) => {
-      const existing = prev.map((r) => r.product);
-      const added = selectedProducts.filter((p) => !existing.includes(p));
-      const remaining = prev.filter((r) => selectedProducts.includes(r.product));
-
-      return [
-        ...remaining,
-        ...added.map((p) => ({
-          product: p,
-          price: '',
-          unit: 'MB',
-          volume: '',
-          current_rate: 0,
-          current_invoice: 0,
-          effective_date: '',
-        })),
-      ];
-    });
-  }, [selectedProducts]);
-
-  /* ================= FETCH UNIT COST ================= */
-  useEffect(() => {
-    const fetchUnitCosts = async () => {
-      if (!client || rows.length === 0) return;
-
-      const needsFetch = rows.some((r) => r.current_rate === 0);
-      if (!needsFetch) return;
+    const fetchAndUpdateRows = async () => {
+      if (!client || selectedProducts.length === 0) {
+        setRows([]);
+        return;
+      }
 
       setFetchingUnitCosts(true);
 
       try {
-        const updated = await Promise.all(
-          rows.map(async (row) => {
-            if (row.current_rate !== 0) return row;
+        const newRows: RowItem[] = [];
 
-            const res = await ClientAPI.getUnitCost({
-              party_id: Number(client),
-              product_id: Number(row.product),
+        for (const productId of selectedProducts) {
+          const res = await ClientAPI.getUnitCost({
+            party_id: Number(client),
+            product_id: Number(productId),
+          });
+
+          if (res?.status && res.data && res.data.length > 0) {
+            // Create a row for each unit cost entry
+            res.data.forEach((item: any, index: number) => {
+              newRows.push({
+                id: `${productId}-${item.service_uid || index}`,
+                product: productId,
+                price: '',
+                unit: 'MB',
+                volume: '',
+                current_rate: Number(item.unit_cost),
+                quantity: Number(item.quantity),
+                current_invoice: Number(item.total),
+                effective_date: '',
+                service_uid: item.service_uid,
+              });
             });
+          } else {
+            // No unit costs, create one default row
+            newRows.push({
+              id: `${productId}-default`,
+              product: productId,
+              price: '',
+              unit: 'MB',
+              volume: '',
+              current_rate: 0,
+              quantity: 0,
+              current_invoice: 0,
+              effective_date: '',
+            });
+          }
+        }
 
-            if (res?.status && res.unit_cost) {
-              return {
-                ...row,
-                current_rate: Number(res.unit_cost),
-                current_invoice: res.total ? Number(res.total) : 0,
-                quantity: res.quantity ? Number(res.quantity) : 0,
-              };
-            }
-            return row;
-          })
-        );
-
-        setRows(updated);
+        setRows(newRows);
       } finally {
         setFetchingUnitCosts(false);
       }
     };
 
-    fetchUnitCosts();
-  }, [rows.length, client]);
+    fetchAndUpdateRows();
+  }, [selectedProducts, client]);
 
   /* ================= AUTO CALCULATION ================= */
-  const updateRow = (product: string, data: Partial<RowItem>) => {
+  const updateRow = (id: string, data: Partial<RowItem>) => {
     setRows((prev) =>
       prev.map((r) => {
-        if (r.product !== product) return r;
+        if (r.id !== id) return r;
 
         const updated = { ...r, ...data };
 
@@ -207,9 +206,13 @@ export default function CreateOrderProposal({ proposal }: Props) {
     );
   };
 
-  const deleteRow = (product: string) => {
-    setRows((prev) => prev.filter((r) => r.product !== product));
-    setSelectedProducts((prev) => prev.filter((p) => p !== product));
+  const deleteRow = (id: string) => {
+    setRows((prev) => prev.filter((r) => r.id !== id));
+    // If no more rows for this product, remove from selectedProducts
+    const remainingForProduct = prev.filter((r) => r.id !== id && r.product === prev.find(p => p.id === id)?.product);
+    if (remainingForProduct.length === 0) {
+      setSelectedProducts((prev) => prev.filter((p) => p !== prev.find(r => r.id === id)?.product));
+    }
   };
 
   /* ================= SUBMIT (UNCHANGED PAYLOAD) ================= */
@@ -340,7 +343,7 @@ export default function CreateOrderProposal({ proposal }: Props) {
           <TableBody>
             {rows.length > 0 ? (
               rows.map((row) => (
-                <TableRow key={row.product}>
+                <TableRow key={row.id}>
                   <TableCell>{products.find((p) => p.value === row.product)?.label}</TableCell>
 
                   <TableCell>{Number(row.current_rate || 0).toFixed(2)}</TableCell>
@@ -354,7 +357,7 @@ export default function CreateOrderProposal({ proposal }: Props) {
                         type="number"
                         value={row.price}
                         onChange={(e) =>
-                          updateRow(row.product, {
+                          updateRow(row.id, {
                             price: e.target.value,
                           })
                         }
@@ -366,7 +369,7 @@ export default function CreateOrderProposal({ proposal }: Props) {
                         className="border rounded-md px-2 py-1 min-w-[50px]"
                         value={row.unit}
                         onChange={(e) =>
-                          updateRow(row.product, {
+                          updateRow(row.id, {
                             unit: e.target.value,
                           })
                         }
@@ -385,7 +388,7 @@ export default function CreateOrderProposal({ proposal }: Props) {
                       type="number"
                       value={row.volume}
                       onChange={(e) =>
-                        updateRow(row.product, {
+                        updateRow(row.id, {
                           volume: e.target.value,
                         })
                       }
@@ -422,7 +425,7 @@ export default function CreateOrderProposal({ proposal }: Props) {
                       label="Effective Date"
                       value={row.effective_date}
                       onChange={(date) =>
-                        updateRow(row.product, {
+                        updateRow(row.id, {
                           effective_date: date,
                         })
                       }
@@ -430,7 +433,7 @@ export default function CreateOrderProposal({ proposal }: Props) {
                   </TableCell>
 
                   <TableCell>
-                    <Button variant="ghost" size="icon" onClick={() => deleteRow(row.product)}>
+                    <Button variant="ghost" size="icon" onClick={() => deleteRow(row.id)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </TableCell>
@@ -438,7 +441,7 @@ export default function CreateOrderProposal({ proposal }: Props) {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={11} className="text-center">
+                <TableCell colSpan={13} className="text-center">
                   No products selected
                 </TableCell>
               </TableRow>
