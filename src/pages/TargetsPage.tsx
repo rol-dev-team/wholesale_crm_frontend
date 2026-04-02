@@ -370,7 +370,7 @@ export default function TargetsPage() {
           <TargetFilterDrawer
             isSupervisor={isSupervisor}
             isManagement={isManagement}
-            supervisor_ids={currentUser?.supervisor_ids}
+            supervisor_ids={currentUser?.default_kam_id}
             division={divisionFilter}
             setDivision={setDivisionFilter}
             kam={filterKam}
